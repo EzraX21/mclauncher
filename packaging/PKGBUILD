@@ -1,0 +1,28 @@
+# Maintainer: mclauncher
+# 用法：在项目根目录执行
+#   tar czf ../mclauncher-2.0.0.tar.gz --exclude=.venv --exclude=.git .
+#   cd .. && makepkg -si -p mclauncher/packaging/PKGBUILD
+pkgname=mclauncher
+pkgver=2.0.0
+pkgrel=1
+pkgdesc="Minecraft launcher with a full-screen TUI: download, versions, mods, launch"
+arch=('any')
+url="https://example.invalid/mclauncher"
+license=('MIT')
+depends=('python' 'python-textual')
+optdepends=('python-questionary: 文本模式交互菜单（--cli）')
+makedepends=('python-build' 'python-installer' 'python-wheel')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/$pkgname-$pkgver"
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  python -m installer --destdir="$pkgdir" dist/*.whl
+  install -Dm644 packaging/mclauncher.desktop "$pkgdir/usr/share/applications/mclauncher.desktop"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

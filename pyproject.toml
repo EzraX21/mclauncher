@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mclauncher"
+version = "2.2.3"
+description = "Minecraft launcher with a full-screen TUI: download, version management, mods and launching"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "mclauncher" }]
+license = { file = "LICENSE" }
+keywords = ["minecraft", "launcher", "tui", "modrinth", "fabric", "quilt"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Games/Entertainment",
+]
+dependencies = ["textual>=8,<9"]
+
+[project.optional-dependencies]
+cli = ["questionary>=2.0,<3"]
+dev = ["questionary>=2.0,<3", "build", "installer"]
+
+[project.scripts]
+mclauncher = "mclauncher.cli:main"
+mclauncher-tui = "mclauncher.tui.app:run"
+
+[project.urls]
+Homepage = "https://github.com/"
+
+[tool.setuptools]
+packages = ["mclauncher", "mclauncher.tui", "mclauncher.tui.panes"]
+
+[tool.setuptools.package-data]
+mclauncher = ["tui/*.tcss"]

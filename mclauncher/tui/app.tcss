@@ -1,0 +1,128 @@
+Screen {
+    layout: vertical;
+}
+
+Header {
+    background: $primary;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+TabPane {
+    padding: 1 2;
+    layout: vertical;
+    height: 1fr;
+}
+
+.pane-title {
+    text-style: bold;
+    color: $accent;
+}
+
+DataTable {
+    height: 1fr;
+    min-height: 8;
+    border: round $primary;
+}
+
+.row {
+    height: auto;
+    margin-top: 0;
+}
+
+Button {
+    margin-right: 1;
+    min-width: 10;
+}
+
+Input {
+    width: 36;
+    margin-right: 1;
+}
+
+Select {
+    width: 30;
+    margin-right: 1;
+}
+
+Checkbox {
+    margin-right: 2;
+    width: auto;
+}
+
+ProgressBar {
+    margin-top: 1;
+}
+
+#v-progress, #i-progress {
+    display: none;
+}
+
+.progress-label {
+    color: $text-muted;
+    height: 1;
+}
+
+RichLog {
+    height: 6;
+    min-height: 3;
+    border: round $secondary;
+    margin-top: 1;
+    padding: 0 1;
+}
+
+.confirm-box {
+    width: 60;
+    height: auto;
+    padding: 1 2;
+    border: thick $error;
+    background: $surface;
+    align: center middle;
+}
+
+.confirm-text {
+    margin-bottom: 1;
+}
+
+.confirm-buttons {
+    height: auto;
+    align-horizontal: right;
+}
+
+.label {
+    width: 12;
+    content-align: right middle;
+    color: $text-muted;
+    margin-right: 1;
+}
+
+#s-dir, #s-java {
+    width: 70;
+}
+
+#s-username {
+    width: 24;
+}
+
+#s-memory {
+    width: 12;
+}
+
+.loader-box {
+    width: 72;
+    height: auto;
+    padding: 1 2;
+    border: thick $accent;
+    background: $surface;
+    align: center middle;
+}
+
+.hidden {
+    display: none;
+}
+
+#i-filter {
+    width: 30;
+}

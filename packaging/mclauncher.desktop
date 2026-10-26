@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=mclauncher
+GenericName=Minecraft Launcher
+Comment=Download, manage mods and launch Minecraft in a TUI
+Exec=mclauncher
+Terminal=true
+Categories=Game;
+Keywords=minecraft;launcher;mods;fabric;quilt;
