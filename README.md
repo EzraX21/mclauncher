@@ -199,3 +199,69 @@ Copyright (C) 2026 mclauncher contributors
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
 Foundation, either version 3 of the License, or (at your option) any later version.
+
+## 打包与发布
+
+### Linux（本机就能打）
+
+```bash
+./packaging/build_linux.sh
+```
+
+`dist/` 里会得到：
+
+| 文件 | 说明 |
+| --- | --- |
+| `mclauncher_<ver>_amd64.deb` | Debian / Ubuntu 安装包（自带 Python 依赖，只要求系统有 python3） |
+| `mclauncher-<ver>-1.x86_64.rpm` | Fedora / RHEL 安装包 |
+| `mclauncher-<ver>-1-x86_64.pkg.tar.zst` | Arch 包 |
+| `mclauncher-<ver>-py3-none-any.whl` | wheel |
+| `mclauncher-<ver>.tar.gz` / `.zip` | 源码包 |
+| `mclauncher-<ver>-portable.zip` | 便携版，解压后 `./mclauncher.sh` 或 `mclauncher.cmd`，自带依赖 |
+
+需要 `nfpm`（脚本会提示下载地址）、`uv`、`zip`、`git`。
+包里的依赖是 vendor 进去的，所以不依赖发行版有没有 `python-textual`。
+
+### Windows
+
+必须在 Windows 上构建（PyInstaller 不能交叉编译）：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File packaging/build_windows.ps1
+```
+
+产物：`dist\mclauncher.exe`（单文件）和 `dist\mclauncher-<ver>-setup.exe`（Inno Setup 安装包，
+带开始菜单/桌面快捷方式，快捷方式用 `cmd /k` 打开 TUI）。需要 Python 3.10+ 和 Inno Setup 6
+（脚本会尝试用 choco 装）。
+
+### macOS
+
+必须在 macOS 上构建：
+
+```bash
+bash packaging/macos/build_app.sh
+```
+
+产物：`dist/mclauncher.app` 和 `dist/mclauncher-<ver>-macos.dmg`。
+`.app` 双击会打开 Terminal 跑 TUI。
+
+### CI / 自动发布
+
+`.github/workflows/release.yml`：推 `v*` tag 时
+
+- Ubuntu 上打 deb / rpm / Arch / wheel / 源码包 / 便携包
+- Windows 上打 exe + 安装包
+- macOS 上打 .app + dmg
+- 汇总到 GitHub Release
+- 用 `KSXGitHub/github-actions-deploy-aur` 更新 AUR
+
+AUR 需要仓库 secrets：`AUR_USERNAME`、`AUR_EMAIL`、`AUR_SSH_PRIVATE_KEY`（公钥加到 AUR 账号）。
+手动提交也可以：
+
+```bash
+cd packaging/aur
+# 先把 PKGBUILD 里的 url 改成你的仓库地址
+./publish.sh
+```
+
+AUR 的 `PKGBUILD` 是按源码构建的（依赖系统的 `python-textual`），和上面 vendor 的二进制包是两条路。
