@@ -173,3 +173,30 @@ class CancelButtonTests(unittest.IsolatedAsyncioTestCase):
                     os.environ.pop("MCLAUNCHER_CONFIG", None)
                 else:
                     os.environ["MCLAUNCHER_CONFIG"] = previous
+
+
+class CurseForgeKeyTests(unittest.IsolatedAsyncioTestCase):
+    async def test_key_saved_from_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            previous = os.environ.get("MCLAUNCHER_CONFIG")
+            os.environ["MCLAUNCHER_CONFIG"] = str(Path(tmp) / "config.json")
+            try:
+                cfg = Config(game_dir=str(Path(tmp) / "game"))
+                app = MclauncherApp(cfg)
+                with mock.patch.object(Manifest, "load",
+                                       classmethod(lambda cls, source="official": Manifest(FAKE_MANIFEST))):
+                    async with app.run_test(size=(120, 40)) as pilot:
+                        await pilot.pause()
+                        app.query_one(TabbedContent).active = "tab-settings"
+                        await pilot.pause()
+                        app.query_one("#s-cf-key").value = "cf-test-key"
+                        await pilot.click("#s-save")
+                        await pilot.pause()
+                        self.assertEqual(cfg.curseforge_api_key, "cf-test-key")
+                        self.assertEqual(Config.load().curseforge_api_key, "cf-test-key")
+                        await pilot.press("q")
+            finally:
+                if previous is None:
+                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                else:
+                    os.environ["MCLAUNCHER_CONFIG"] = previous

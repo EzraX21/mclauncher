@@ -31,6 +31,9 @@ class SettingsPane(Vertical):
             yield Static("用户名", classes="label")
             yield Input(id="s-username")
         with Horizontal(classes="row"):
+            yield Static("CurseForge key", classes="label")
+            yield Input(placeholder="可选，模组来源选 CurseForge 时需要", password=True, id="s-cf-key")
+        with Horizontal(classes="row"):
             yield Static("版本隔离", classes="label")
             yield Switch(value=True, id="s-isolate")
             yield Static("下载源", classes="label")
@@ -49,6 +52,7 @@ class SettingsPane(Vertical):
         self.query_one("#s-java", Input).value = cfg.java_path or ""
         self.query_one("#s-memory", Input).value = str(cfg.memory_mb)
         self.query_one("#s-username", Input).value = cfg.username
+        self.query_one("#s-cf-key", Input).value = cfg.curseforge_api_key
         self.query_one("#s-isolate", Switch).value = cfg.isolate_versions
         self.query_one("#s-source", Select).value = cfg.download_source
         self._log(
@@ -94,6 +98,7 @@ class SettingsPane(Vertical):
         cfg.java_path = java or None
         cfg.memory_mb = int(memory) if memory else cfg.memory_mb
         cfg.username = username
+        cfg.curseforge_api_key = self.query_one("#s-cf-key", Input).value.strip()
         cfg.isolate_versions = self.query_one("#s-isolate", Switch).value
         value = self.query_one("#s-source", Select).value
         if isinstance(value, str):

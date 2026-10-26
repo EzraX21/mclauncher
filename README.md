@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mclauncher ───────────────────────────── v2.3.0 · Minecraft 启动器 ─┐
+┌ mclauncher ───────────────────────────── v2.3.1 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -80,6 +80,30 @@ git clone <repo> && cd mclauncher
 - 卸载：`pipx uninstall mclauncher` / `pacman -R mclauncher`，配置目录自己删
 - 版本：`mclauncher --version`
 
+### 配置项
+
+配置文件在 `~/.config/mclauncher/config.json`（macOS/Windows 见上），也可以用命令改：
+
+```bash
+mclauncher config                    # 查看
+mclauncher config set memory_mb 8192
+mclauncher config set download_source auto
+mclauncher config set curseforge_api_key 你的key
+```
+
+| 配置 | 环境变量 | 说明 |
+| --- | --- | --- |
+| `game_dir` | — | 游戏目录，默认 `~/.minecraft` |
+| `java_path` | — | 指定 Java，留空自动找 |
+| `memory_mb` | — | 内存 MB，默认 4096 |
+| `username` | — | 离线用户名 |
+| `isolate_versions` | — | 版本隔离，默认开 |
+| `jobs` | — | 下载并发，默认 8 |
+| `download_source` | — | `official`（默认）/ `auto`（BMCLAPI 优先） |
+| `curseforge_api_key` | `CURSEFORGE_API_KEY` | 可选，用 CurseForge 模组源时需要，**由用户自己申请** |
+
+配置里的 key 是明文存的，介意的话 `chmod 600 ~/.config/mclauncher/config.json`，或者只用环境变量。
+
 ## 命令行模式
 
 TUI 之外保留了完整子命令，脚本和 CI 里能用：
@@ -127,6 +151,8 @@ mclauncher config set download_source official
 
 默认用 Modrinth。想用 CurseForge 需要自己申请 API key，因为它是审核制的。
 
+**本项目不内置、也不代申请任何 key**；没有配置 key 时，模组页选 CurseForge 会提示，Modrinth 不受影响。
+
 **申请步骤**
 
 1. 注册/登录 CurseForge（Overwolf）账号
@@ -139,11 +165,16 @@ mclauncher config set download_source official
 
 **配置 key**
 
+三种方式，任选：
+
 ```bash
-export CURSEFORGE_API_KEY=你的key               # 临时
-mclauncher config set curseforge_api_key 你的key  # 写入配置
-mclauncher doctor                               # 能看到是否已配置
+export CURSEFORGE_API_KEY=你的key               # 当前终端有效
+mclauncher config set curseforge_api_key 你的key  # 写入配置文件
 ```
+
+或者打开 TUI → 设置 → CurseForge key，粘贴后保存。
+
+配完 `mclauncher doctor` 能看到“已配置”。
 
 **使用**
 
@@ -208,7 +239,7 @@ mclauncher/
 │   ├── prompts.py      questionary 封装（CLI 用）
 │   ├── home.py         CLI 文本菜单
 │   └── ui.py           颜色 / 对齐 / 摘要框
-├── tests/              69 个测试（含无头 TUI 测试）
+├── tests/              70 个测试（含无头 TUI 测试）
 ├── packaging/          PKGBUILD、.desktop
 ├── run.sh / run.bat    开发用启动脚本
 └── pyproject.toml
