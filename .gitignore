@@ -9,3 +9,5 @@ dist/
 *.part
 dist/
 .pkgtest/
+
+*.log
