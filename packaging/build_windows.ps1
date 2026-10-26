@@ -1,5 +1,7 @@
 # 在 Windows 上构建 mclauncher.exe 和安装包
 $ErrorActionPreference = "Stop"
+# 让原生命令（pyinstaller / ISCC）失败时也终止脚本
+$PSNativeCommandUseErrorActionPreference = $true
 Set-Location (Join-Path $PSScriptRoot "..")
 
 $python = if (Get-Command py -ErrorAction SilentlyContinue) { "py" } else { "python" }

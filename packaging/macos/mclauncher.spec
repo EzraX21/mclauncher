@@ -1,5 +1,9 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+
 from PyInstaller.utils.hooks import collect_all
+
+ROOT = os.path.abspath(os.path.join(SPECPATH, "..", ".."))
 
 datas, binaries, hiddenimports = [], [], []
 for package in ("textual", "rich", "questionary", "markdown_it", "mdit_py_plugins",
@@ -13,8 +17,8 @@ for package in ("textual", "rich", "questionary", "markdown_it", "mdit_py_plugin
         pass
 
 a = Analysis(
-    ["packaging/entry.py"],
-    pathex=["."],
+    [os.path.join(ROOT, "packaging", "entry.py")],
+    pathex=[ROOT],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
