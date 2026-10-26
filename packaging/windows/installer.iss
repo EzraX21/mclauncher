@@ -1,6 +1,9 @@
 ; Inno Setup 脚本：mclauncher.exe 安装包
 #define MyAppName "mclauncher"
-#define MyAppVersion "2.2.3"
+#define MyAppVersion GetEnv("MCLAUNCHER_VERSION")
+#if MyAppVersion == ""
+  #define MyAppVersion "0.0.0"
+#endif
 #define MyAppPublisher "mclauncher"
 #define MyAppExeName "mclauncher.exe"
 

@@ -5,6 +5,11 @@ $PSNativeCommandUseErrorActionPreference = $true
 Set-Location (Join-Path $PSScriptRoot "..")
 
 $python = if (Get-Command py -ErrorAction SilentlyContinue) { "py" } else { "python" }
+
+# 版本号从包里读，Inno Setup 用同一个
+$versionLine = Select-String -Path "mclauncher/__init__.py" -Pattern '__version__ = "([^"]+)"'
+$env:MCLAUNCHER_VERSION = $versionLine.Matches[0].Groups[1].Value
+Write-Host "mclauncher $env:MCLAUNCHER_VERSION"
 & $python -m pip install --upgrade pip
 & $python -m pip install ".[cli]" pyinstaller
 

@@ -1,6 +1,6 @@
 pkgbase = mclauncher
 	pkgdesc = Minecraft launcher with a full-screen TUI: download, versions, mods, launch
-	pkgver = 2.2.3
+	pkgver = 2.3.1
 	pkgrel = 1
 	url = https://github.com/ezrax21/mclauncher
 	arch = any

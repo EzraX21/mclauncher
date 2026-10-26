@@ -3,7 +3,7 @@
 #   tar czf ../mclauncher-2.0.0.tar.gz --exclude=.venv --exclude=.git .
 #   cd .. && makepkg -si -p mclauncher/packaging/PKGBUILD
 pkgname=mclauncher
-pkgver=2.0.0
+pkgver=2.3.1
 pkgrel=1
 pkgdesc="Minecraft launcher with a full-screen TUI: download, versions, mods, launch"
 arch=('any')
