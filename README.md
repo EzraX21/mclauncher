@@ -186,3 +186,9 @@ python -m unittest discover -s tests -v
 ```
 
 核心逻辑 + 无头 TUI（Textual `run_test`），不需要终端、不需要网络。
+
+## 许可证
+
+GNU General Public License v3.0（GPL-3.0-only），完整文本见 [LICENSE](LICENSE)。
+
+Copyright (C) 2026 mclauncher contributors
