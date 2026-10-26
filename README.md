@@ -189,6 +189,13 @@ python -m unittest discover -s tests -v
 
 ## 许可证
 
-GNU General Public License v3.0（GPL-3.0-only），完整文本见 [LICENSE](LICENSE)。
+GNU General Public License v3.0 **或更新版本**（GPL-3.0-or-later），完整文本见 [LICENSE](LICENSE)。
 
 Copyright (C) 2026 mclauncher contributors
+
+本项目是自由软件：你可以按自由软件基金会发布的 GNU 通用公共许可证（第 3 版或你选择的任何更新版本）的条款
+再分发和/或修改它。分发时不做任何担保，也不附带任何默示担保。详见 LICENSE。
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later version.
