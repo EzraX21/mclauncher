@@ -321,13 +321,61 @@ bash packaging/macos/build_app.sh
 - 汇总到 GitHub Release
 - 用 `KSXGitHub/github-actions-deploy-aur` 更新 AUR
 
-AUR 需要仓库 secrets：`AUR_USERNAME`、`AUR_EMAIL`、`AUR_SSH_PRIVATE_KEY`（公钥加到 AUR 账号）。
-手动提交也可以：
+### AUR 自动发布怎么配
+
+**1. AUR 账号**：去 <https://aur.archlinux.org/register> 注册（用户名、邮箱、密码）。
+
+**2. 生成一把专用 SSH key**
+
+```bash
+ssh-keygen -t ed25519 -C "aur" -f ~/.ssh/aur -N ""
+cat ~/.ssh/aur.pub
+```
+
+把输出粘到 <https://aur.archlinux.org/account> 的 **SSH Public Key** 里。测试：
+
+```bash
+ssh -i ~/.ssh/aur aur@aur.archlinux.org help
+```
+
+**3. 首次提交包（必须走网页）**
+
+AUR 的新包不能直接用 git 推出来，要先在 <https://aur.archlinux.org/submit> 提交一次：
+
+- 包名填 `mclauncher`
+- 上传 `packaging/aur/PKGBUILD` 和 `packaging/aur/.SRCINFO`
+- 提交后 `<ssh://aur@aur.archlinux.org/mclauncher.git>` 这个仓库才会存在
+
+**4. 配 GitHub secrets**（仓库 → Settings → Secrets and variables → Actions）
+
+| Secret | 值 |
+| --- | --- |
+| `AUR_USERNAME` | 你的 AUR 用户名 |
+| `AUR_EMAIL` | AUR 注册邮箱 |
+| `AUR_SSH_PRIVATE_KEY` | `~/.ssh/aur` 的**私钥内容**（不是 .pub） |
+
+用命令行也行：
+
+```bash
+gh secret set AUR_USERNAME
+gh secret set AUR_EMAIL
+gh secret set AUR_SSH_PRIVATE_KEY < ~/.ssh/aur
+```
+
+配好之后，下次推 `v*` tag 时 `release.yml` 会：
+
+1. 用 tag 版本改 PKGBUILD 和 `.SRCINFO`
+2. 下载 GitHub 源码包、重算 sha256 填进去
+3. 提交并推送 AUR
+
+**5. 本地手动推**
 
 ```bash
 cd packaging/aur
-# 先把 PKGBUILD 里的 url 改成你的仓库地址
 ./publish.sh
 ```
 
-AUR 的 `PKGBUILD` 是按源码构建的（依赖系统的 `python-textual`），和上面 vendor 的二进制包是两条路。
+需要 `~/.ssh/config` 里给 `aur.archlinux.org` 指定这把 key，或者用 `ssh-agent` 加载。
+
+注意：`PKGBUILD` 里 `url` 指向的仓库必须能公开访问，否则 AUR 构建时拉不到源码；
+包名 `mclauncher` 如果已被占用，需要换一个。

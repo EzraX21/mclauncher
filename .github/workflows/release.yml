@@ -87,7 +87,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 更新 PKGBUILD 版本
-        run: python3 packaging/aur/update_version.py "${GITHUB_REF_NAME}"
+        run: python3 packaging/aur/update_version.py "${GITHUB_REF_NAME}" --checksum
       - uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
           pkgname: mclauncher
