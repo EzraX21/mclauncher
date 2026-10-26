@@ -30,7 +30,7 @@ mclauncher = "mclauncher.cli:main"
 mclauncher-tui = "mclauncher.tui.app:run"
 
 [project.urls]
-Homepage = "https://github.com/"
+Homepage = "https://github.com/ezrax21/mclauncher"
 
 [tool.setuptools]
 packages = ["mclauncher", "mclauncher.tui", "mclauncher.tui.panes"]

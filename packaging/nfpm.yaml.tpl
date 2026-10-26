@@ -6,7 +6,7 @@ section: games
 priority: optional
 maintainer: mclauncher contributors
 vendor: mclauncher
-homepage: https://github.com/
+homepage: https://github.com/ezrax21/mclauncher
 license: GPL-3.0-or-later
 description: |
   Minecraft launcher with a full-screen TUI.
