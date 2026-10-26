@@ -94,6 +94,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--query", help="搜索关键词（search 用）")
     p.add_argument("--version", help="游戏版本（默认 last_version）")
     p.add_argument("--loader", help="加载器（fabric/quilt/forge/neoforge）")
+    p.add_argument("--provider", choices=["modrinth", "curseforge"], default=None,
+                   help="模组来源（默认 modrinth）")
     p.add_argument("-y", "--yes", action="store_true", help="不确认")
 
     p = sub.add_parser("java", help="Java 运行时")

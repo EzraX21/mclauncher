@@ -9,7 +9,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, DataTable, Input, RichLog, Select, Static
 
-from ... import modrinth
+from ... import curseforge, modrinth
 from ...mods import find, list_mods, remove, set_enabled
 from ...platforms import open_in_file_manager
 from ...progress import human_size
@@ -22,6 +22,8 @@ class ModsPane(Vertical):
         yield PaneTitle("模组")
         with Horizontal(classes="row"):
             yield Select([], prompt="选择版本", id="m-version")
+            yield Select([("Modrinth", "modrinth"), ("CurseForge", "curseforge")],
+                         value="modrinth", id="m-provider")
             yield Button("刷新", id="m-refresh", variant="primary")
             yield Button("启用 / 禁用", id="m-toggle")
             yield Button("删除", id="m-delete", variant="error")
@@ -72,6 +74,10 @@ class ModsPane(Vertical):
     def selected_version(self) -> str | None:
         value = self.query_one("#m-version", Select).value
         return value if isinstance(value, str) else None
+
+    def provider(self) -> str:
+        value = self.query_one("#m-provider", Select).value
+        return value if isinstance(value, str) else "modrinth"
 
     def on_select_changed(self, event: Select.Changed) -> None:
         if event.select.id == "m-version":
@@ -161,8 +167,13 @@ class ModsPane(Vertical):
             self.app.notify("先选一个版本", severity="warning")
             return
         loader, game = self._loader_and_game(version_id)
-        self._log(f"搜索 {query}（{game} / {loader}）…")
-        self._search_worker(query, loader, game)
+        provider = self.provider()
+        if provider == "curseforge" and not curseforge.api_key(self.cfg):
+            self._log("[yellow]没配 CurseForge API key，先用 Modrinth，"
+                      "或设置 CURSEFORGE_API_KEY[/]")
+            return
+        self._log(f"搜索 {query}（{game} / {loader} / {provider}）…")
+        self._search_worker(query, loader, game, provider)
 
     def _loader_and_game(self, version_id: str) -> tuple[str, str]:
         resolved = resolve(self.cfg.root(), version_id)
@@ -181,12 +192,13 @@ class ModsPane(Vertical):
             return
         loader, game = self._loader_and_game(version_id)
         hit = self.results[row]
+        provider = self.provider()
         if self.cancel_event is not None:
             self.cancel_event.set()
         self.cancel_event = threading.Event()
         self.query_one("#m-cancel", Button).disabled = False
         self.query_one("#m-install", Button).disabled = True
-        self._install_worker(version_id, hit.slug, loader, game)
+        self._install_worker(version_id, hit.slug, loader, game, provider)
 
     # ------------------------------------------------------------------
     def _log(self, message: str) -> None:
@@ -196,10 +208,14 @@ class ModsPane(Vertical):
         ui_call(self, self._log, message)
 
     @work(thread=True, group="mod-search", exclusive=True)
-    def _search_worker(self, query: str, loader: str, game: str) -> None:
+    def _search_worker(self, query: str, loader: str, game: str, provider: str = "modrinth") -> None:
         try:
-            hits = modrinth.search(query, loader=loader, game_version=game, limit=12,
-                                   source=self.cfg.download_source)
+            if provider == "curseforge":
+                hits = curseforge.search(query, loader=loader, game_version=game, limit=12,
+                                         config=self.cfg)
+            else:
+                hits = modrinth.search(query, loader=loader, game_version=game, limit=12,
+                                       source=self.cfg.download_source)
         except Exception as exc:  # noqa: BLE001
             self._log_threadsafe(f"[red]搜索失败：{exc}[/]")
             return
@@ -215,6 +231,30 @@ class ModsPane(Vertical):
         for hit in self.results:
             table.add_row(hit.title, hit.slug, f"{hit.downloads:,}")
 
+    def _install_curseforge(self, version_id: str, slug: str, loader: str,
+                            game: str, cancel) -> None:
+        key = curseforge.require_key(self.cfg)
+        try:
+            mod_id = int(slug)
+        except ValueError as exc:
+            raise RuntimeError(f"CurseForge 需要数字 mod id：{slug}") from exc
+        file = curseforge.latest_file(mod_id, loader, game, key=key)
+        if file is None:
+            raise RuntimeError(f"CurseForge 上没有适配 {game} / {loader} 的文件")
+        path = curseforge.download_file(file, self.cfg.mods_dir(version_id), key=key,
+                                       cancel=cancel)
+        self._log_threadsafe(f"[green]已安装 {path.name}[/]")
+        for dependency_id in curseforge.required_dependency_ids(file):
+            if cancel is not None and cancel.is_set():
+                raise RuntimeError("已取消")
+            dep_file = curseforge.latest_file(dependency_id, loader, game, key=key)
+            if dep_file is None:
+                continue
+            dep_path = curseforge.download_file(dep_file, self.cfg.mods_dir(version_id),
+                                                key=key, cancel=cancel)
+            self._log_threadsafe(f"前置：{dep_path.name}")
+        ui_call(self, self.refresh_mods)
+
     def _cancel_install(self) -> None:
         if self.cancel_event is not None:
             self.cancel_event.set()
@@ -227,10 +267,14 @@ class ModsPane(Vertical):
         self.cancel_event = None
 
     @work(thread=True, group="mod-install", exclusive=True)
-    def _install_worker(self, version_id: str, slug: str, loader: str, game: str) -> None:
+    def _install_worker(self, version_id: str, slug: str, loader: str, game: str,
+                        provider: str = "modrinth") -> None:
         source = self.cfg.download_source
         cancel = self.cancel_event
         try:
+            if provider == "curseforge":
+                self._install_curseforge(version_id, slug, loader, game, cancel)
+                return
             project = modrinth.get_project(slug, source)
             version = modrinth.latest_version(project.get("id", slug), loader, game, source)
             if version is None:

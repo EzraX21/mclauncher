@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from . import modrinth, prompts
+from . import curseforge, modrinth, prompts
 from .config import Config
 from .mods import find, list_mods, remove, set_enabled
 from .progress import human_size
@@ -116,6 +116,36 @@ def _install_project(ui: UI, cfg: Config, version_id: str, reference: str,
     return 0
 
 
+def _install_curseforge(ui: UI, cfg: Config, version_id: str, reference: str,
+                        loader: str, game_version: str, interactive: bool) -> int:
+    key = curseforge.require_key(cfg)
+    try:
+        mod_id = int(reference)
+    except ValueError:
+        raise VersionError(f"CurseForge 需要数字 mod id，收到的是 {reference}")
+
+    file = curseforge.latest_file(mod_id, loader, game_version, key=key)
+    if file is None:
+        ui.error(f"CurseForge 上没有适配 {game_version} / {loader} 的文件")
+        return 1
+    name = curseforge.primary_file_name(file)
+    if interactive:
+        ui.note(f"{curseforge.describe(file)}")
+        if not prompts.confirm(ui, "下载并装进 mods 目录？"):
+            return 130
+
+    path = curseforge.download_file(file, cfg.mods_dir(version_id), key=key)
+    ui.ok(f"已安装 {path.name}")
+
+    for dependency_id in curseforge.required_dependency_ids(file):
+        dep_file = curseforge.latest_file(dependency_id, loader, game_version, key=key)
+        if dep_file is None:
+            continue
+        dep_path = curseforge.download_file(dep_file, cfg.mods_dir(version_id), key=key)
+        ui.ok(f"前置：{dep_path.name}")
+    return 0
+
+
 def run(args, ui: UI, cfg: Config) -> int:
     interactive = not args.yes and sys.stdin.isatty()
     requested = args.version
@@ -138,16 +168,22 @@ def run(args, ui: UI, cfg: Config) -> int:
                 )
         loader = args.loader
 
+    provider = getattr(args, "provider", None) or "modrinth"
+
     if args.action == "search":
         query = args.query or args.project or ""
         if not query:
             raise VersionError("搜索要给关键词：mods search <关键词>")
-        hits = modrinth.search(query, loader=loader, game_version=game_version, limit=10,
-                               source=cfg.download_source)
+        if provider == "curseforge":
+            hits = curseforge.search(query, loader=loader, game_version=game_version,
+                                     limit=10, config=cfg)
+        else:
+            hits = modrinth.search(query, loader=loader, game_version=game_version, limit=10,
+                                   source=cfg.download_source)
         if not hits:
             ui.warn("没搜到结果，换个关键词？")
             return 0
-        ui.title(f"搜索：{query}  （{game_version} / {loader}）")
+        ui.title(f"搜索：{query}  （{game_version} / {loader} / {provider}）")
         for index, hit in enumerate(hits, 1):
             ui.info(f"{index:>2}. {hit.title}  ({hit.slug})  {hit.downloads:,} 次下载")
             ui.note(hit.description[:80])
@@ -159,9 +195,16 @@ def run(args, ui: UI, cfg: Config) -> int:
         picked = prompts.select(ui, "装哪个？", choices)
         if not picked:
             return 0
+        if provider == "curseforge":
+            return _install_curseforge(ui, cfg, version_id, picked, loader, game_version, interactive)
         return _install_project(ui, cfg, version_id, picked, loader, game_version, interactive)
 
     if args.action == "install":
+        if not args.project:
+            raise VersionError("要给 mod id 或 slug，例如 mods install sodium")
+        if provider == "curseforge":
+            return _install_curseforge(ui, cfg, version_id, args.project, loader,
+                                       game_version, interactive)
         return _install_project(ui, cfg, version_id, args.project, loader, game_version, interactive)
 
     if args.action == "toggle":

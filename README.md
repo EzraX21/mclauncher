@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mclauncher ───────────────────────────── v2.2.3 · Minecraft 启动器 ─┐
+┌ mclauncher ───────────────────────────── v2.3.0 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -24,7 +24,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 
 - **版本**：表格列出已装版本（加载器、Java、模组数），按钮启动 / 装加载器（Fabric、Quilt、Forge、NeoForge）/ 打开目录 / 删除
 - **安装**：加载官方版本清单，边输入边筛选，勾选是否下资源，进度条 + 日志，随时可以「取消安装」
-- **模组**：选版本后看本地模组，启用/禁用/删除；下面直接搜 Modrinth 并安装（自动补前置，也能取消）
+- **模组**：选版本后看本地模组，启用/禁用/删除；来源可选 Modrinth 或 CurseForge，搜到后直接装（自动补前置，也能取消）
 - **设置**：游戏目录、Java、内存、用户名、版本隔离、下载源
 
 按键：`Tab` 切标签，`q` 退出，`ctrl+r` 刷新，`ctrl+s` 保存设置。日志默认折叠，点「日志」按钮展开；开始安装 / 启动时会自动展开。
@@ -123,6 +123,40 @@ mclauncher config set download_source auto   # 以后都用镜像
 mclauncher config set download_source official
 ```
 
+## CurseForge（可选）
+
+默认用 Modrinth。想用 CurseForge 需要自己申请 API key，因为它是审核制的。
+
+**申请步骤**
+
+1. 注册/登录 CurseForge（Overwolf）账号
+2. 填官方申请表：<https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key>
+3. 表里写清楚项目用途（个人启动器 / 下载模组）、链接、预计请求量，并同意 3rd Party API Terms
+4. Overwolf 人工审核，通过后 key 会发到邮箱
+
+审核会关注：是否影响作者收益、对 CDN 的压力、是否尊重作者对第三方分发的选择。个人自用一般没问题，
+但别拿它做公开下载站。
+
+**配置 key**
+
+```bash
+export CURSEFORGE_API_KEY=你的key               # 临时
+mclauncher config set curseforge_api_key 你的key  # 写入配置
+mclauncher doctor                               # 能看到是否已配置
+```
+
+**使用**
+
+```bash
+mclauncher mods search jei --provider curseforge --version 1.20.1 --loader forge
+mclauncher mods install 238222 --provider curseforge --version 1.20.1 --loader forge
+```
+
+TUI 模组页的「来源」下拉切到 CurseForge 即可（没配 key 会提示）。
+
+注意：有些作者在 CurseForge 后台关掉了第三方下载，这类文件拿不到直链（会尝试 `download-url` 接口，
+也可能失败）；API 也有速率限制，别刷。
+
 ## 启动是怎么拼出来的
 
 1. **合并版本链**：沿 `inheritsFrom` 从父到子合并，库按 `group:artifact:classifier` 去重，子版本覆盖父版本
@@ -141,7 +175,7 @@ mclauncher config set download_source official
 
 - **只支持离线登录**：微软 OAuth 没做，正版联机请用官方启动器 / PCL
 - **Forge / NeoForge 安装较慢**：要跑官方安装器，会下载较多库；需要 Java 可用（没有会自动从 Mojang 下）
-- **模组源只有 Modrinth**：CurseForge 需要 API key
+- **CurseForge 需要自备 API key**，且部分作者禁止第三方下载，这类文件会失败
 - **老终端**：Windows 的 legacy conhost 对全屏 TUI 支持一般，建议 Windows Terminal
 
 ## 项目结构
@@ -165,6 +199,7 @@ mclauncher/
 │   ├── sources.py      下载源候选（官方 / BMCLAPI / mcimirror）
 │   ├── java.py         Java 探测与 Mojang 运行时下载
 │   ├── modrinth.py     Modrinth API
+│   ├── curseforge.py   CurseForge API（需要 key）
 │   ├── mods.py         本地模组与 jar 元数据
 │   ├── loaders.py      Fabric / Quilt profile
 │   ├── manifest.py     版本清单 / 版本 JSON / 资源索引
@@ -173,7 +208,7 @@ mclauncher/
 │   ├── prompts.py      questionary 封装（CLI 用）
 │   ├── home.py         CLI 文本菜单
 │   └── ui.py           颜色 / 对齐 / 摘要框
-├── tests/              60 个测试（含无头 TUI 测试）
+├── tests/              69 个测试（含无头 TUI 测试）
 ├── packaging/          PKGBUILD、.desktop
 ├── run.sh / run.bat    开发用启动脚本
 └── pyproject.toml

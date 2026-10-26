@@ -13,6 +13,7 @@ EDITABLE = {
     "isolate_versions": "版本隔离（true/false）",
     "jobs": "下载并发数",
     "download_source": "下载源（auto/official）",
+    "curseforge_api_key": "CurseForge API key",
 }
 
 
@@ -25,6 +26,7 @@ def show(ui: UI, cfg: Config) -> None:
     ui.kv("版本隔离", "开" if cfg.isolate_versions else "关")
     ui.kv("并发", str(cfg.jobs))
     ui.kv("下载源", "BMCLAPI 优先" if cfg.download_source == "auto" else "仅官方（默认）")
+    ui.kv("CurseForge", "已配置" if cfg.curseforge_api_key else "未配置（模组页可选 Modrinth）")
     ui.kv("上次版本", cfg.last_version or "—")
 
 
