@@ -1,229 +1,206 @@
 # MCL（mclauncher）
 
-> 全名 **mclauncher**，命令是 `mcl`，发行包名是 `mcl-launcher`。Minecraft 启动器：全屏 TUI + 图形界面，下载原版、装 Fabric/Quilt/Forge/NeoForge、搜模组、启动游戏。
-> 默认走 **官方源**；想要镜像可以切 BMCLAPI（和 PCL 同一套）。
+> Minecraft: Java Edition 启动器：下载原版、装加载器、装模组/整合包、光影材质、启动游戏。
+> 全名 **mclauncher**，命令 `mcl`，发行包名 `mcl-launcher`。
+>
+> A lightweight Minecraft: Java Edition launcher with a TUI and a native desktop GUI.
+> Vanilla installs, Fabric/Quilt/Forge/NeoForge, Modrinth/CurseForge mods, modpacks,
+> shaders/resource packs, crash analysis and launching.
 
-PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加载器 → 装模组 → 启动」这条链路自己做了一遍，
-文件来源和 PCL 一致（BMCLAPI 优先、官方兜底），启动参数按官方 launcher 的规则构建。
+PCL 2.99 起不再提供游戏本体下载。MCL 把「下载 → 装加载器 → 装模组 → 启动」这条链路自己做了一遍，
+启动参数按官方 launcher 的规则构建；默认走 Mojang 官方源，也可以切 BMCLAPI 镜像。
 
-## 命名约定
+## 项目状态
 
-| 层 | 名称 |
+当前版本 **v3.6.0**，以下是真实状态：
+
+| 状态 | 功能 |
 | --- | --- |
-| 产品 | **MCL** |
-| 全名 | **mclauncher** |
-| 命令 | `mcl` / `mcl-tui` |
-| Python 包（import） | `mcl` |
-| 发行包 / AUR / PyPI | `mcl-launcher` |
-| 仓库 | `mclauncher`（地址不变） |
-| 配置目录 | `~/.config/mcl` |
-| 环境变量 | `MCL_*` |
-| 窗口标题 | `MCL · mclauncher` |
+| ✅ 已完成 | 原版下载、版本管理、Fabric/Quilt/Forge/NeoForge、模组搜索/安装、整合包、光影/材质、崩溃分析、Java 运行时、TUI、GUI、多主题、原生窗口、Linux/Windows 打包 |
+| 🚧 等待外部 | **微软登录**：代码已完整实现，内置 Azure 应用已提交 Mojang 白名单审核；审核通过前 Minecraft 接口会返回 `Invalid app registration` |
+| 🚧 待验证 | **CurseForge 整合包**：下载逻辑已实现，需要 API key；手头没有 key，还没跑真实整合包回归 |
+| 🚧 未发布 | **AUR**：`mcl-launcher` 的 PKGBUILD 已就绪，还没在 AUR 首次提交；CI 那一步暂时是红的 |
+| 📋 计划中 | 服务器列表 / 快速进服、启动器自动更新、Java 管理 GUI、地图/数据包 |
 
-**版本号**
+## 功能
 
-- Git tag：`v3.7.0`、`v3.7.0-beta.1`、`v3.7.0-rc.1`
-- 代码 / Python 包（PEP 440）：`3.7.0`、`3.7.0b1`、`3.7.0rc1`
-- 产物文件名：`mcl-<版本>-<平台>-<架构>[-变体].<扩展名>`，例如
-  `mcl-3.7.0-windows-x64-setup.exe`、`mcl-3.7.0-linux-x64.deb`、
-  `mcl-3.7.0-linux-x64-portable.tar.gz`；wheel 按 PEP 427 保持 `mcl_launcher-3.7.0-py3-none-any.whl`
-- 每个 Release 附一个 `SHA256SUMS.txt`
+| 模块 | 能做什么 |
+| --- | --- |
+| 版本 | 列出已装版本（加载器、Java、模组数），启动 / 装加载器 / 打开目录 / 删除 |
+| 安装 | Mojang 官方版本清单，边输边筛，可选下载资源文件，进度条 + 日志 + 取消 |
+| 模组 | Modrinth / CurseForge 搜索安装，自动补前置；本地模组启用/禁用/删除 |
+| 整合包 | Modrinth `.mrpack`、CurseForge zip；自动装原版和加载器，复制 overrides，生成独立实例 |
+| 资源 | 光影、材质包搜索安装到 `shaderpacks/` / `resourcepacks/` |
+| 崩溃分析 | 解析 crash-report / latest.log，给出 Java 版本、内存、缺前置、Mixin 冲突等建议 |
+| 账号 | 离线 + 微软正版（设备代码流），token 本地缓存、自动刷新 |
+| Java | 按版本要求选主版本，缺了自动从 Mojang 下载，不会拿新 Java 硬启动老版本 |
+| GUI | 原生窗口（Linux WebKitGTK / Windows WebView2），浅色/深色/跟随系统 |
+| TUI | 全屏终端界面，SSH / 无桌面环境也能用 |
 
-**发版**
+## 截图
+
+| 浅色 | 深色 |
+| --- | --- |
+| ![版本列表](docs/gui-versions.png) | ![深色主题](docs/gui-dark.png) |
+
+| 安装 | 模组 / 整合包 |
+| --- | --- |
+| ![安装](docs/gui-install.png) | ![模组](docs/gui-mods.png) |
+
+| 资源 | 设置 / 微软账号 |
+| --- | --- |
+| ![资源](docs/gui-resources.png) | ![设置](docs/gui-settings.png) |
+
+## 安装
+
+### 下载 Release
+
+从 [Releases](https://github.com/EzraX21/mclauncher/releases) 下载对应文件：
+
+| 平台 | 文件 |
+| --- | --- |
+| Windows | `mcl-<ver>-windows-x64-setup.exe`（安装包）或 `mcl-<ver>-windows-x64-portable.zip`（解压即用） |
+| Debian / Ubuntu | `mcl-<ver>-linux-x64.deb` |
+| Fedora / RHEL | `mcl-<ver>-linux-x64.rpm` |
+| Arch | `mcl-<ver>-linux-x64.pkg.tar.zst` |
+| Linux 便携 | `mcl-<ver>-linux-x64-portable.tar.gz`（自带依赖，解压后 `./mcl.sh`） |
+
+每个 Release 附 `SHA256SUMS.txt`。包内包名是 `mcl-launcher`，安装后的命令是 `mcl`。
 
 ```bash
-python3 packaging/release.py          # 交互问版本号，改文件
-python3 packaging/release.py --version 3.7.0 --commit
+# Debian / Ubuntu
+sudo dpkg -i mcl-<ver>-linux-x64.deb
+# Fedora / RHEL
+sudo rpm -i mcl-<ver>-linux-x64.rpm
+# Arch
+sudo pacman -U mcl-<ver>-linux-x64.pkg.tar.zst
 ```
 
-预发布（beta/rc）会发成 GitHub Pre-release，AUR 那步自动跳过。
+Windows 安装包会装 `mclw.exe`（双击开原生窗口，无控制台）和 `mcl.exe`（命令行/TUI）。
+安装包目前没有代码签名，SmartScreen 提示时点「更多信息 → 仍要运行」。
 
-## 界面
+### 从源码
 
-```
-┌ mcl ───────────────────────────── v3.6.0 · Minecraft 启动器 ─┐
-│ 版本 │ 安装 │ 模组 │ 设置                                              │
-├──────────────────────────────────────────────────────────────────────┤
-│ 版本                    加载器      Java    模组   客户端             │
-│ 1.20.1                  vanilla     17      0      ✓                  │
-│ fabric-loader-0.20.1-1.20.1  fabric 17      3      —                  │
-│                                                                      │
-│ [刷新] [启动] [装加载器] [日志] [打开目录] [删除]                     │
-│ ── 日志 ──────────────────────────────────────────────────────────    │
-└──────────────────────────────────────────────────────────────────────┘
-  q 退出   ctrl+r 刷新   ctrl+s 保存设置
+```bash
+git clone https://github.com/EzraX21/mclauncher
+cd mclauncher
+pipx install ".[cli,gui]"     # 或 uv tool install ".[cli,gui]"
+mcl
 ```
 
-- **版本**：表格列出已装版本（加载器、Java、模组数），按钮启动 / 装加载器（Fabric、Quilt、Forge、NeoForge）/ 打开目录 / 删除
-- **安装**：加载官方版本清单，边输入边筛选，勾选是否下资源，进度条 + 日志，随时可以「取消安装」
-- **模组**：选版本后看本地模组，启用/禁用/删除；来源可选 Modrinth 或 CurseForge，搜到后直接装（自动补前置，也能取消）
-- **设置**：游戏目录、Java、内存、用户名、版本隔离、下载源
+`[gui]` 是 pywebview（原生窗口），`[cli]` 是 questionary（`mcl --cli` 文本菜单）。
+只跑 TUI 可以只装 `.[cli]`。开发时也可以 `./run.sh` 自动建 `.venv`。
 
-按键：`Tab` 切标签，`q` 退出，`ctrl+r` 刷新，`ctrl+s` 保存设置。日志默认折叠，点「日志」按钮展开；开始安装 / 启动时会自动展开。
+### 运行
+
+```bash
+mcl            # 有 TTY 时进 TUI
+mcl gui        # 原生桌面窗口
+mcl --cli      # questionary 文本菜单
+```
 
 ## 图形界面
 
-除了 TUI，还有一套 Electron + TypeScript 的图形界面，配色和布局参考 PCL：
-左侧图标导航、顶部标题栏、白底卡片、蓝色主色。
+`mcl gui` 打开的是**桌面窗口**，不是浏览器标签：
 
-![版本列表](docs/gui-versions.png)
-
-```bash
-mcl gui           # 原生桌面窗口（pywebview：GTK/WebView2/WKWebView）
-mcl gui --web     # 浏览器
-mcl gui --electron  # 开发时用仓库里的 Electron
-mcl gui --no-browser --port 8765   # 只起服务
-```
-
-窗口是真正的桌面窗口，不是浏览器标签页。Linux 依赖 WebKitGTK 和 PyGObject：
+- Linux：GTK + WebKitGTK，需要 `webkit2gtk-4.1`、`python-gobject`
+- Windows：WebView2（Win10/11 自带）；安装包里的 `mclw.exe` 直接双击
+- Linux 桌面项的 `Exec` 是 `mcl gui`
 
 ```bash
 # Arch
 sudo pacman -S webkit2gtk-4.1 python-gobject
 # Debian / Ubuntu
 sudo apt install python3-gi gir1.2-webkit2-4.1
-pip install "mcl-launcher[gui]"
+
+mcl gui              # 原生窗口（默认）
+mcl gui --web        # 浏览器
+mcl gui --electron   # 开发时用仓库里的 Electron
+mcl gui --web --no-browser --port 8765   # 只起本地服务
 ```
 
-deb / rpm / Arch 包已经把 `python3-gi`、`webkit2gtk-4.1` 写成依赖，装包时自动带上。
-没有 pywebview 时会退回 Electron（仓库里）或浏览器。
-
-TUI 里能干的事 GUI 里都有：版本列表（启动 / 装加载器）、安装原版（进度条）、
-Modrinth 搜索与本地模组管理、设置。设置里可以切**浅色 / 深色 / 跟随系统**。
-
-![深色主题](docs/gui-dark.png)
-
-| 安装 | 模组 |
-| --- | --- |
-| ![安装](docs/gui-install.png) | ![模组](docs/gui-mods.png) |
-
-![设置](docs/gui-settings.png)
+界面里能切**浅色 / 深色 / 跟随系统**，设置即时保存。GUI 后端是 `mcl/webui.py`，
+只监听 `127.0.0.1`，前端在 `gui/`（TypeScript，esbuild 打包）。
 
 **开发**
 
 ```bash
 cd gui
-npm install --include=dev   # 如果 npm 全局配置了 omit=dev 需要这个参数
-npm run build               # 产出 gui/dist
+npm install --include=dev    # 如果 npm 全局配置了 omit=dev 需要这个参数
+npm run build
 cd ..
-python -m mcl gui --web
+mcl gui --web
 ```
 
-单独跑 Electron 窗口：
+单独跑 Electron：
 
 ```bash
-python -m mcl gui --web --no-browser --port 8765 &
+mcl gui --web --no-browser --port 8765 &
 MCL_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
 ```
 
-GUI 的后端是 `mcl/webui.py`，只监听 `127.0.0.1`，提供 `/api/state`、
-`/api/install`、`/api/mods`、`/api/launch` 这些接口；前端产物会打进 wheel / deb / rpm。
+## TUI
 
-## 微软登录（可选）
+无桌面环境 / SSH 里用 TUI，四个标签页：版本、安装、模组、设置。
 
-默认离线启动；想要正版皮肤、进正版服务器，可以登微软账号。
+- `Tab` 切标签，`q` 退出，`ctrl+r` 刷新，`ctrl+s` 保存设置
+- 日志默认折叠，开始安装 / 启动时自动展开
+- 模组页来源可选 Modrinth / CurseForge，本地模组可启用/禁用/删除
 
-**注册 Azure 应用（免费，5 分钟）**
-
-1. 打开 https://portal.azure.com → **Microsoft Entra ID** → **应用注册** → **新注册**
-2. 名称随便填（例如 `MCL`）；账户类型选 **仅个人 Microsoft 账户**；重定向 URI **留空**
-3. 进应用 → **身份验证** → **允许公共客户端流** → **是** → 保存
-4. 回到 **概述**，复制 **应用程序(客户端) ID**
-5. 不需要创建 client secret，也不用配 API 权限
-
-**配置并登录**
+## 命令行
 
 ```bash
-mcl config set ms_client_id 你的-client-id
-mcl login        # 按提示打开 microsoft.com/devicelogin 输入代码
-mcl account      # 查看当前账号
-mcl logout       # 退出
+mcl install 1.20.1                  # 装原版
+mcl install latest --no-assets -y
+mcl versions                        # 已装版本
+mcl loaders fabric 1.20.1           # 装 Fabric
+mcl loaders forge 1.20.1            # 装 Forge（官方安装器）
+mcl loaders neoforge 1.21.1         # 装 NeoForge
+mcl launch 1.20.1                   # 启动
+mcl launch 1.20.1 --dry-run         # 只打印命令
+mcl launch 1.20.1 --offline         # 强制离线
+mcl mods search sodium --version 1.20.1
+mcl mods install sodium --version fabric-loader-0.20.1-1.20.1 -y
+mcl modpack install pack.mrpack --name "我的整合包"
+mcl resources search shader complementary --version 1.20.1
+mcl crash 1.20.1                    # 分析崩溃
+mcl java install 21                 # 下 Java 运行时
+mcl login / mcl account / mcl logout
+mcl config                          # 查看配置
+mcl doctor --network                # 环境自检
 ```
 
-GUI 里在「设置 → 微软账号」填 client id 点登录，窗口会显示设备代码。
-登录成功后会缓存到 `~/.config/mcl/accounts.json`，启动时自动刷新，过期就退回离线。
-`mcl launch --offline` 可以强制离线。
+完整参数看 `mcl <命令> --help`。
 
-## 安装
+## 微软登录
 
-### pipx（推荐，隔离环境 + 自带命令）
+代码和 GUI 都已完成，**默认使用内置 Azure 应用，用户不需要自己注册**：
 
 ```bash
-pipx install "mcl-launcher[cli]"
-mcl
+mcl login       # 显示 microsoft.com/link + 设备代码
+mcl account
+mcl logout
 ```
 
-`[cli]` 是可选依赖（questionary），只有退回文本菜单 `mcl --cli` 时才需要；
-只装 TUI 的话 `pipx install mcl-launcher` 就够。
+GUI 在「设置 → 微软账号」点登录，窗口里会显示设备代码。
 
-### uv
+> 当前状态：Mojang 2026 起要求第三方启动器的 client id 进入 allowlist。
+> 内置应用已经提交申请，审核通过前 `login_with_xbox` 会返回
+> `Invalid app registration`，此时登录会给出提示，离线模式不受影响。
 
-```bash
-uv tool install "mcl-launcher[cli]"
-```
+想用自己的 Azure 应用（同样需要 Mojang 白名单）：
 
-### pip
+1. Azure 门户 → Microsoft Entra ID → 应用注册 → 新注册
+2. 账户类型选「仅个人 Microsoft 账户」，重定向 URI 留空
+3. 身份验证 → 允许公共客户端流 → 是
+4. 复制应用程序(客户端) ID，`mcl config set ms_client_id <id>`
 
-```bash
-pip install --user "mcl-launcher[cli]"
-```
-
-Windows 上用 `py -m pip install --user "mcl-launcher[cli]"`，然后在 **Windows Terminal** 里运行 `mcl`。
-安装包会同时装 `mclw.exe`（双击即开原生窗口，无控制台）和 `mcl.exe`（命令行/TUI），开始菜单里两个入口都有。
-
-### Arch Linux（本机 PKGBUILD）
-
-```bash
-# 在项目根目录
-tar czf ../mcl-2.0.0.tar.gz --exclude=.venv --exclude=.git .
-cd .. && makepkg -si -p mcl/packaging/PKGBUILD
-```
-
-装完自带 `/usr/share/applications/mcl.desktop`。
-
-### 从源码跑（开发）
-
-```bash
-git clone <repo> && cd mclauncher
-./run.sh          # 自动建 .venv 并安装依赖
-```
-
-## 系统集成
-
-- 配置：Linux `$XDG_CONFIG_HOME/mcl`，macOS `~/Library/Application Support/mcl`，Windows `%APPDATA%\mcl`
-- 缓存：`$XDG_CACHE_HOME/mcl` / `~/Library/Caches/mcl` / `%LOCALAPPDATA%\mcl\cache`
-- 自检：`mcl doctor`（`--network` 顺便测下载源）
-- 卸载：`pipx uninstall mcl-launcher` / `pacman -R mcl-launcher`，配置目录自己删
-- 版本：`mcl --version`
-
-### 配置项
-
-配置文件在 `~/.config/mcl/config.json`（macOS/Windows 见上），也可以用命令改：
-
-```bash
-mcl config                    # 查看
-mcl config set memory_mb 8192
-mcl config set download_source auto
-mcl config set curseforge_api_key 你的key
-```
-
-| 配置 | 环境变量 | 说明 |
-| --- | --- | --- |
-| `game_dir` | — | 游戏目录，默认 `~/.minecraft` |
-| `java_path` | — | 指定 Java，留空自动找 |
-| `memory_mb` | — | 内存 MB，默认 4096 |
-| `username` | — | 离线用户名 |
-| `isolate_versions` | — | 版本隔离，默认开 |
-| `jobs` | — | 下载并发，默认 8 |
-| `download_source` | — | `official`（默认）/ `auto`（BMCLAPI 优先） |
-| `curseforge_api_key` | `CURSEFORGE_API_KEY` | 可选，用 CurseForge 模组源时需要，**由用户自己申请** |
-
-配置里的 key 是明文存的，介意的话 `chmod 600 ~/.config/mcl/config.json`，或者只用环境变量。
+不需要 client secret，也不需要预配 API 权限。登录 token 存在
+`~/.config/mcl/accounts.json`（0600），过期自动刷新，失败退回离线。
 
 ## 整合包
 
-支持 Modrinth 的 `.mrpack`：自动装对应原版 + 加载器（Fabric/Quilt/Forge/NeoForge）、
-下载模组、复制 `overrides`，生成一个独立实例。
+支持 Modrinth `.mrpack` 和 CurseForge zip：
 
 ```bash
 mcl modpack info Fabulously.Optimized.mrpack
@@ -231,12 +208,12 @@ mcl modpack install Fabulously.Optimized.mrpack --name "FO 1.20.1"
 mcl launch "FO 1.20.1"
 ```
 
-CurseForge 的整合包也能导，但需要先在设置里填 CurseForge API key。
-GUI 的「模组」页可以直接选文件导入，不用敲命令。
+安装时会：补原版 → 装对应加载器 → 下载模组（sha1 校验）→ 复制 `overrides/` 和
+`client-overrides/` → 生成独立实例。GUI 的「模组」页可以直接选文件上传导入。
 
-## 光影 / 材质包
+CurseForge 整合包需要在设置里配 API key（见下）。
 
-从 Modrinth 搜光影和材质包，直接装到当前版本的 `shaderpacks/` / `resourcepacks/`：
+## 资源
 
 ```bash
 mcl resources search shader complementary --version 1.20.1
@@ -245,161 +222,126 @@ mcl resources list shader --version 1.20.1
 mcl resources remove shader ComplementaryReimagined_r5.9.3.zip --version 1.20.1
 ```
 
-GUI 侧边栏「资源」页可以选版本、搜、装、删。
+支持光影（`shaderpacks/`）和材质包（`resourcepacks/`），GUI 侧边栏「资源」页同样能搜/装/删。
 
 ## 崩溃分析
-
-启动失败或闪退时，读 `crash-reports/` 里最新的报告（没有就看 `logs/latest.log`），
-匹配 Java 版本、内存、缺前置、模组重复、Mixin 冲突、OpenGL、权限这些常见原因：
 
 ```bash
 mcl crash 1.20.1
 ```
 
-GUI 里在「版本列表」每个版本后面点「崩溃分析」，会弹窗列出原因和建议，日志末尾可展开。
+读最新的 `crash-reports/crash-*.txt`（没有就看 `logs/latest.log`），匹配 Java 版本、
+OOM、缺前置、模组重复、Mixin 冲突、OpenGL、权限等常见原因并给建议。
+GUI 版本列表每行有「崩溃分析」按钮。
 
-## 命令行模式
+## 配置
 
-TUI 之外保留了完整子命令，脚本和 CI 里能用：
+路径：
 
-```bash
-mcl install 1.20.1                  # 装原版
-mcl install latest --no-assets -y
-mcl loaders fabric 1.20.1           # 装 Fabric
-mcl loaders forge 1.20.1            # 装 Forge（跑官方安装器）
-mcl loaders neoforge 1.21.1         # 装 NeoForge
-mcl mods search sodium --version 1.20.1
-mcl mods install iris --version fabric-loader-0.20.1-1.20.1 -y
-mcl launch 1.20.1                   # 启动
-mcl launch 1.20.1 --dry-run         # 只打印命令
-mcl java install 21                 # 从 Mojang 下 Java 运行时
-mcl versions                        # 版本列表
-mcl doctor --network
-```
+- Linux：`$XDG_CONFIG_HOME/mcl`（默认 `~/.config/mcl`）
+- Windows：`%APPDATA%\mcl`
+- macOS：`~/Library/Application Support/mcl`
 
-`mcl --cli` 会回到原来的 questionary 文本菜单（需要 `[cli]` 依赖）。
+配置文件 `config.json`，可以用 `mcl config set <key> <value>` 修改：
+
+| 配置 | 说明 |
+| --- | --- |
+| `game_dir` | 游戏目录，默认 `~/.minecraft` |
+| `java_path` | 指定 Java；留空按版本自动找 |
+| `memory_mb` | 内存 MB，默认 4096 |
+| `username` | 离线用户名 |
+| `isolate_versions` | 版本隔离，默认开 |
+| `jobs` | 下载并发，默认 8 |
+| `download_source` | `official`（默认）/ `auto`（BMCLAPI 优先） |
+| `theme` | GUI 主题：`light` / `dark` / `system` |
+| `ms_client_id` | 覆盖内置 Azure client id（可选） |
+| `curseforge_api_key` | CurseForge API key（可选） |
+
+环境变量：`MCL_CONFIG`（覆盖配置路径）、`CURSEFORGE_API_KEY`（优先于配置文件）。
 
 ## 下载源
 
-默认 `official`：只连 Mojang 官方 CDN，最正统但国内可能慢。
-想走镜像就切 `auto`——BMCLAPI 优先，失败自动回退官方（规则和 PCL 一致）：
-
-| 类型 | 镜像写法 |
-| --- | --- |
-| 版本清单 / 版本 JSON / client jar | `bmclapi2.bangbang93.com` + 原路径 |
-| 库 | `bmclapi2.bangbang93.com/maven/<group>/<artifact>/...`（`/libraries` 备选） |
-| 资源对象 | `bmclapi2.bangbang93.com/assets/<前两位>/<hash>` |
-| Java 运行时 | `bmclapi2.bangbang93.com/v1/products/java-runtime/...` |
-| Fabric meta | `bmclapi2.bangbang93.com/fabric-meta/v2/...` |
-| Modrinth API / CDN | `mod.mcimirror.top/modrinth`、`mod.mcimirror.top` |
-
-Quilt 没有镜像，始终走官方。
+默认 `official`：只连 Mojang 官方 CDN。国内慢可以切 `auto`：BMCLAPI 优先，失败回退官方：
 
 ```bash
-mcl install 1.20.1 --source auto   # 这次用镜像
-mcl config set download_source auto   # 以后都用镜像
-mcl config set download_source official
+mcl install 1.20.1 --source auto
+mcl config set download_source auto
 ```
+
+覆盖：版本清单 / JSON / client jar / 库 / 资源对象 / Java 运行时 / Fabric meta，
+Modrinth API 与 CDN 走 `mod.mcimirror.top`。Quilt 没有镜像，始终官方。
 
 ## CurseForge（可选）
 
-默认用 Modrinth。想用 CurseForge 需要自己申请 API key，因为它是审核制的。
-
-**本项目不内置、也不代申请任何 key**；没有配置 key 时，模组页选 CurseForge 会提示，Modrinth 不受影响。
-
-**申请步骤**
+默认用 Modrinth。CurseForge 需要自己申请 API key（审核制），本项目不内置、不代申请。
 
 1. 注册/登录 CurseForge（Overwolf）账号
 2. 填官方申请表：<https://support.curseforge.com/support/solutions/articles/9000208346-about-the-curseforge-api-and-how-to-apply-for-a-key>
-3. 表里写清楚项目用途（个人启动器 / 下载模组）、链接、预计请求量，并同意 3rd Party API Terms
-4. Overwolf 人工审核，通过后 key 会发到邮箱
-
-审核会关注：是否影响作者收益、对 CDN 的压力、是否尊重作者对第三方分发的选择。个人自用一般没问题，
-但别拿它做公开下载站。
-
-**配置 key**
-
-三种方式，任选：
+3. 通过后 key 发到邮箱
 
 ```bash
-export CURSEFORGE_API_KEY=你的key               # 当前终端有效
-mcl config set curseforge_api_key 你的key  # 写入配置文件
+export CURSEFORGE_API_KEY=你的key
+mcl config set curseforge_api_key 你的key
 ```
 
-或者打开 TUI → 设置 → CurseForge key，粘贴后保存。
+也可以 TUI → 设置 → CurseForge key 粘贴。配置后 `mcl doctor` 会显示已配置。
+部分作者禁用了第三方下载，这类文件拿不到直链，会明确报错。
 
-配完 `mcl doctor` 能看到“已配置”。
+## 命名与发版
 
-**使用**
+| 层 | 名称 |
+| --- | --- |
+| 产品 / 全名 | MCL / mclauncher |
+| 命令 | `mcl` / `mcl-tui` |
+| Python 包 / 发行包 | `mcl` / `mcl-launcher` |
+| 配置目录 | `~/.config/mcl` |
+
+- 版本：`v3.7.0`、`v3.7.0-beta.1`、`v3.7.0-rc.1`（代码用 PEP 440：`3.7.0b1`）
+- 产物：`mcl-<ver>-<platform>-<arch>[-variant].<ext>`，deb/rpm/Arch 文件名也统一；
+  wheel 保持 PEP 427
+- 每个 Release 附 `SHA256SUMS.txt`
+- beta/rc 发成 GitHub Pre-release，AUR 跳过
 
 ```bash
-mcl mods search jei --provider curseforge --version 1.20.1 --loader forge
-mcl mods install 238222 --provider curseforge --version 1.20.1 --loader forge
+python3 packaging/release.py          # 交互问版本号
+python3 packaging/release.py --version 3.7.0 --commit
 ```
 
-TUI 模组页的「来源」下拉切到 CurseForge 即可（没配 key 会提示）。
+## 打包
 
-注意：模组只能装在带加载器的版本上。如果选的是原版版本，工具会提示你先去「版本」页装加载器。
+```bash
+./packaging/build_linux.sh             # deb / rpm / Arch / wheel / 源码 / 便携 tar.gz
+powershell -File packaging/build_windows.ps1   # setup.exe + portable.zip
+```
 
-注意：有些作者在 CurseForge 后台关掉了第三方下载，这类文件拿不到直链（会尝试 `download-url` 接口，
-也可能失败）；API 也有速率限制，别刷。
-
-## 启动是怎么拼出来的
-
-1. **合并版本链**：沿 `inheritsFrom` 从父到子合并，库按 `group:artifact:classifier` 去重，子版本覆盖父版本
-2. **classpath**：按 `rules` 过滤平台（os/arch/features），最后加客户端 jar
-3. **natives**：老格式解压到 `versions/<id>/natives`；1.19+ 的 natives jar 直接进 classpath
-4. **参数**：`arguments.jvm` / `arguments.game`，老版本退回 `minecraftArguments`，替换 `${auth_player_name}` 等占位符
-5. **登录**：离线档案，UUID 用 `OfflinePlayer:<name>` 的 MD5 按 v3 规则生成
-6. **Java**：按版本要求的主版本选（1.12 要 8、1.17 要 16/17、1.21 要 21），没有对应的就从 Mojang 下；
-   不会拿 Java 25 去启动要求 Java 8 的版本
-
-## 版本隔离
-
-默认开启：每个版本用 `versions/<id>/` 当游戏目录，存档、`mods/`、`options.txt` 都独立。
-设置里关掉就共用根目录。
-
-## 已知边界
-
-- **只支持离线登录**：微软 OAuth 没做，正版联机请用官方启动器 / PCL
-- **Forge / NeoForge 安装较慢**：要跑官方安装器，会下载较多库；需要 Java 可用（没有会自动从 Mojang 下）
-- **CurseForge 需要自备 API key**，且部分作者禁止第三方下载，这类文件会失败
-- **老终端**：Windows 的 legacy conhost 对全屏 TUI 支持一般，建议 Windows Terminal
+CI（`.github/workflows/release.yml`）在推 `v*` tag 时构建 Linux + Windows 并汇总 Release。
+AUR 配置好 secrets 后会自动更新；首次提交仍需要手动在 AUR 网页创建 `mcl-launcher`。
 
 ## 项目结构
 
 ```
 mclauncher/
-├── mcl/
-│   ├── cli.py          子命令解析；无参数且有 TTY 时进 TUI
-│   ├── tui/
-│   │   ├── app.py      Textual App（Header + 四个标签页 + Footer）
-│   │   ├── app.tcss    样式
-│   │   ├── common.py   确认弹窗 / 进度适配 / 线程安全调用
-│   │   └── panes/      versions / install / mods / settings，外加 loader 弹窗
-│   ├── doctor.py       环境自检
-│   ├── platforms.py    XDG / AppData / macOS 路径、Java 位置、打开目录
-│   ├── config.py       配置与路径
-│   ├── versions.py     扫描 / inheritsFrom 合并 / Maven 坐标
-│   ├── launch.py       参数、classpath、natives、spawn
-│   ├── installer.py    下载计划与落地
-│   ├── net.py          并发下载 + SHA-1 + 断点续传 + 连接复用
-│   ├── sources.py      下载源候选（官方 / BMCLAPI / mcimirror）
-│   ├── webui.py        GUI 的本地 HTTP + JSON 服务
-│   ├── java.py         Java 探测与 Mojang 运行时下载
-│   ├── modrinth.py     Modrinth API
-│   ├── curseforge.py   CurseForge API（需要 key）
-│   ├── mods.py         本地模组与 jar 元数据
-│   ├── loaders.py      Fabric / Quilt profile
-│   ├── manifest.py     版本清单 / 版本 JSON / 资源索引
-│   ├── rules.py        平台 rules 判定
-│   ├── progress.py     终端进度条（CLI 用）
-│   ├── prompts.py      questionary 封装（CLI 用）
-│   ├── home.py         CLI 文本菜单
-│   └── ui.py           颜色 / 对齐 / 摘要框
-├── tests/              100 个测试（含无头 TUI、GUI API、微软登录、整合包、崩溃分析、资源）
-├── packaging/          PKGBUILD、.desktop
-├── run.sh / run.bat    开发用启动脚本
+├── mcl/                  Python 包
+│   ├── cli.py            子命令；无参数进 TUI
+│   ├── tui/              Textual TUI
+│   ├── gui_cmd.py        GUI 启动（pywebview / Electron / 浏览器）
+│   ├── webui.py          GUI 的本地 HTTP + JSON 服务
+│   ├── auth.py           微软设备代码登录
+│   ├── modpacks.py       整合包导入
+│   ├── resources.py      光影 / 材质包
+│   ├── crash.py          崩溃日志分析
+│   ├── versions.py       inheritsFrom 合并 / 版本扫描
+│   ├── launch.py         启动参数 / classpath / natives
+│   ├── installer.py      下载计划与落地
+│   ├── net.py            并发下载 / 校验 / 续传
+│   ├── java.py           Java 探测与 Mojang 运行时
+│   ├── modrinth.py       Modrinth API
+│   ├── curseforge.py     CurseForge API
+│   └── ...
+├── gui/                  TypeScript 前端（esbuild）
+├── docs/                 README 截图
+├── tests/                100 个测试
+├── packaging/            deb/rpm/Arch、Windows、macOS、AUR、发版脚本
 └── pyproject.toml
 ```
 
@@ -409,136 +351,50 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-核心逻辑 + 无头 TUI（Textual `run_test`），不需要终端、不需要网络。
+100 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+崩溃分析、微软登录、无头 TUI 和 GUI API；不需要网络。
+
+## 已知限制
+
+- 微软登录等 Mojang 白名单；通过前会返回 `Invalid app registration`
+- CurseForge 整合包需要 key，且尚未做真实包回归
+- Windows 安装包未签名，SmartScreen 会提示
+- macOS 只有手动构建脚本，Release 不发布 dmg；GUI 在 macOS 上会退回浏览器
+- AUR 还没首次提交；CI 的 AUR 步骤在配 secrets 前会失败（已 continue-on-error）
+- 资源目前只有光影/材质，地图、数据包还没做
+- 服务器列表、自动更新、Java 管理 GUI 还没做
+
+## 隐私
+
+不收集任何数据、没有遥测。登录在微软页面完成，密码不经过 MCL；token 只存本机
+（0600）。详见 [PRIVACY.md](PRIVACY.md)。
 
 ## 许可证
 
 GNU General Public License v3.0 **或更新版本**（GPL-3.0-or-later），完整文本见 [LICENSE](LICENSE)。
+Copyright (C) 2026 mcl contributors.
 
-Copyright (C) 2026 mcl contributors
+---
 
-本项目是自由软件：你可以按自由软件基金会发布的 GNU 通用公共许可证（第 3 版或你选择的任何更新版本）的条款
-再分发和/或修改它。分发时不做任何担保，也不附带任何默示担保。详见 LICENSE。
+## English Quick Start
 
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or (at your option) any later version.
-
-## 打包与发布
-
-### Linux（本机就能打）
+MCL (full name **mclauncher**) is an open-source Minecraft: Java Edition launcher
+with a TUI and a native desktop GUI.
 
 ```bash
-./packaging/build_linux.sh
+# Linux (deb example)
+sudo dpkg -i mcl-<ver>-linux-x64.deb
+mcl gui
+
+# From source
+git clone https://github.com/EzraX21/mclauncher && cd mclauncher
+pipx install ".[cli,gui]"
+mcl
 ```
 
-`dist/` 里会得到：
+Features: vanilla installs, Fabric/Quilt/Forge/NeoForge, Modrinth & CurseForge mods,
+modpacks (`.mrpack` / CurseForge zip), shaders and resource packs, crash analysis,
+Java runtime management, Microsoft device-code login (pending Mojang allowlist),
+light/dark themes.
 
-| 文件 | 说明 |
-| --- | --- |
-| `mcl-<ver>-linux-x64.deb` | Debian / Ubuntu 安装包（自带 Python 依赖，只要求系统有 python3） |
-| `mcl-<ver>-linux-x64.rpm` | Fedora / RHEL 安装包 |
-| `mcl-<ver>-linux-x64.pkg.tar.zst` | Arch 包 |
-| `mcl_launcher-<ver>-py3-none-any.whl` | wheel（PEP 427 命名） |
-| `mcl-<ver>-source.tar.gz` | 源码包 |
-| `mcl-<ver>-linux-x64-portable.tar.gz` | 便携版，解压后 `./mcl.sh`，自带依赖 |
-
-包内元数据/包名仍是 `mcl-launcher`，只是产物文件名统一。
-需要 `nfpm`（脚本会提示下载地址）、`uv`、`tar`、`git`。
-包里的依赖是 vendor 进去的，所以不依赖发行版有没有 `python-textual`。
-
-### Windows
-
-必须在 Windows 上构建（PyInstaller 不能交叉编译）：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File packaging/build_windows.ps1
-```
-
-产物：
-
-- `dist\mcl-<ver>-windows-x64-setup.exe`（Inno Setup 安装包，快捷方式指向 `mclw.exe`）
-- `dist\mcl-<ver>-windows-x64-portable.zip`（解压即用，含 `mcl.exe` 和 `mclw.exe`）
-
-需要 Python 3.10+ 和 Inno Setup 6
-（脚本会尝试用 choco 装）。
-
-### macOS（手动构建，Release 默认不发布）
-
-必须在 macOS 上构建：
-
-```bash
-bash packaging/macos/build_app.sh
-```
-
-产物：`dist/mcl.app` 和 `dist/mcl-<ver>-macos.dmg`。
-`.app` 双击会打开 Terminal 跑 TUI。
-
-### CI / 自动发布
-
-`.github/workflows/release.yml`：推 `v*` tag 时
-
-- Ubuntu 上打 deb / rpm / Arch / wheel / 源码包 / 便携包
-- Windows 上打 exe + 安装包
-- 汇总到 GitHub Release（macOS dmg 已从自动发布移除）
-- beta/rc tag 发成 Pre-release，AUR 跳过
-- 用 `KSXGitHub/github-actions-deploy-aur` 更新 AUR
-
-### AUR 自动发布怎么配
-
-**1. AUR 账号**：去 <https://aur.archlinux.org/register> 注册（用户名、邮箱、密码）。
-
-**2. 生成一把专用 SSH key**
-
-```bash
-ssh-keygen -t ed25519 -C "aur" -f ~/.ssh/aur -N ""
-cat ~/.ssh/aur.pub
-```
-
-把输出粘到 <https://aur.archlinux.org/account> 的 **SSH Public Key** 里。测试：
-
-```bash
-ssh -i ~/.ssh/aur aur@aur.archlinux.org help
-```
-
-**3. 首次提交包（必须走网页）**
-
-AUR 的新包不能直接用 git 推出来，要先在 <https://aur.archlinux.org/submit> 提交一次：
-
-- 包名填 `mcl`
-- 上传 `packaging/aur/PKGBUILD` 和 `packaging/aur/.SRCINFO`
-- 提交后 `<ssh://aur@aur.archlinux.org/mcl.git>` 这个仓库才会存在
-
-**4. 配 GitHub secrets**（仓库 → Settings → Secrets and variables → Actions）
-
-| Secret | 值 |
-| --- | --- |
-| `AUR_USERNAME` | 你的 AUR 用户名 |
-| `AUR_EMAIL` | AUR 注册邮箱 |
-| `AUR_SSH_PRIVATE_KEY` | `~/.ssh/aur` 的**私钥内容**（不是 .pub） |
-
-用命令行也行：
-
-```bash
-gh secret set AUR_USERNAME
-gh secret set AUR_EMAIL
-gh secret set AUR_SSH_PRIVATE_KEY < ~/.ssh/aur
-```
-
-配好之后，下次推 `v*` tag 时 `release.yml` 会：
-
-1. 用 tag 版本改 PKGBUILD 和 `.SRCINFO`
-2. 下载 GitHub 源码包、重算 sha256 填进去
-3. 提交并推送 AUR
-
-**5. 本地手动推**
-
-```bash
-cd packaging/aur
-./publish.sh
-```
-
-需要 `~/.ssh/config` 里给 `aur.archlinux.org` 指定这把 key，或者用 `ssh-agent` 加载。
-
-注意：`PKGBUILD` 里 `url` 指向的仓库必须能公开访问，否则 AUR 构建时拉不到源码；
-包名 `mcl` 如果已被占用，需要换一个。
+License: GPL-3.0-or-later. No telemetry; account tokens stay local.
