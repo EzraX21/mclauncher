@@ -6,7 +6,7 @@ interface VersionInfo {
 interface ConfigInfo {
   game_dir: string; java_path: string; memory_mb: number; username: string;
   isolate_versions: boolean; jobs: number; download_source: string;
-  curseforge_configured: boolean; last_version: string; config_path: string;
+  curseforge_configured: boolean; last_version: string; config_path: string; theme: string;
 }
 interface StateInfo { version: string; config: ConfigInfo; versions: VersionInfo[]; platform: string; }
 interface RemoteVersion { id: string; type: string; release: string; }
@@ -28,6 +28,21 @@ let modsTimer: number | null = null;
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
+
+type ThemePref = "light" | "dark" | "system";
+const darkMedia = window.matchMedia("(prefers-color-scheme: dark)");
+
+function applyTheme(pref: string): void {
+  const value: ThemePref = pref === "dark" || pref === "system" ? pref : "light";
+  const resolved = value === "system" ? (darkMedia.matches ? "dark" : "light") : value;
+  document.documentElement.dataset.theme = resolved;
+  document.documentElement.dataset.themePref = value;
+  localStorage.setItem("mcl-theme", value);
+}
+
+darkMedia.addEventListener("change", () => {
+  if (document.documentElement.dataset.themePref === "system") applyTheme("system");
+});
 
 const icons: Record<View, string> = {
   versions: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z"/></svg>',
@@ -132,6 +147,7 @@ function badge(loader: string): string {
 
 async function refreshState(): Promise<void> {
   state = await api<StateInfo>("/api/state");
+  applyTheme(state.config.theme || "light");
   (document.getElementById("brand-version") as HTMLElement).textContent = `v${state.version}`;
   (document.getElementById("side-foot") as HTMLElement).textContent = state.config.game_dir;
   if (!modsVersion || !state.versions.some((item) => item.id === modsVersion)) {
@@ -455,6 +471,13 @@ function renderSettings(): void {
             <option value="auto" ${cfg.download_source === "auto" ? "selected" : ""}>BMCLAPI 优先</option>
           </select>
         </div>
+        <div class="field"><label>主题</label>
+          <select id="set-theme">
+            <option value="light" ${cfg.theme === "light" ? "selected" : ""}>浅色</option>
+            <option value="dark" ${cfg.theme === "dark" ? "selected" : ""}>深色</option>
+            <option value="system" ${cfg.theme === "system" ? "selected" : ""}>跟随系统</option>
+          </select>
+        </div>
         <div class="field"><label>版本隔离</label>
           <label class="checkbox"><input type="checkbox" id="set-isolate" ${cfg.isolate_versions ? "checked" : ""} /> 每个版本独立存档与模组目录</label>
         </div>
@@ -464,6 +487,16 @@ function renderSettings(): void {
         </div>
       </div>
     </div>`;
+  const themeSelect = content.querySelector("#set-theme") as HTMLSelectElement;
+  themeSelect.addEventListener("change", async () => {
+    applyTheme(themeSelect.value);
+    try {
+      await api("/api/config", { method: "POST", body: JSON.stringify({ theme: themeSelect.value }) });
+      toast("主题已切换", "ok");
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
   content.querySelector("#set-save")?.addEventListener("click", async () => {
     try {
       await api("/api/config", {
@@ -475,6 +508,7 @@ function renderSettings(): void {
           username: (content.querySelector("#set-username") as HTMLInputElement).value.trim() || "Player",
           download_source: (content.querySelector("#set-source") as HTMLSelectElement).value,
           isolate_versions: (content.querySelector("#set-isolate") as HTMLInputElement).checked,
+          theme: (content.querySelector("#set-theme") as HTMLSelectElement).value,
         }),
       });
       toast("设置已保存", "ok");
@@ -533,6 +567,7 @@ function watchTask(task: TaskInfo, title: string): void {
 
 // ---------------------------------------------------------------- 启动
 async function boot(): Promise<void> {
+  applyTheme(localStorage.getItem("mcl-theme") || "light");
   view = viewFromHash();
   app.innerHTML = shell();
   window.addEventListener("hashchange", () => {

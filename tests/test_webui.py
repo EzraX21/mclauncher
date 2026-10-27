@@ -56,6 +56,13 @@ class WebuiTests(unittest.TestCase):
         self.assertEqual(data["config"]["username"], "Steve")
         self.assertEqual(Config.load().memory_mb, 8192)  # 写进的是临时配置
 
+    def test_theme(self):
+        data = post_json(self.url + "api/config", {"theme": "dark"})
+        self.assertEqual(data["config"]["theme"], "dark")
+        self.assertEqual(Config.load().theme, "dark")
+        post_json(self.url + "api/config", {"theme": "system"})
+        self.assertEqual(Config.load().theme, "system")
+
     def test_unknown_api(self):
         with self.assertRaises(urllib.error.HTTPError) as ctx:
             get_json(self.url + "api/nope")

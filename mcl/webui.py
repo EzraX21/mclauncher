@@ -93,6 +93,7 @@ def _config_dict(cfg: Config) -> dict:
         "isolate_versions": cfg.isolate_versions,
         "jobs": cfg.jobs,
         "download_source": cfg.download_source,
+        "theme": getattr(cfg, "theme", "light"),
         "curseforge_configured": bool(cfg.curseforge_api_key),
         "last_version": cfg.last_version or "",
         "config_path": str(config_path()),
@@ -228,8 +229,8 @@ def launch_version(version_id: str) -> dict:
 def _static_dir() -> Optional[Path]:
     env = os.environ.get("MCL_WEB_DIR")
     candidates = [Path(env) if env else None,
-                  Path(__file__).parent / "webui_dist",
-                  Path(__file__).parent.parent / "gui" / "dist"]
+                  Path(__file__).parent.parent / "gui" / "dist",
+                  Path(__file__).parent / "webui_dist"]
     for candidate in candidates:
         if candidate and (candidate / "index.html").exists():
             return candidate
@@ -361,6 +362,8 @@ class Handler(BaseHTTPRequestHandler):
                             "isolate_versions", "jobs", "download_source"):
                     if key in body:
                         setattr(cfg, key, body[key])
+                if body.get("theme") in ("light", "dark", "system"):
+                    cfg.theme = body["theme"]
                 cfg.save()
                 return self._json({"config": _config_dict(cfg), "versions": _versions()})
             return self._error("未知接口", 404)
