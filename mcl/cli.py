@@ -6,9 +6,9 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import (__version__, auth_cmd, crash_cmd, doctor, home, install_cmd, java_cmd,
-               launch_cmd, loaders_cmd, modpack_cmd, mods_cmd, resources_cmd,
-               settings_cmd)
+from . import (__version__, auth_cmd, crash_cmd, desktop_cmd, doctor, home,
+               install_cmd, java_cmd, launch_cmd, loaders_cmd, modpack_cmd, mods_cmd,
+               resources_cmd, settings_cmd)
 from .config import Config
 from .installer import PlanError
 from .manifest import ApiError
@@ -17,7 +17,7 @@ from .ui import UI
 from .versions import VersionError
 
 COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor", "gui",
-            "login", "logout", "account", "modpack", "crash", "resources"}
+            "login", "logout", "account", "modpack", "crash", "resources", "desktop"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -126,6 +126,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("query", nargs="?", help="关键词 / 项目 slug / 文件名")
     p.add_argument("--version", help="游戏版本（默认上次启动的）")
 
+    p = sub.add_parser("desktop", help="安装 / 移除 Linux 桌面启动项")
+    p.add_argument("action", nargs="?", default="install", choices=["install", "remove"])
+
     p = sub.add_parser("crash", help="分析最近的崩溃日志")
     p.add_argument("version", nargs="?", help="版本号（默认上次启动的）")
 
@@ -222,6 +225,8 @@ def main(argv=None) -> int:
             return doctor.run(args, ui, cfg)
         if args.command == "modpack":
             return modpack_cmd.run(args, ui, cfg)
+        if args.command == "desktop":
+            return desktop_cmd.run(args, ui, cfg)
         if args.command == "resources":
             return resources_cmd.run(args, ui, cfg)
         if args.command == "crash":

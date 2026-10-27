@@ -113,6 +113,18 @@ sudo pacman -U mcl-<ver>-linux-x64.pkg.tar.zst
 The Windows installer includes `mclw.exe` (native window, no console) and `mcl.exe` (CLI/TUI).
 The installer is unsigned; on SmartScreen choose "More info → Run anyway".
 
+### Desktop entry
+
+Linux packages (deb/rpm/Arch) install the menu entry and icon automatically. For pip/uv
+or the portable build, the first `mcl` launch adds it; you can also do it manually:
+
+```bash
+mcl desktop          # install ~/.local/share/applications/mcl.desktop
+mcl desktop remove   # remove it
+```
+
+If your launcher still cannot find MCL, log out/in or restart the launcher to refresh its cache.
+
 ### From source
 
 ```bash
@@ -269,6 +281,7 @@ mcl resources search shader complementary --version 1.20.1
 mcl crash 1.20.1                    # analyze a crash
 mcl java install 21                 # download a Java runtime
 mcl login / mcl account / mcl logout
+mcl desktop                         # install the Linux menu entry
 mcl config                          # show config
 mcl doctor --network                # environment check
 ```
@@ -384,7 +397,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                100 tests
+├── tests/                102 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -395,7 +408,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-100 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+102 tests covering rules, download plans, version merging, launch arguments, Java, mods,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations

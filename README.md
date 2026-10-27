@@ -113,6 +113,18 @@ sudo pacman -U mcl-<ver>-linux-x64.pkg.tar.zst
 Windows 安装包会装 `mclw.exe`（双击开原生窗口，无控制台）和 `mcl.exe`（命令行/TUI）。
 安装包目前没有代码签名，SmartScreen 提示时点「更多信息 → 仍要运行」。
 
+### 桌面图标
+
+Linux 安装包（deb/rpm/Arch）会自动装上应用菜单项和图标。用 pip/uv 或便携版的话，
+第一次运行 `mcl` 会自动补；也可以手动：
+
+```bash
+mcl desktop          # 安装菜单项（~/.local/share/applications/mcl.desktop）
+mcl desktop remove   # 移除
+```
+
+装完 launcher 还搜不到就重新登录一次，或重启 launcher 刷新缓存。
+
 ### 从源码
 
 ```bash
@@ -266,6 +278,7 @@ mcl resources search shader complementary --version 1.20.1
 mcl crash 1.20.1                    # 分析崩溃
 mcl java install 21                 # 下 Java 运行时
 mcl login / mcl account / mcl logout
+mcl desktop                         # 安装 Linux 桌面菜单项
 mcl config                          # 查看配置
 mcl doctor --network                # 环境自检
 ```
@@ -378,7 +391,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript 前端（esbuild）
 ├── docs/                 README 截图
-├── tests/                100 个测试
+├── tests/                102 个测试
 ├── packaging/            deb/rpm/Arch、Windows、macOS、AUR、发版脚本
 └── pyproject.toml
 ```
@@ -389,7 +402,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-100 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+102 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
 崩溃分析、微软登录、TUI（无需终端）和 GUI API；不需要网络。
 
 ## 已知限制

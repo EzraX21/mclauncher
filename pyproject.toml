@@ -37,4 +37,4 @@ Homepage = "https://github.com/ezrax21/mclauncher"
 packages = ["mcl", "mcl.tui", "mcl.tui.panes"]
 
 [tool.setuptools.package-data]
-mcl = ["tui/*.tcss", "webui_dist/*"]
+mcl = ["tui/*.tcss", "webui_dist/*", "assets/*.png"]

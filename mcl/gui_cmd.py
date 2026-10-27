@@ -8,6 +8,7 @@ import sys
 import time
 from pathlib import Path
 
+from . import desktop
 from .config import Config
 from .ui import UI
 from .webui import serve
@@ -44,9 +45,14 @@ def _display_available() -> bool:
 
 
 def run_default(ui: UI, cfg: Config) -> bool:
-    """无参数启动：优先开原生窗口；没有后端/没有显示就返回 False，让调用方退回 TUI。"""
+    """无参数启动：优先开原生窗口；没有后端/没有显示就返回 False。"""
     if not _display_available():
         return False
+    try:
+        if desktop.ensure():
+            ui.note("已添加桌面启动项（应用菜单里搜 MCL）")
+    except Exception:  # noqa: BLE001 - 桌面项失败不影响启动
+        pass
     httpd, url = serve(cfg)
     ui.note(f"界面地址：{url}")
     try:
@@ -57,6 +63,11 @@ def run_default(ui: UI, cfg: Config) -> bool:
 
 
 def run_gui(args, ui: UI, cfg: Config) -> int:
+    try:
+        if desktop.ensure():
+            ui.note("已添加桌面启动项（应用菜单里搜 MCL）")
+    except Exception:  # noqa: BLE001
+        pass
     httpd, url = serve(cfg, args.port)
     ui.note(f"界面地址：{url}")
 
