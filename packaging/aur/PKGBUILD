@@ -1,7 +1,7 @@
 # Maintainer: mcl contributors
 pkgname=mcl-launcher
 provides=('mcl')
-pkgver=3.0.1
+pkgver=3.0.2
 pkgrel=1
 pkgdesc="MCL (mclauncher), a Minecraft launcher with a full-screen TUI: download, versions, mods, launch"
 arch=('any')
@@ -11,7 +11,7 @@ depends=('python' 'python-textual')
 optdepends=('python-questionary: 文本模式交互菜单（--cli）')
 makedepends=('python-build' 'python-installer' 'python-wheel')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('f45f64647a063efb545893c5f7d6126d67f4c1c9c3ceefddbcb39536813757ec')
+sha256sums=('a1d7d207facccb3142d1f40c0a18689f6c869dfa1b84bec66c0c3c57454555b4')
 
 build() {
   cd "$pkgname-$pkgver"

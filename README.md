@@ -110,6 +110,7 @@ pip install --user "mcl-launcher[cli]"
 ```
 
 Windows 上用 `py -m pip install --user "mcl-launcher[cli]"`，然后在 **Windows Terminal** 里运行 `mcl`。
+安装包会同时装 `mclw.exe`（双击即开原生窗口，无控制台）和 `mcl.exe`（命令行/TUI），开始菜单里两个入口都有。
 
 ### Arch Linux（本机 PKGBUILD）
 
