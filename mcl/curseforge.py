@@ -110,6 +110,15 @@ def search(query: str, loader: Optional[str] = None, game_version: Optional[str]
     return hits
 
 
+def file(mod_id: int, file_id: int, key: Optional[str] = None,
+         config=None) -> dict:
+    key = key or require_key(config)
+    data = _get(f"/mods/{mod_id}/files/{file_id}", key)
+    if not isinstance(data, dict) or "data" not in data:
+        raise CurseForgeError(f"CurseForge 文件 {mod_id}/{file_id} 不存在")
+    return data["data"]
+
+
 def files(mod_id: int, loader: Optional[str] = None, game_version: Optional[str] = None,
           key: Optional[str] = None, config=None) -> list[dict]:
     key = key or require_key(config)

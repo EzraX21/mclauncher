@@ -1,10 +1,13 @@
 """GUI 后端 API 的测试（本地 HTTP，不联网）。"""
 
+import io
 import json
 import os
 import tempfile
+import time
 import unittest
 import urllib.request
+import zipfile
 from pathlib import Path
 
 from mcl.config import Config
@@ -13,6 +16,12 @@ from mcl.webui import serve
 
 def get_json(url: str) -> dict:
     with urllib.request.urlopen(url, timeout=10) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def post_bytes(url: str, payload: bytes, headers: dict) -> dict:
+    request = urllib.request.Request(url, data=payload, headers=headers, method="POST")
+    with urllib.request.urlopen(request, timeout=10) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -66,6 +75,38 @@ class WebuiTests(unittest.TestCase):
         self.assertEqual(Config.load().theme, "dark")
         post_json(self.url + "api/config", {"theme": "system"})
         self.assertEqual(Config.load().theme, "system")
+
+    def test_modpack_upload(self):
+        root = Path(self.tmp.name) / "game"
+        version_dir = root / "versions" / "1.20.1"
+        version_dir.mkdir(parents=True)
+        (version_dir / "1.20.1.json").write_text(json.dumps({
+            "id": "1.20.1", "type": "release", "mainClass": "x",
+            "javaVersion": {"majorVersion": 17},
+            "downloads": {"client": {"url": "u", "sha1": "a", "size": 1}},
+        }))
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w") as archive:
+            archive.writestr("modrinth.index.json", json.dumps({
+                "formatVersion": 1, "game": "minecraft", "versionId": "1.0",
+                "name": "Upload Test", "dependencies": {"minecraft": "1.20.1"},
+                "files": [],
+            }))
+            archive.writestr("overrides/config/upload.txt", "hello")
+        task = post_bytes(self.url + "api/modpack/install", buffer.getvalue(), {
+            "Content-Type": "application/octet-stream",
+            "X-Filename": "pack.mrpack",
+            "X-Pack-Name": "UploadTest",
+        })
+        for _ in range(50):
+            with urllib.request.urlopen(self.url + f"api/task/{task['id']}", timeout=10) as response:
+                task = json.loads(response.read().decode("utf-8"))
+            if task["state"] != "running":
+                break
+            time.sleep(0.1)
+        self.assertEqual(task["state"], "done", task.get("error"))
+        self.assertEqual(task["result"]["version"], "UploadTest")
+        self.assertTrue((root / "versions" / "UploadTest" / "config" / "upload.txt").exists())
 
     def test_unknown_api(self):
         with self.assertRaises(urllib.error.HTTPError) as ctx:

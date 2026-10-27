@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import mimetypes
 import os
+import tempfile
 import threading
 import uuid
 import webbrowser
@@ -13,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, auth, loaders, modrinth
+from . import __version__, auth, loaders, modpacks, modrinth
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -239,6 +240,37 @@ def start_login(client_id: str) -> dict:
     return task
 
 
+def start_modpack(data: bytes, filename: str, name: str = "") -> dict:
+    cfg = _ACTIVE_CFG
+    suffix = Path(filename).suffix or ".mrpack"
+    handle, path_text = tempfile.mkstemp(prefix="mcl-pack-", suffix=suffix)
+    with os.fdopen(handle, "wb") as handle_file:
+        handle_file.write(data)
+    path = Path(path_text)
+    task = _new_task("modpack")
+
+    def run() -> None:
+        try:
+            version_id = modpacks.install(
+                path, cfg, name=name or None,
+                on_log=lambda message: _log(task, message),
+                on_phase=lambda label, files, size: _progress(task, label, files, size),
+            )
+            task["result"] = {"version": version_id}
+            task["state"] = "done"
+        except Exception as exc:  # noqa: BLE001
+            task["error"] = str(exc)
+            task["state"] = "error"
+        finally:
+            try:
+                path.unlink()
+            except OSError:
+                pass
+
+    threading.Thread(target=run, daemon=True).start()
+    return task
+
+
 def launch_version(version_id: str) -> dict:
     cfg = _ACTIVE_CFG
     resolved = resolve(cfg.root(), version_id)
@@ -282,6 +314,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _raw_body(self) -> bytes:
+        length = int(self.headers.get("Content-Length") or 0)
+        if length <= 0:
+            return b""
+        if length > 512 * 1024 * 1024:
+            raise RuntimeError("整合包太大了（上限 512 MB）")
+        return self.rfile.read(length)
 
     def _body(self) -> dict:
         length = int(self.headers.get("Content-Length") or 0)
@@ -361,6 +401,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
         parsed = urlparse(self.path)
         try:
+            if parsed.path == "/api/modpack/install":
+                filename = unquote(self.headers.get("X-Filename", "pack.mrpack"))
+                name = unquote(self.headers.get("X-Pack-Name", ""))
+                return self._json(start_modpack(self._raw_body(), filename, name))
             body = self._body()
             if parsed.path == "/api/install":
                 return self._json(start_install(body.get("id", ""), bool(body.get("assets", True))))

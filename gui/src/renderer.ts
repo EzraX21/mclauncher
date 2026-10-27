@@ -350,6 +350,17 @@ function renderMods(): void {
     `<option value="${esc(version.id)}" ${version.id === modsVersion ? "selected" : ""}>${esc(version.id)} (${esc(version.loader)})</option>`).join("");
   content.innerHTML = `
     <div class="card">
+      <div class="card-head"><span class="card-title">导入整合包</span></div>
+      <div class="card-body">
+        <div class="inline">
+          <input type="file" id="pack-file" accept=".mrpack,.zip" />
+          <input id="pack-name" placeholder="实例名（可选）" style="width:200px" />
+          <button class="btn primary" id="pack-import">导入</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-head">
         <span class="card-title">本地模组</span>
         <div class="inline">
@@ -376,6 +387,28 @@ function renderMods(): void {
   });
   content.querySelector("#mods-refresh")?.addEventListener("click", () => void loadLocalMods());
   content.querySelector("#mods-search")?.addEventListener("click", () => void searchMods());
+  content.querySelector("#pack-import")?.addEventListener("click", async () => {
+    const input = content.querySelector("#pack-file") as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) { toast("先选一个 .mrpack / .zip", "error"); return; }
+    const name = (content.querySelector("#pack-name") as HTMLInputElement).value.trim();
+    try {
+      const response = await fetch("/api/modpack/install", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "X-Filename": encodeURIComponent(file.name),
+          "X-Pack-Name": encodeURIComponent(name),
+        },
+        body: await file.arrayBuffer(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || response.statusText);
+      watchTask(data as TaskInfo, `导入 ${file.name}`);
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
   (content.querySelector("#mods-query") as HTMLInputElement).addEventListener("keydown", (event) => {
     if (event.key === "Enter") void searchMods();
   });

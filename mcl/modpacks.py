@@ -33,6 +33,9 @@ class PackFile:
     urls: list[str] = field(default_factory=list)
     sha1: Optional[str] = None
     size: Optional[int] = None
+    project_id: Optional[int] = None
+    file_id: Optional[int] = None
+    required: bool = True
 
 
 @dataclass
@@ -127,12 +130,17 @@ def _inspect_curseforge(path: Path, archive: zipfile.ZipFile) -> PackInfo:
                 break
     overrides = sorted(name[len("overrides/"):] for name in archive.namelist()
                        if name.startswith("overrides/") and not name.endswith("/"))
+    files = [PackFile(path="", project_id=int(entry.get("projectID", 0)),
+                      file_id=int(entry.get("fileID", 0)),
+                      required=bool(entry.get("required", True)))
+             for entry in manifest.get("files") or []
+             if entry.get("projectID") and entry.get("fileID")]
     return PackInfo(
         path=path, format="curseforge", name=str(manifest.get("name") or path.stem),
         version=str(manifest.get("version") or ""),
         minecraft=str(minecraft.get("version") or ""), loader=loader,
-        loader_version=loader_version, overrides=overrides,
-        needs_curseforge_key=bool(manifest.get("files")),
+        loader_version=loader_version, files=files, overrides=overrides,
+        needs_curseforge_key=bool(files),
     )
 
 
@@ -175,11 +183,9 @@ def install(path: Path, cfg: Config, name: Optional[str] = None,
             on_phase=None, cancel=None) -> str:
     note = on_log or (lambda _message: None)
     info = inspect(path)
-    if info.needs_curseforge_key:
-        if not curseforge.api_key(cfg):
-            raise PackError("CurseForge 整合包需要先配置 CurseForge API key"
-                            "（设置 → CurseForge，或 mcl config set curseforge_api_key）")
-        raise PackError("CurseForge 整合包下载暂未接入，先用 Modrinth 的 .mrpack")
+    if info.needs_curseforge_key and not curseforge.api_key(cfg):
+        raise PackError("CurseForge 整合包需要先配置 CurseForge API key"
+                        "（设置 → CurseForge，或 mcl config set curseforge_api_key）")
     if not info.minecraft:
         raise PackError("整合包没有写 Minecraft 版本")
     if info.loader != "vanilla" and not info.loader_version:
@@ -216,21 +222,43 @@ def install(path: Path, cfg: Config, name: Optional[str] = None,
         json.dumps(profile, ensure_ascii=False, indent=2), encoding="utf-8")
 
     tasks: list[DownloadTask] = []
-    for pack_file in info.files:
-        relative = _safe_relative(pack_file.path)
-        if relative is None:
-            continue
-        destination = instance_dir / relative
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        urls = sources.modrinth_candidates(pack_file.urls[0], cfg.download_source) \
-            if "modrinth" in pack_file.urls[0] else [pack_file.urls[0]]
-        alternates = tuple(urls[1:] + pack_file.urls[1:])
-        tasks.append(DownloadTask(url=urls[0], dest=destination,
-                                  sha1=pack_file.sha1, size=pack_file.size,
-                                  alternates=alternates))
+    if info.format == "modrinth":
+        for pack_file in info.files:
+            relative = _safe_relative(pack_file.path)
+            if relative is None:
+                continue
+            destination = instance_dir / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            urls = sources.modrinth_candidates(pack_file.urls[0], cfg.download_source) \
+                if "modrinth" in pack_file.urls[0] else [pack_file.urls[0]]
+            alternates = tuple(urls[1:] + pack_file.urls[1:])
+            tasks.append(DownloadTask(url=urls[0], dest=destination,
+                                      sha1=pack_file.sha1, size=pack_file.size,
+                                      alternates=alternates))
+    else:
+        key = curseforge.require_key(cfg)
+        for pack_file in info.files:
+            if not pack_file.required:
+                continue
+            try:
+                cf_file = curseforge.file(pack_file.project_id, pack_file.file_id,
+                                          key=key, config=cfg)
+                url = curseforge.file_download_url(cf_file, key, cfg)
+            except curseforge.CurseForgeError as exc:
+                note(f"跳过 {pack_file.project_id}/{pack_file.file_id}：{exc}")
+                continue
+            if not url:
+                note(f"跳过 {pack_file.project_id}/{pack_file.file_id}：没有下载链接")
+                continue
+            destination = instance_dir / "mods" / curseforge.primary_file_name(cf_file)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            tasks.append(DownloadTask(url=url, dest=destination,
+                                      size=cf_file.get("fileLength")))
+
     note(f"下载 {len(tasks)} 个模组文件 …")
-    result = run_tasks(tasks, jobs=cfg.jobs, cancel=cancel,
-                       progress=None)
+    total_bytes = sum(task.size or 0 for task in tasks)
+    sink = on_phase("模组文件", len(tasks), total_bytes) if on_phase else None
+    result = run_tasks(tasks, jobs=cfg.jobs, cancel=cancel, progress=sink)
     if result.errors:
         raise PackError(result.errors[0])
 

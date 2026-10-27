@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mcl ───────────────────────────── v3.3.0 · Minecraft 启动器 ─┐
+┌ mcl ───────────────────────────── v3.4.0 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -199,8 +199,8 @@ mcl modpack install Fabulously.Optimized.mrpack --name "FO 1.20.1"
 mcl launch "FO 1.20.1"
 ```
 
-CurseForge 的整合包能识别 `manifest.json`，但拉文件要 CurseForge API key；
-配置好 key 后目前会提示「下载暂未接入」，下一步补。
+CurseForge 的整合包也能导，但需要先在设置里填 CurseForge API key。
+GUI 的「模组」页可以直接选文件导入，不用敲命令。
 
 ## 命令行模式
 
@@ -341,7 +341,7 @@ mclauncher/
 │   ├── prompts.py      questionary 封装（CLI 用）
 │   ├── home.py         CLI 文本菜单
 │   └── ui.py           颜色 / 对齐 / 摘要框
-├── tests/              91 个测试（含无头 TUI、GUI API、微软登录、整合包）
+├── tests/              92 个测试（含无头 TUI、GUI API、微软登录、整合包）
 ├── packaging/          PKGBUILD、.desktop
 ├── run.sh / run.bat    开发用启动脚本
 └── pyproject.toml
