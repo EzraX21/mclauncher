@@ -13,6 +13,7 @@ class AuthTests(unittest.TestCase):
     def test_friendly_errors(self):
         self.assertIn("公共客户端流", auth.friendly("AADSTS7000218: ..."))
         self.assertIn("client id", auth.friendly("AADSTS700016: ..."))
+        self.assertIn("AppRegInfo", auth.friendly("Invalid app registration"))
 
     def test_chain_builds_account(self):
         xbl = {"Token": "xbl-token", "DisplayClaims": {"xui": [{"uhs": "uhs-1"}]}}

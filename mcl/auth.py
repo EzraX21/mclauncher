@@ -45,6 +45,9 @@ def friendly(message: str) -> str:
         return "Azure 应用没开「允许公共客户端流」：身份验证 → 允许公共客户端流 → 是"
     if "AADSTS65001" in message:
         return "这个 Azure 应用没有获得授权，检查 API 权限或重新登录"
+    if "Invalid app registration" in message:
+        return ("Mojang 还没把这个 client id 加入白名单（Invalid app registration）。"
+                "需要提交 Minecraft 第三方应用注册表：https://aka.ms/AppRegInfo")
     return message
 
 
@@ -85,7 +88,8 @@ def _post_json(url: str, payload: dict, token: Optional[str] = None) -> dict:
             data = json.loads(body)
         except json.JSONDecodeError:
             data = {}
-        message = data.get("error_description") or data.get("Message") or body[:300]
+        message = (data.get("error_description") or data.get("errorMessage")
+                   or data.get("Message") or body[:300])
         raise AuthError(friendly(message)) from exc
     except urllib.error.URLError as exc:
         raise AuthError(f"连不上微软登录服务：{exc.reason}") from exc
