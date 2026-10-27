@@ -1,6 +1,6 @@
 # Maintainer: mclauncher contributors
 pkgname=mclauncher
-pkgver=2.3.1
+pkgver=2.3.2
 pkgrel=1
 pkgdesc="Minecraft launcher with a full-screen TUI: download, versions, mods, launch"
 arch=('any')
@@ -10,7 +10,7 @@ depends=('python' 'python-textual')
 optdepends=('python-questionary: 文本模式交互菜单（--cli）')
 makedepends=('python-build' 'python-installer' 'python-wheel')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('ab3266f9224c2341bcdbbbdf2ab77108ba994311b17a53e5788a328a280020e7')
+sha256sums=('4d76f701fedce808828d09fea6a865bde2dcda31f157d98ab7b14536276a32ef')
 
 build() {
   cd "$pkgname-$pkgver"
