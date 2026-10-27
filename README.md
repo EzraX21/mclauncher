@@ -1,25 +1,59 @@
-# MCL（mclauncher）
+<p align="center">
+  <img src="gui/assets/mcl.png" width="96" alt="MCL"/>
+</p>
 
-> Minecraft: Java Edition 启动器：下载原版、装加载器、装模组/整合包、光影材质、启动游戏。
-> 全名 **mclauncher**，命令 `mcl`，发行包名 `mcl-launcher`。
->
-> A lightweight Minecraft: Java Edition launcher with a TUI and a native desktop GUI.
-> Vanilla installs, Fabric/Quilt/Forge/NeoForge, Modrinth/CurseForge mods, modpacks,
-> shaders/resource packs, crash analysis and launching.
+<h1 align="center">MCL · mclauncher</h1>
 
-PCL 2.99 起不再提供游戏本体下载。MCL 把「下载 → 装加载器 → 装模组 → 启动」这条链路自己做了一遍，
-启动参数按官方 launcher 的规则构建；默认走 Mojang 官方源，也可以切 BMCLAPI 镜像。
+<p align="center">Minecraft: Java Edition 启动器：下载原版、装加载器、装模组/整合包、光影材质、启动游戏。</p>
+
+<p align="center">
+  <a href="https://github.com/EzraX21/mclauncher/releases"><img src="https://img.shields.io/github/v/release/EzraX21/mclauncher?style=flat-square" alt="Release"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue?style=flat-square" alt="License"/></a>
+  <img src="https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey?style=flat-square" alt="Platform"/>
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776AB?style=flat-square" alt="Python"/>
+</p>
+
+<p align="center">
+  <a href="./README_EN.md">English</a> | <strong>简体中文</strong>
+</p>
+
+---
+
+## 目录
+
+- [项目状态](#项目状态)
+- [功能](#功能)
+- [截图](#截图)
+- [安装](#安装)
+- [运行](#运行)
+- [图形界面](#图形界面)
+- [TUI](#tui)
+- [微软登录](#微软登录)
+- [整合包](#整合包)
+- [资源](#资源)
+- [崩溃分析](#崩溃分析)
+- [命令行](#命令行)
+- [配置](#配置)
+- [下载源](#下载源)
+- [CurseForge（可选）](#curseforge可选)
+- [命名与发版](#命名与发版)
+- [打包](#打包)
+- [项目结构](#项目结构)
+- [测试](#测试)
+- [已知限制](#已知限制)
+- [隐私](#隐私)
+- [许可证](#许可证)
 
 ## 项目状态
 
-当前版本 **v3.6.0**，以下是真实状态：
+当前版本 **v3.6.0**：
 
 | 状态 | 功能 |
 | --- | --- |
 | ✅ 已完成 | 原版下载、版本管理、Fabric/Quilt/Forge/NeoForge、模组搜索/安装、整合包、光影/材质、崩溃分析、Java 运行时、TUI、GUI、多主题、原生窗口、Linux/Windows 打包 |
-| 🚧 等待外部 | **微软登录**：代码已完整实现，内置 Azure 应用已提交 Mojang 白名单审核；审核通过前 Minecraft 接口会返回 `Invalid app registration` |
+| 🚧 等待外部 | **微软登录**：代码已完整实现，内置 Azure 应用已提交 Mojang 白名单审核；通过前 Minecraft 接口会返回 `Invalid app registration` |
 | 🚧 待验证 | **CurseForge 整合包**：下载逻辑已实现，需要 API key；手头没有 key，还没跑真实整合包回归 |
-| 🚧 未发布 | **AUR**：`mcl-launcher` 的 PKGBUILD 已就绪，还没在 AUR 首次提交；CI 那一步暂时是红的 |
+| 🚧 未发布 | **AUR**：`mcl-launcher` 的 PKGBUILD 已就绪，尚未首次提交；CI 的 AUR 步骤在配 secrets 前会失败（已 continue-on-error） |
 | 📋 计划中 | 服务器列表 / 快速进服、启动器自动更新、Java 管理 GUI、地图/数据包 |
 
 ## 功能
@@ -91,7 +125,7 @@ mcl
 `[gui]` 是 pywebview（原生窗口），`[cli]` 是 questionary（`mcl --cli` 文本菜单）。
 只跑 TUI 可以只装 `.[cli]`。开发时也可以 `./run.sh` 自动建 `.venv`。
 
-### 运行
+## 运行
 
 ```bash
 mcl            # 有 TTY 时进 TUI
@@ -146,31 +180,6 @@ MCL_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
 - `Tab` 切标签，`q` 退出，`ctrl+r` 刷新，`ctrl+s` 保存设置
 - 日志默认折叠，开始安装 / 启动时自动展开
 - 模组页来源可选 Modrinth / CurseForge，本地模组可启用/禁用/删除
-
-## 命令行
-
-```bash
-mcl install 1.20.1                  # 装原版
-mcl install latest --no-assets -y
-mcl versions                        # 已装版本
-mcl loaders fabric 1.20.1           # 装 Fabric
-mcl loaders forge 1.20.1            # 装 Forge（官方安装器）
-mcl loaders neoforge 1.21.1         # 装 NeoForge
-mcl launch 1.20.1                   # 启动
-mcl launch 1.20.1 --dry-run         # 只打印命令
-mcl launch 1.20.1 --offline         # 强制离线
-mcl mods search sodium --version 1.20.1
-mcl mods install sodium --version fabric-loader-0.20.1-1.20.1 -y
-mcl modpack install pack.mrpack --name "我的整合包"
-mcl resources search shader complementary --version 1.20.1
-mcl crash 1.20.1                    # 分析崩溃
-mcl java install 21                 # 下 Java 运行时
-mcl login / mcl account / mcl logout
-mcl config                          # 查看配置
-mcl doctor --network                # 环境自检
-```
-
-完整参数看 `mcl <命令> --help`。
 
 ## 微软登录
 
@@ -233,6 +242,31 @@ mcl crash 1.20.1
 读最新的 `crash-reports/crash-*.txt`（没有就看 `logs/latest.log`），匹配 Java 版本、
 OOM、缺前置、模组重复、Mixin 冲突、OpenGL、权限等常见原因并给建议。
 GUI 版本列表每行有「崩溃分析」按钮。
+
+## 命令行
+
+```bash
+mcl install 1.20.1                  # 装原版
+mcl install latest --no-assets -y
+mcl versions                        # 已装版本
+mcl loaders fabric 1.20.1           # 装 Fabric
+mcl loaders forge 1.20.1            # 装 Forge（官方安装器）
+mcl loaders neoforge 1.21.1         # 装 NeoForge
+mcl launch 1.20.1                   # 启动
+mcl launch 1.20.1 --dry-run         # 只打印命令
+mcl launch 1.20.1 --offline         # 强制离线
+mcl mods search sodium --version 1.20.1
+mcl mods install sodium --version fabric-loader-0.20.1-1.20.1 -y
+mcl modpack install pack.mrpack --name "我的整合包"
+mcl resources search shader complementary --version 1.20.1
+mcl crash 1.20.1                    # 分析崩溃
+mcl java install 21                 # 下 Java 运行时
+mcl login / mcl account / mcl logout
+mcl config                          # 查看配置
+mcl doctor --network                # 环境自检
+```
+
+完整参数看 `mcl <命令> --help`。
 
 ## 配置
 
@@ -360,7 +394,7 @@ python -m unittest discover -s tests -v
 - CurseForge 整合包需要 key，且尚未做真实包回归
 - Windows 安装包未签名，SmartScreen 会提示
 - macOS 只有手动构建脚本，Release 不发布 dmg；GUI 在 macOS 上会退回浏览器
-- AUR 还没首次提交；CI 的 AUR 步骤在配 secrets 前会失败（已 continue-on-error）
+- AUR 还没首次提交
 - 资源目前只有光影/材质，地图、数据包还没做
 - 服务器列表、自动更新、Java 管理 GUI 还没做
 
@@ -373,28 +407,3 @@ python -m unittest discover -s tests -v
 
 GNU General Public License v3.0 **或更新版本**（GPL-3.0-or-later），完整文本见 [LICENSE](LICENSE)。
 Copyright (C) 2026 mcl contributors.
-
----
-
-## English Quick Start
-
-MCL (full name **mclauncher**) is an open-source Minecraft: Java Edition launcher
-with a TUI and a native desktop GUI.
-
-```bash
-# Linux (deb example)
-sudo dpkg -i mcl-<ver>-linux-x64.deb
-mcl gui
-
-# From source
-git clone https://github.com/EzraX21/mclauncher && cd mclauncher
-pipx install ".[cli,gui]"
-mcl
-```
-
-Features: vanilla installs, Fabric/Quilt/Forge/NeoForge, Modrinth & CurseForge mods,
-modpacks (`.mrpack` / CurseForge zip), shaders and resource packs, crash analysis,
-Java runtime management, Microsoft device-code login (pending Mojang allowlist),
-light/dark themes.
-
-License: GPL-3.0-or-later. No telemetry; account tokens stay local.
