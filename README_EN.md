@@ -69,7 +69,7 @@ Current version: **v3.6.0**
 | Accounts | Offline + Microsoft device-code login, local token cache with refresh |
 | Java | Picks the exact major version; downloads the matching Mojang runtime instead of using a newer Java |
 | GUI | **Default entry point**: native window (WebKitGTK on Linux / WebView2 on Windows), light/dark/system themes |
-| TUI | **Feature entry point**: full-screen terminal UI for SSH and headless machines, `mcl tui` |
+| TUI | **Feature entry point**: full-screen terminal UI for terminal/keyboard workflows; launching still needs a graphical environment |
 
 ## Screenshots
 
@@ -123,13 +123,13 @@ mcl
 ```
 
 `[gui]` pulls pywebview (native window); `[cli]` pulls questionary for `mcl --cli`.
-For TUI only, install `.[cli]` (without `[gui]`, `mcl` falls back to the TUI). For development, `./run.sh` creates a `.venv` for you.
+For TUI only, install `.[cli]` and run `mcl tui`; the default `mcl` command needs `[gui]`. For development, `./run.sh` creates a `.venv` for you.
 
 ## Running
 
 ```bash
-mcl            # default: GUI (falls back to TUI when no window backend)
-mcl tui        # full-screen TUI (SSH / headless)
+mcl            # default: GUI
+mcl tui        # full-screen TUI (manage from a terminal; GUI still required to play)
 mcl gui        # explicitly open the GUI
 mcl --cli      # questionary text menu
 ```
@@ -177,9 +177,10 @@ MCL_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
 
 ## TUI
 
-The TUI is a first-class alternative, not the default. Run `mcl tui` explicitly; `mcl`
-falls back to it automatically when no window backend/desktop is available.
-Four tabs: Versions, Install, Mods, Settings.
+The TUI is a first-class alternative, not the default: run `mcl tui` explicitly. It is for
+terminal/keyboard-oriented workflows and can install versions, loaders and mods, but
+**launching the game still requires a graphical environment**. `mcl` does not fall back
+silently; it reports why the window could not open. Four tabs: Versions, Install, Mods, Settings.
 
 - `Tab` switches tabs, `q` quits, `ctrl+r` refreshes, `ctrl+s` saves settings
 - Logs are collapsed by default and expand when an install or launch starts
@@ -395,7 +396,7 @@ python -m unittest discover -s tests -v
 ```
 
 100 tests covering rules, download plans, version merging, launch arguments, Java, mods,
-modpacks, resources, crash analysis, Microsoft auth, headless TUI and GUI API; no network needed.
+modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations
 

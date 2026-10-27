@@ -163,30 +163,28 @@ def main(argv=None) -> int:
     cfg = Config.load()
 
     if not args.command:
-        # 默认图形界面；没有窗口后端/没有显示时退回 TUI
-        if not args.cli:
+        # 默认图形界面；TUI 只作为显式入口（mcl tui）
+        if args.cli:
+            if not sys.stdout.isatty():
+                build_parser().print_help()
+                return 0
             try:
-                from .gui_cmd import run_default
-
-                if run_default(ui, cfg):
-                    return 0
-                ui.warn("没有可用的图形界面后端，改用 TUI（mcl tui）")
-            except Exception as exc:  # noqa: BLE001 - GUI 失败不应该挡住启动器
-                ui.warn(f"图形界面启动失败：{exc}")
-        if not sys.stdout.isatty():
-            build_parser().print_help()
-            return 0
-        if not args.cli:
-            try:
-                from .tui.app import run as run_tui
-
-                return run_tui(cfg)
-            except ImportError:
-                ui.warn("没装 textual，退回文本界面（pip install textual）")
+                return home.run(ui, cfg)
+            except PromptsUnavailable as exc:
+                ui.error(str(exc))
+                return 1
         try:
-            return home.run(ui, cfg)
-        except PromptsUnavailable as exc:
-            ui.error(str(exc))
+            from .gui_cmd import run_default
+
+            if run_default(ui, cfg):
+                return 0
+            ui.error("打不开图形界面：需要桌面环境，并安装 pywebview")
+            ui.note("安装：pip install \"mcl-launcher[gui]\"")
+            ui.note("只想在终端管理版本和模组：mcl tui")
+            return 1
+        except Exception as exc:  # noqa: BLE001 - 给出明确原因，不静默退 TUI
+            ui.error(f"图形界面启动失败：{exc}")
+            ui.note("浏览器模式：mcl gui --web；终端管理：mcl tui")
             return 1
 
     _apply_directory(args, cfg)
