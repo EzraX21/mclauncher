@@ -38,7 +38,7 @@ class ArgumentTests(unittest.TestCase):
 
 
 class CommandTests(unittest.TestCase):
-    def build(self, tmp_path: Path) -> LaunchCommand:
+    def build(self, tmp_path: Path, java=None) -> LaunchCommand:
         root = tmp_path / "mc"
         (root / "versions" / "demo").mkdir(parents=True)
         (root / "versions" / "demo" / "demo.jar").write_bytes(b"jar")
@@ -63,7 +63,18 @@ class CommandTests(unittest.TestCase):
             assets_dir=root / "assets",
         )
         cfg = Config(game_dir=str(root), username="Alex", memory_mb=1024, isolate_versions=False)
-        return build_command(resolved, cfg, java=None)
+        return build_command(resolved, cfg, java=java)
+
+    def test_warns_when_java_major_mismatch(self):
+        import tempfile
+        from pathlib import Path as P
+
+        from mclauncher.java import JavaRuntime
+
+        with tempfile.TemporaryDirectory() as directory:
+            wrong = JavaRuntime(path=P("/java21"), major=21, version="21.0.1")
+            command = self.build(Path(directory), java=wrong)
+            self.assertTrue(any("要求 Java 17" in warning for warning in command.warnings))
 
     def test_offline_uuid_stable(self):
         first = offline_uuid("Alex")

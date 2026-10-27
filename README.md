@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mclauncher ───────────────────────────── v2.3.2 · Minecraft 启动器 ─┐
+┌ mclauncher ───────────────────────────── v2.3.3 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -197,7 +197,8 @@ TUI 模组页的「来源」下拉切到 CurseForge 即可（没配 key 会提�
 3. **natives**：老格式解压到 `versions/<id>/natives`；1.19+ 的 natives jar 直接进 classpath
 4. **参数**：`arguments.jvm` / `arguments.game`，老版本退回 `minecraftArguments`，替换 `${auth_player_name}` 等占位符
 5. **登录**：离线档案，UUID 用 `OfflinePlayer:<name>` 的 MD5 按 v3 规则生成
-6. **Java**：配置 → `JAVA_HOME` → PATH → 游戏目录 `runtime/`，缺了自动从 Mojang 下载
+6. **Java**：按版本要求的主版本选（1.12 要 8、1.17 要 16/17、1.21 要 21），没有对应的就从 Mojang 下；
+   不会拿 Java 25 去启动要求 Java 8 的版本
 
 ## 版本隔离
 

@@ -9,7 +9,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, DataTable, ProgressBar, RichLog, Static
 
-from ...java import ensure_java, component_for, find_all, install_runtime, pick, probe
+from ...java import ensure_java
 from ...launch import build_command, ensure_libraries, prepare_natives, spawn, wait
 from ...loaders import install as install_loader
 from ...mods import list_mods
@@ -174,17 +174,10 @@ class VersionsPane(Vertical):
     def _launch(self, version_id: str) -> None:
         try:
             resolved = resolve(self.cfg.root(), version_id)
-            java = pick(find_all(self.cfg), resolved.java_major)
-            if java is None:
-                component = component_for(resolved.java_major)
-                self._log_threadsafe(f"[yellow]缺少 Java，正在从 Mojang 下载 {component} …[/]")
-                path = install_runtime(component, self.cfg.root(), jobs=self.cfg.jobs,
-                                       on_phase=self._progress, source=self.cfg.download_source)
-                self.cfg.java_path = str(path)
-                self.cfg.save()
-                java = probe(path)
-                self._finish_progress()
-            self._log_threadsafe(f"Java：{java.display if java else '未找到'}")
+            java = ensure_java(self.cfg, resolved.java_major,
+                               on_phase=self._progress, note=self._log_threadsafe)
+            self._finish_progress()
+            self._log_threadsafe(f"Java：{java.display}")
 
             ensure_libraries(resolved, self.cfg.root(), jobs=self.cfg.jobs,
                              on_phase=self._progress, source=self.cfg.download_source)

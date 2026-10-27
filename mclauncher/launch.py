@@ -301,8 +301,10 @@ def build_command(
         legacy = resolved.data.get("minecraftArguments", "")
         argv += build_arguments(legacy.split() if legacy else [], context, features, command.warnings)
 
-    if java is not None and resolved.java_major and java.major < resolved.java_major:
-        command.warnings.append(f"这个版本建议 Java {resolved.java_major}，当前是 Java {java.major}")
+    if java is not None and resolved.java_major and java.major != resolved.java_major:
+        command.warnings.append(
+            f"这个版本要求 Java {resolved.java_major}，当前是 Java {java.major}，可能不兼容"
+        )
 
     deduped: list[str] = []
     seen: set[str] = set()

@@ -34,3 +34,63 @@ class JavaTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EnsureJavaTests(unittest.TestCase):
+    def test_pick_exact(self):
+        from mclauncher.java import pick_exact
+
+        runtimes = [runtime(8), runtime(21), runtime(25)]
+        self.assertEqual(pick_exact(runtimes, 8).major, 8)
+        self.assertIsNone(pick_exact(runtimes, 17))
+
+    def test_uses_exact_without_download(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        from mclauncher.config import Config
+        from mclauncher.java import ensure_java
+
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = Config(game_dir=tmp)
+            with mock.patch("mclauncher.java.find_all", return_value=[runtime(8), runtime(25)]), \
+                    mock.patch("mclauncher.java.install_runtime") as install:
+                result = ensure_java(cfg, 8)
+        self.assertEqual(result.major, 8)
+        install.assert_not_called()
+
+    def test_downloads_matching_runtime_when_only_newer(self):
+        import tempfile
+        from pathlib import Path
+        from unittest import mock
+
+        from mclauncher.config import Config
+        from mclauncher.java import ensure_java
+
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = Config(game_dir=tmp)
+            new_java = runtime(8)
+            with mock.patch("mclauncher.java.find_all", return_value=[runtime(25)]), \
+                    mock.patch("mclauncher.java.install_runtime",
+                               return_value=Path(tmp) / "jre-legacy" / "bin" / "java") as install, \
+                    mock.patch("mclauncher.java.probe", return_value=new_java):
+                result = ensure_java(cfg, 8)
+        self.assertEqual(result.major, 8)
+        self.assertEqual(install.call_args.args[0], "jre-legacy")
+
+    def test_falls_back_with_warning_if_download_fails(self):
+        import tempfile
+        from unittest import mock
+
+        from mclauncher.config import Config
+        from mclauncher.java import ensure_java
+
+        notes = []
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = Config(game_dir=tmp)
+            with mock.patch("mclauncher.java.find_all", return_value=[runtime(25)]), \
+                    mock.patch("mclauncher.java.install_runtime", side_effect=RuntimeError("no net")):
+                result = ensure_java(cfg, 8, note=notes.append)
+        self.assertEqual(result.major, 25)
+        self.assertTrue(any("不兼容" in note for note in notes))

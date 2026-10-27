@@ -8,7 +8,7 @@ from typing import Optional
 
 from . import prompts
 from .config import Config
-from .java import (JavaRuntime, component_for, find_all, install_runtime, pick, probe)
+from .java import JavaRuntime, component_for, ensure_java, find_all, pick, pick_exact, probe
 from .launch import build_command, ensure_libraries, prepare_natives, run
 from .progress import ProgressReporter, human_size
 from .ui import UI
@@ -37,15 +37,15 @@ def _select_java(ui: UI, cfg: Config, required: Optional[int], requested: Option
         return runtime
 
     runtimes = find_all(cfg)
-    chosen = pick(runtimes, required)
-    if chosen and (required is None or chosen.major >= required):
-        return chosen
+    exact = pick_exact(runtimes, required) if required is not None else pick(runtimes, None)
+    if exact is not None:
+        return exact
 
     if dry_run:
-        return chosen
+        return pick(runtimes, required)
 
     component = component_for(required)
-    hint = f"需要 Java {required}，当前没有合适的运行时" if required else "没找到 Java"
+    hint = f"需要 Java {required}，当前没有主版本匹配的运行时" if required else "没找到 Java"
     if not interactive:
         raise RuntimeError(f"{hint}。先运行：mclauncher java install {component}")
 
@@ -55,15 +55,7 @@ def _select_java(ui: UI, cfg: Config, required: Optional[int], requested: Option
     def on_phase(label, files, total):
         return ProgressReporter(label, files, total)
 
-    ui.note("正在下载 Java 运行时（约 100 MB）…")
-    java_path = install_runtime(component, cfg.root(), jobs=cfg.jobs,
-                                on_phase=on_phase, source=cfg.download_source)
-    runtime = probe(java_path)
-    if runtime is None:
-        raise RuntimeError(f"下载完成但 {java_path} 跑不起来")
-    cfg.java_path = str(java_path)
-    cfg.save()
-    return runtime
+    return ensure_java(cfg, required, on_phase=on_phase, note=ui.note)
 
 
 def run_launch(args, ui: UI, cfg: Config) -> int:

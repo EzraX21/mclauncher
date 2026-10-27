@@ -134,22 +134,43 @@ def pick(runtimes: Iterable[JavaRuntime], required: Optional[int]) -> Optional[J
     return max(runtimes, key=lambda runtime: runtime.major)
 
 
+def pick_exact(runtimes: Iterable[JavaRuntime], required: int) -> Optional[JavaRuntime]:
+    """只要主版本号完全一致的 Java（老版本不能用新 Java 凑合）。"""
+    return next((runtime for runtime in runtimes if runtime.major == required), None)
+
+
 def ensure_java(cfg: Config, required: Optional[int],
                 on_phase: Optional[Callable[[str, int, int], object]] = None,
                 note: Optional[Callable[[str], None]] = None,
                 source: Optional[str] = None) -> JavaRuntime:
-    """挑一个够用的 Java；一个都没有就从 Mojang 下载对应运行时。"""
-    runtime = pick(find_all(cfg), required)
-    if runtime and (required is None or runtime.major >= required):
-        return runtime
+    """挑主版本号匹配的 Java；没有就下对应的 Mojang 运行时。
+
+    不会拿 Java 21 去启动要求 Java 8 的版本——老版本会直接崩。
+    """
+    runtimes = find_all(cfg)
+    if required is None:
+        if runtimes:
+            return max(runtimes, key=lambda runtime: runtime.major)
+        required = 21
+    else:
+        exact = pick_exact(runtimes, required)
+        if exact is not None:
+            return exact
 
     component = component_for(required)
     if note:
-        note(f"缺少 Java {required or ''}，正在从 Mojang 下载 {component} …")
-    path = install_runtime(component, cfg.root(), jobs=cfg.jobs, on_phase=on_phase,
-                           source=source or cfg.download_source)
-    cfg.java_path = str(path)
-    cfg.save()
+        note(f"缺少 Java {required}，正在从 Mojang 下载 {component} …")
+    try:
+        path = install_runtime(component, cfg.root(), jobs=cfg.jobs, on_phase=on_phase,
+                               source=source or cfg.download_source)
+    except Exception as exc:  # noqa: BLE001 - 下载失败时退回最接近的版本并提示
+        fallback = pick(runtimes, required)
+        if fallback is not None and (required is None or fallback.major >= required):
+            if note:
+                note(f"下载 Java {required} 失败（{exc}），暂用 Java {fallback.major}，可能不兼容")
+            return fallback
+        raise
+
     runtime = probe(path)
     if runtime is None:
         raise RuntimeError(f"下载了 {component}，但 {path} 跑不起来")
