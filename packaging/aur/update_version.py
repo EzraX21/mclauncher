@@ -22,6 +22,8 @@ if not version:
 
 pkgbuild = here / "PKGBUILD"
 text = pkgbuild.read_text(encoding="utf-8")
+name_match = re.search(r"^pkgname=([^\s]+)$", text, re.MULTILINE)
+package = name_match.group(1) if name_match else "mcl-launcher"
 text = re.sub(r"^pkgver=.*$", f"pkgver={version}", text, flags=re.MULTILINE)
 pkgbuild.write_text(text, encoding="utf-8")
 
@@ -48,7 +50,7 @@ url_match = re.search(r'^url="([^"]+)"', text, re.MULTILINE)
 if url_match:
     source_url = f"{url_match.group(1)}/archive/v{version}.tar.gz"
     info = re.sub(r"^(\tsource = ).*$",
-                  rf"\g<1>mcl-{version}.tar.gz::{source_url}", info, flags=re.MULTILINE)
+                  rf"\g<1>{package}-{version}.tar.gz::{source_url}", info, flags=re.MULTILINE)
 if checksum:
     info = re.sub(r"^(\tsha256sums = ).*$", rf"\g<1>{checksum}", info, flags=re.MULTILINE)
 srcinfo.write_text(info, encoding="utf-8")

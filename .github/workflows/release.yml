@@ -115,7 +115,7 @@ jobs:
         run: python3 packaging/aur/update_version.py "${GITHUB_REF_NAME}" --checksum
       - uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
-          pkgname: mcl
+          pkgname: mcl-launcher
           pkgbuild: ./packaging/aur/PKGBUILD
           assets: ./packaging/aur/.SRCINFO
           commit_username: ${{ secrets.AUR_USERNAME }}

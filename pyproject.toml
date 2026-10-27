@@ -3,12 +3,12 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mcl"
+name = "mcl-launcher"
 version = "3.0.0"
 description = "Minecraft launcher with a full-screen TUI: download, version management, mods and launching"
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{ name = "mcl" }]
+authors = [{ name = "mclauncher" }]
 license = { file = "LICENSE" }
 keywords = ["minecraft", "launcher", "tui", "modrinth", "fabric", "quilt"]
 classifiers = [

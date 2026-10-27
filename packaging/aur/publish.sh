@@ -10,7 +10,7 @@ makepkg --printsrcinfo > .SRCINFO
 
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-git clone --depth 1 "ssh://aur@aur.archlinux.org/mcl.git" "$TMP/aur"
+git clone --depth 1 "ssh://aur@aur.archlinux.org/mcl-launcher.git" "$TMP/aur"
 cp PKGBUILD .SRCINFO "$TMP/aur/"
 cd "$TMP/aur"
 git add PKGBUILD .SRCINFO

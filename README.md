@@ -50,7 +50,7 @@ mcl gui --no-browser --port 8765   # 只起服务
 sudo pacman -S webkit2gtk-4.1 python-gobject
 # Debian / Ubuntu
 sudo apt install python3-gi gir1.2-webkit2-4.1
-pip install "mcl[gui]"
+pip install "mcl-launcher[gui]"
 ```
 
 deb / rpm / Arch 包已经把 `python3-gi`、`webkit2gtk-4.1` 写成依赖，装包时自动带上。
@@ -90,26 +90,26 @@ GUI 的后端是 `mcl/webui.py`，只监听 `127.0.0.1`，提供 `/api/state`、
 ### pipx（推荐，隔离环境 + 自带命令）
 
 ```bash
-pipx install "mcl[cli]"
+pipx install "mcl-launcher[cli]"
 mcl
 ```
 
 `[cli]` 是可选依赖（questionary），只有退回文本菜单 `mcl --cli` 时才需要；
-只装 TUI 的话 `pipx install mcl` 就够。
+只装 TUI 的话 `pipx install mcl-launcher` 就够。
 
 ### uv
 
 ```bash
-uv tool install "mcl[cli]"
+uv tool install "mcl-launcher[cli]"
 ```
 
 ### pip
 
 ```bash
-pip install --user "mcl[cli]"
+pip install --user "mcl-launcher[cli]"
 ```
 
-Windows 上用 `py -m pip install --user "mcl[cli]"`，然后在 **Windows Terminal** 里运行 `mcl`。
+Windows 上用 `py -m pip install --user "mcl-launcher[cli]"`，然后在 **Windows Terminal** 里运行 `mcl`。
 
 ### Arch Linux（本机 PKGBUILD）
 
@@ -133,7 +133,7 @@ git clone <repo> && cd mclauncher
 - 配置：Linux `$XDG_CONFIG_HOME/mcl`，macOS `~/Library/Application Support/mcl`，Windows `%APPDATA%\mcl`
 - 缓存：`$XDG_CACHE_HOME/mcl` / `~/Library/Caches/mcl` / `%LOCALAPPDATA%\mcl\cache`
 - 自检：`mcl doctor`（`--network` 顺便测下载源）
-- 卸载：`pipx uninstall mcl` / `pacman -R mcl`，配置目录自己删
+- 卸载：`pipx uninstall mcl-launcher` / `pacman -R mcl-launcher`，配置目录自己删
 - 版本：`mcl --version`
 
 ### 配置项

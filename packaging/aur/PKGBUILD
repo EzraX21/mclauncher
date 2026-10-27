@@ -1,8 +1,9 @@
 # Maintainer: mcl contributors
-pkgname=mcl
+pkgname=mcl-launcher
+provides=('mcl')
 pkgver=2.4.1
 pkgrel=1
-pkgdesc="Minecraft launcher with a full-screen TUI: download, versions, mods, launch"
+pkgdesc="MCL (mclauncher), a Minecraft launcher with a full-screen TUI: download, versions, mods, launch"
 arch=('any')
 url="https://github.com/ezrax21/mclauncher"
 license=('GPL-3.0-or-later')

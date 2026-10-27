@@ -1,4 +1,4 @@
-name: mcl
+name: mcl-launcher
 arch: amd64
 platform: linux
 version: @VERSION@
@@ -22,7 +22,7 @@ contents:
   - src: packaging/mcl.desktop
     dst: /usr/share/applications/mcl.desktop
   - src: LICENSE
-    dst: /usr/share/licenses/mcl/LICENSE
+    dst: /usr/share/licenses/mcl-launcher/LICENSE
 overrides:
   deb:
     depends:

@@ -1,5 +1,5 @@
-pkgbase = mcl
-	pkgdesc = Minecraft launcher with a full-screen TUI: download, versions, mods, launch
+pkgbase = mcl-launcher
+	pkgdesc = MCL (mclauncher), a Minecraft launcher with a full-screen TUI: download, versions, mods, launch
 	pkgver = 2.4.1
 	pkgrel = 1
 	url = https://github.com/ezrax21/mclauncher
@@ -11,7 +11,8 @@ pkgbase = mcl
 	depends = python
 	depends = python-textual
 	optdepends = python-questionary: 文本模式交互菜单（--cli）
-	source = mcl-2.4.1.tar.gz::https://github.com/ezrax21/mclauncher/archive/v2.4.1.tar.gz
+	provides = mcl
+	source = mcl-launcher-2.4.1.tar.gz::https://github.com/ezrax21/mclauncher/archive/v2.4.1.tar.gz
 	sha256sums = d9ae735bc1ef536e5421658769e052d6096f14b4f50093ebd0671584c4c43e73
 
-pkgname = mcl
+pkgname = mcl-launcher
