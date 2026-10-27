@@ -141,18 +141,23 @@ def scan(root: Path) -> list[InstalledVersion]:
         if not json_path.exists():
             continue
         try:
-            data = _read_json(json_path)
+            resolved = resolve(root, directory.name)
+            data = resolved.data
         except VersionError:
-            continue
-        java = _java_major_of(root, data)
+            try:
+                data = _read_json(json_path)
+            except VersionError:
+                continue
+            resolved = None
         versions.append(InstalledVersion(
             id=directory.name,
             directory=directory,
             data=data,
             inherits=data.get("inheritsFrom"),
             loader=detect_loader(directory.name, data),
-            java_major=java,
-            has_jar=(directory / f"{directory.name}.jar").exists(),
+            java_major=resolved.java_major if resolved is not None else _java_major_of(root, data),
+            has_jar=(resolved.client_jar.exists() if resolved is not None
+                     else (directory / f"{directory.name}.jar").exists()),
             modified=json_path.stat().st_mtime,
         ))
     versions.sort(key=lambda version: version.modified, reverse=True)

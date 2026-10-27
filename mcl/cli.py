@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 from . import (__version__, auth_cmd, doctor, home, install_cmd, java_cmd, launch_cmd,
-               loaders_cmd, mods_cmd, settings_cmd)
+               loaders_cmd, modpack_cmd, mods_cmd, settings_cmd)
 from .config import Config
 from .installer import PlanError
 from .manifest import ApiError
@@ -16,7 +16,7 @@ from .ui import UI
 from .versions import VersionError
 
 COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor", "gui",
-            "login", "logout", "account"}
+            "login", "logout", "account", "modpack"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -109,6 +109,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("tui", help="打开全屏 TUI")
 
+    p = sub.add_parser("modpack", help="导入整合包（.mrpack / CurseForge zip）")
+    action_sub = p.add_subparsers(dest="action")
+    info_parser = action_sub.add_parser("info", help="查看整合包信息")
+    info_parser.add_argument("file")
+    install_parser = action_sub.add_parser("install", help="安装整合包")
+    install_parser.add_argument("file")
+    install_parser.add_argument("--name", help="实例名（默认用整合包名）")
+
     p = sub.add_parser("login", help="微软正版登录（设备代码）")
     p.add_argument("--client-id", help="Azure 应用的 client id")
     sub.add_parser("logout", help="退出微软账号")
@@ -192,6 +200,8 @@ def main(argv=None) -> int:
             return run_tui(cfg)
         if args.command == "doctor":
             return doctor.run(args, ui, cfg)
+        if args.command == "modpack":
+            return modpack_cmd.run(args, ui, cfg)
         if args.command == "login":
             return auth_cmd.run_login(args, ui, cfg)
         if args.command == "logout":

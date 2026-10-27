@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mcl ───────────────────────────── v3.2.1 · Minecraft 启动器 ─┐
+┌ mcl ───────────────────────────── v3.3.0 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -188,6 +188,20 @@ mcl config set curseforge_api_key 你的key
 
 配置里的 key 是明文存的，介意的话 `chmod 600 ~/.config/mcl/config.json`，或者只用环境变量。
 
+## 整合包
+
+支持 Modrinth 的 `.mrpack`：自动装对应原版 + 加载器（Fabric/Quilt/Forge/NeoForge）、
+下载模组、复制 `overrides`，生成一个独立实例。
+
+```bash
+mcl modpack info Fabulously.Optimized.mrpack
+mcl modpack install Fabulously.Optimized.mrpack --name "FO 1.20.1"
+mcl launch "FO 1.20.1"
+```
+
+CurseForge 的整合包能识别 `manifest.json`，但拉文件要 CurseForge API key；
+配置好 key 后目前会提示「下载暂未接入」，下一步补。
+
 ## 命令行模式
 
 TUI 之外保留了完整子命令，脚本和 CI 里能用：
@@ -327,7 +341,7 @@ mclauncher/
 │   ├── prompts.py      questionary 封装（CLI 用）
 │   ├── home.py         CLI 文本菜单
 │   └── ui.py           颜色 / 对齐 / 摘要框
-├── tests/              87 个测试（含无头 TUI、GUI API、微软登录）
+├── tests/              91 个测试（含无头 TUI、GUI API、微软登录、整合包）
 ├── packaging/          PKGBUILD、.desktop
 ├── run.sh / run.bat    开发用启动脚本
 └── pyproject.toml
