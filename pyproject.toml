@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mcl-launcher"
-version = "3.6.0"
-description = "Minecraft launcher with a full-screen TUI: download, version management, mods and launching"
+version = "3.7.0"
+description = "MCL (mclauncher), a Minecraft launcher with a native GUI and a TUI mode"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{ name = "mclauncher" }]

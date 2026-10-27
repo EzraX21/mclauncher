@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.6.0**
+Current version: **v3.7.0**
 
 | Status | Area |
 | --- | --- |
