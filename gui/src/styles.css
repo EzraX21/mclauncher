@@ -218,3 +218,10 @@ html[data-theme="dark"] .toast { background: #26282d; }
 html[data-theme="dark"] .modal { background: #26282d; }
 html[data-theme="dark"] .overlay { background: rgba(0, 0, 0, 0.55); }
 html[data-theme="dark"] .search { background: #2a2c31; }
+
+.finding { border-left: 3px solid var(--blue); background: var(--blue-soft); border-radius: 6px;
+  padding: 10px 12px; margin-bottom: 10px; }
+html[data-theme="dark"] .finding { background: #1b2b3a; }
+.log-tail { max-height: 220px; overflow: auto; background: #f8fafb; border-radius: 6px;
+  padding: 10px; font-size: 11px; white-space: pre-wrap; }
+html[data-theme="dark"] .log-tail { background: #1a1b1e; color: #aeb4bc; }

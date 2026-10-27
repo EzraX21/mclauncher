@@ -6,8 +6,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import (__version__, auth_cmd, doctor, home, install_cmd, java_cmd, launch_cmd,
-               loaders_cmd, modpack_cmd, mods_cmd, settings_cmd)
+from . import (__version__, auth_cmd, crash_cmd, doctor, home, install_cmd, java_cmd,
+               launch_cmd, loaders_cmd, modpack_cmd, mods_cmd, settings_cmd)
 from .config import Config
 from .installer import PlanError
 from .manifest import ApiError
@@ -16,7 +16,7 @@ from .ui import UI
 from .versions import VersionError
 
 COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor", "gui",
-            "login", "logout", "account", "modpack"}
+            "login", "logout", "account", "modpack", "crash"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -117,6 +117,9 @@ def build_parser() -> argparse.ArgumentParser:
     install_parser.add_argument("file")
     install_parser.add_argument("--name", help="实例名（默认用整合包名）")
 
+    p = sub.add_parser("crash", help="分析最近的崩溃日志")
+    p.add_argument("version", nargs="?", help="版本号（默认上次启动的）")
+
     p = sub.add_parser("login", help="微软正版登录（设备代码）")
     p.add_argument("--client-id", help="Azure 应用的 client id")
     sub.add_parser("logout", help="退出微软账号")
@@ -202,6 +205,8 @@ def main(argv=None) -> int:
             return doctor.run(args, ui, cfg)
         if args.command == "modpack":
             return modpack_cmd.run(args, ui, cfg)
+        if args.command == "crash":
+            return crash_cmd.run(args, ui, cfg)
         if args.command == "login":
             return auth_cmd.run_login(args, ui, cfg)
         if args.command == "logout":

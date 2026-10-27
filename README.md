@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mcl ───────────────────────────── v3.4.0 · Minecraft 启动器 ─┐
+┌ mcl ───────────────────────────── v3.5.0 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -202,6 +202,17 @@ mcl launch "FO 1.20.1"
 CurseForge 的整合包也能导，但需要先在设置里填 CurseForge API key。
 GUI 的「模组」页可以直接选文件导入，不用敲命令。
 
+## 崩溃分析
+
+启动失败或闪退时，读 `crash-reports/` 里最新的报告（没有就看 `logs/latest.log`），
+匹配 Java 版本、内存、缺前置、模组重复、Mixin 冲突、OpenGL、权限这些常见原因：
+
+```bash
+mcl crash 1.20.1
+```
+
+GUI 里在「版本列表」每个版本后面点「崩溃分析」，会弹窗列出原因和建议，日志末尾可展开。
+
 ## 命令行模式
 
 TUI 之外保留了完整子命令，脚本和 CI 里能用：
@@ -341,7 +352,7 @@ mclauncher/
 │   ├── prompts.py      questionary 封装（CLI 用）
 │   ├── home.py         CLI 文本菜单
 │   └── ui.py           颜色 / 对齐 / 摘要框
-├── tests/              92 个测试（含无头 TUI、GUI API、微软登录、整合包）
+├── tests/              97 个测试（含无头 TUI、GUI API、微软登录、整合包、崩溃分析）
 ├── packaging/          PKGBUILD、.desktop
 ├── run.sh / run.bat    开发用启动脚本
 └── pyproject.toml

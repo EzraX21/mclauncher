@@ -204,6 +204,7 @@ function renderVersions(): void {
                 ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
               <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
             </div>
+            <button class="btn" data-crash="${esc(version.id)}">崩溃分析</button>
             <button class="btn" data-loader="${esc(version.id)}">装加载器</button>
             <button class="btn primary" data-launch="${esc(version.id)}">启动</button>
           </div>`).join("")}
@@ -214,6 +215,9 @@ function renderVersions(): void {
   });
   content.querySelectorAll<HTMLButtonElement>("[data-loader]").forEach((button) => {
     button.addEventListener("click", () => openLoader(button.dataset.loader as string));
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-crash]").forEach((button) => {
+    button.addEventListener("click", () => openCrash(button.dataset.crash as string));
   });
 }
 
@@ -228,6 +232,39 @@ async function launch(id: string, button: HTMLButtonElement): Promise<void> {
   } finally {
     button.disabled = false;
     button.textContent = "启动";
+  }
+}
+
+async function openCrash(id: string): Promise<void> {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `<div class="modal" style="width:720px"><h3>崩溃分析 · ${esc(id)}</h3>
+    <div class="small muted">正在读取日志…</div><div class="actions"><button class="btn" id="crash-close">关闭</button></div></div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector("#crash-close")?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  try {
+    const data = await api<{ path: string; findings: { title: string; detail: string; fix: string }[];
+      tail: string; message: string }>(`/api/crash?version=${encodeURIComponent(id)}`);
+    const findings = data.findings || [];
+    overlay.innerHTML = `<div class="modal" style="width:720px">
+      <h3>崩溃分析 · ${esc(id)}</h3>
+      <div class="small muted" style="margin-bottom:12px">${esc(data.path || "没有找到日志")}</div>
+      ${findings.length ? findings.map((finding) => `
+        <div class="finding">
+          <div class="title">${esc(finding.title)}</div>
+          <div class="desc">${esc(finding.detail)}</div>
+          <div class="small" style="margin-top:4px">→ ${esc(finding.fix)}</div>
+        </div>`).join("") : `<div class="empty">${esc(data.message || "没有识别出常见原因")}</div>`}
+      ${data.tail ? `<details><summary class="small muted">日志末尾</summary><pre class="log-tail">${esc(data.tail)}</pre></details>` : ""}
+      <div class="actions"><button class="btn" id="crash-close">关闭</button></div>
+    </div>`;
+    overlay.querySelector("#crash-close")?.addEventListener("click", close);
+  } catch (error) {
+    overlay.querySelector(".modal")!.innerHTML = `<h3>崩溃分析</h3><div class="empty">${esc((error as Error).message)}</div>
+      <div class="actions"><button class="btn" id="crash-close">关闭</button></div>`;
+    overlay.querySelector("#crash-close")?.addEventListener("click", close);
   }
 }
 

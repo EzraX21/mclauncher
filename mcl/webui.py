@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, auth, loaders, modpacks, modrinth
+from . import __version__, auth, crash, loaders, modpacks, modrinth
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -375,6 +375,9 @@ class Handler(BaseHTTPRequestHandler):
                               "description": hit.description, "downloads": hit.downloads,
                               "author": hit.author} for hit in hits],
                 })
+            if parsed.path == "/api/crash":
+                version_id = query.get("version", [""])[0] or None
+                return self._json(crash.analyze_version(_ACTIVE_CFG, version_id))
             if parsed.path == "/api/mods/local":
                 version_id = query.get("version", [""])[0]
                 if not version_id:
