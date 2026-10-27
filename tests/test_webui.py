@@ -7,8 +7,8 @@ import unittest
 import urllib.request
 from pathlib import Path
 
-from mclauncher.config import Config
-from mclauncher.webui import serve
+from mcl.config import Config
+from mcl.webui import serve
 
 
 def get_json(url: str) -> dict:
@@ -30,8 +30,8 @@ def post_json(url: str, payload: dict) -> dict:
 class WebuiTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.previous = os.environ.get("MCLAUNCHER_CONFIG")
-        os.environ["MCLAUNCHER_CONFIG"] = str(Path(self.tmp.name) / "config.json")
+        self.previous = os.environ.get("MCL_CONFIG")
+        os.environ["MCL_CONFIG"] = str(Path(self.tmp.name) / "config.json")
         self.cfg = Config(game_dir=str(Path(self.tmp.name) / "game"), memory_mb=2048)
         self.httpd, self.url = serve(self.cfg, 0)
 
@@ -39,9 +39,9 @@ class WebuiTests(unittest.TestCase):
         self.httpd.shutdown()
         self.tmp.cleanup()
         if self.previous is None:
-            os.environ.pop("MCLAUNCHER_CONFIG", None)
+            os.environ.pop("MCL_CONFIG", None)
         else:
-            os.environ["MCLAUNCHER_CONFIG"] = self.previous
+            os.environ["MCL_CONFIG"] = self.previous
 
     def test_state(self):
         data = get_json(self.url + "api/state")

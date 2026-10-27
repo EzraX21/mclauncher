@@ -8,6 +8,6 @@ if not exist ".venv\Scripts\python.exe" (
     ".venv\Scripts\python.exe" -m pip install --upgrade pip >nul
 )
 ".venv\Scripts\python.exe" -m pip install --quiet -r requirements.txt
-".venv\Scripts\python.exe" -m mclauncher %*
+".venv\Scripts\python.exe" -m mcl %*
 echo.
 pause

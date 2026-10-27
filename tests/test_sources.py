@@ -2,7 +2,7 @@
 
 import unittest
 
-from mclauncher import sources
+from mcl import sources
 
 
 class SourceTests(unittest.TestCase):

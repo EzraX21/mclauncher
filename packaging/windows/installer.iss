@@ -1,11 +1,11 @@
-; Inno Setup 脚本：mclauncher.exe 安装包
-#define MyAppName "mclauncher"
-#define MyAppVersion GetEnv("MCLAUNCHER_VERSION")
+; Inno Setup 脚本：mcl.exe 安装包
+#define MyAppName "MCL"
+#define MyAppVersion GetEnv("MCL_VERSION")
 #if MyAppVersion == ""
   #define MyAppVersion "0.0.0"
 #endif
 #define MyAppPublisher "mclauncher"
-#define MyAppExeName "mclauncher.exe"
+#define MyAppExeName "mcl.exe"
 
 [Setup]
 AppId={{8E4B2C5A-3F1D-4C7E-9B2A-6D5F1A0C3E21}
@@ -16,7 +16,7 @@ DefaultDirName={autopf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 OutputDir=..\..\dist
-OutputBaseFilename=mclauncher-{#MyAppVersion}-setup
+OutputBaseFilename=mcl-{#MyAppVersion}-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -36,4 +36,4 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{cmd}"; Parameters: "/k ""{app}\{
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加任务:"
 
 [Run]
-Filename: "{cmd}"; Parameters: "/k ""{app}\{#MyAppExeName}"""; WorkingDir: "{app}"; Description: "启动 mclauncher"; Flags: postinstall nowait skipifsilent
+Filename: "{cmd}"; Parameters: "/k ""{app}\{#MyAppExeName}"""; WorkingDir: "{app}"; Description: "启动 MCL"; Flags: postinstall nowait skipifsilent

@@ -3,7 +3,7 @@
 import unittest
 from pathlib import Path
 
-from mclauncher.installer import build_plan
+from mcl.installer import build_plan
 
 LINUX = {"name": "linux", "version": "6.1.0"}
 SHA = "a" * 40

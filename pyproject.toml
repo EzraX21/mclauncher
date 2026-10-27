@@ -3,12 +3,12 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mclauncher"
-version = "2.4.1"
+name = "mcl"
+version = "3.0.0"
 description = "Minecraft launcher with a full-screen TUI: download, version management, mods and launching"
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{ name = "mclauncher" }]
+authors = [{ name = "mcl" }]
 license = { file = "LICENSE" }
 keywords = ["minecraft", "launcher", "tui", "modrinth", "fabric", "quilt"]
 classifiers = [
@@ -27,14 +27,14 @@ gui = ["pywebview>=6"]
 dev = ["questionary>=2.0,<3", "build", "installer"]
 
 [project.scripts]
-mclauncher = "mclauncher.cli:main"
-mclauncher-tui = "mclauncher.tui.app:run"
+mcl = "mcl.cli:main"
+mcl-tui = "mcl.tui.app:run"
 
 [project.urls]
 Homepage = "https://github.com/ezrax21/mclauncher"
 
 [tool.setuptools]
-packages = ["mclauncher", "mclauncher.tui", "mclauncher.tui.panes"]
+packages = ["mcl", "mcl.tui", "mcl.tui.panes"]
 
 [tool.setuptools.package-data]
-mclauncher = ["tui/*.tcss", "webui_dist/*"]
+mcl = ["tui/*.tcss", "webui_dist/*"]

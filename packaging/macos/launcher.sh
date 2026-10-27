@@ -1,7 +1,7 @@
 #!/bin/bash
 # 双击 .app 时打开 Terminal 跑 TUI
 DIR="$(cd "$(dirname "$0")" && pwd)"
-BIN="$DIR/../Resources/app/mclauncher-cli/mclauncher"
+BIN="$DIR/../Resources/app/mcl-cli/mcl"
 osascript <<APPLESCRIPT
 tell application "Terminal"
     activate

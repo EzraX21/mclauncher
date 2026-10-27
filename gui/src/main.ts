@@ -1,6 +1,6 @@
 import { app, BrowserWindow } from "electron";
 
-const url = process.env.MCLAUNCHER_GUI_URL || "http://127.0.0.1:8765/";
+const url = process.env.MCL_GUI_URL || "http://127.0.0.1:8765/";
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -9,7 +9,7 @@ function createWindow(): void {
     minWidth: 900,
     minHeight: 600,
     backgroundColor: "#f5f6f8",
-    title: "mclauncher",
+    title: "MCL",
     autoHideMenuBar: true,
   });
   void win.loadURL(url);

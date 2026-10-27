@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mclauncher.versions import (detect_loader, library_key, maven_path,
+from mcl.versions import (detect_loader, library_key, maven_path,
                                    resolve, scan)
 
 

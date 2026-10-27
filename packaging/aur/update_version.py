@@ -32,7 +32,7 @@ if "--checksum" in sys.argv:
         url = f"{match.group(1)}/archive/v{version}.tar.gz"
         print(f"计算 {url} 的 sha256 …")
         digest = hashlib.sha256()
-        request = urllib.request.Request(url, headers={"User-Agent": "mclauncher-packaging"})
+        request = urllib.request.Request(url, headers={"User-Agent": "mcl-packaging"})
         with urllib.request.urlopen(request, timeout=120) as response:
             for chunk in iter(lambda: response.read(1 << 20), b""):
                 digest.update(chunk)
@@ -48,7 +48,7 @@ url_match = re.search(r'^url="([^"]+)"', text, re.MULTILINE)
 if url_match:
     source_url = f"{url_match.group(1)}/archive/v{version}.tar.gz"
     info = re.sub(r"^(\tsource = ).*$",
-                  rf"\g<1>mclauncher-{version}.tar.gz::{source_url}", info, flags=re.MULTILINE)
+                  rf"\g<1>mcl-{version}.tar.gz::{source_url}", info, flags=re.MULTILINE)
 if checksum:
     info = re.sub(r"^(\tsha256sums = ).*$", rf"\g<1>{checksum}", info, flags=re.MULTILINE)
 srcinfo.write_text(info, encoding="utf-8")

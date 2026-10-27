@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mclauncher.mods import find, list_mods, remove, set_enabled
+from mcl.mods import find, list_mods, remove, set_enabled
 
 
 class ModTests(unittest.TestCase):

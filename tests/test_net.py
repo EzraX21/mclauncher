@@ -5,7 +5,7 @@ import threading
 import unittest
 from unittest import mock
 
-from mclauncher.net import _proxied
+from mcl.net import _proxied
 
 
 class ProxyTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class CancelTests(unittest.TestCase):
         import tempfile
         from pathlib import Path
 
-        from mclauncher.net import Cancelled, DownloadTask, download
+        from mcl.net import Cancelled, DownloadTask, download
 
         event = threading.Event()
         event.set()
@@ -46,7 +46,7 @@ class CancelTests(unittest.TestCase):
         import tempfile
         from pathlib import Path
 
-        from mclauncher.net import DownloadTask, run_tasks
+        from mcl.net import DownloadTask, run_tasks
 
         event = threading.Event()
         event.set()

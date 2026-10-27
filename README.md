@@ -1,6 +1,6 @@
-# mclauncher
+# MCL（mclauncher）
 
-> Minecraft 启动器：全屏 TUI + 图形界面，下载原版、装 Fabric/Quilt/Forge/NeoForge、搜模组、启动游戏。
+> 全名 **mclauncher**，命令和包名是 `mcl`。Minecraft 启动器：全屏 TUI + 图形界面，下载原版、装 Fabric/Quilt/Forge/NeoForge、搜模组、启动游戏。
 > 默认走 **官方源**；想要镜像可以切 BMCLAPI（和 PCL 同一套）。
 
 PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加载器 → 装模组 → 启动」这条链路自己做了一遍，
@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mclauncher ───────────────────────────── v2.4.1 · Minecraft 启动器 ─┐
+┌ mcl ───────────────────────────── v3.0.0 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -37,10 +37,10 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ![版本列表](docs/gui-versions.png)
 
 ```bash
-mclauncher gui           # 原生桌面窗口（pywebview：GTK/WebView2/WKWebView）
-mclauncher gui --web     # 浏览器
-mclauncher gui --electron  # 开发时用仓库里的 Electron
-mclauncher gui --no-browser --port 8765   # 只起服务
+mcl gui           # 原生桌面窗口（pywebview：GTK/WebView2/WKWebView）
+mcl gui --web     # 浏览器
+mcl gui --electron  # 开发时用仓库里的 Electron
+mcl gui --no-browser --port 8765   # 只起服务
 ```
 
 窗口是真正的桌面窗口，不是浏览器标签页。Linux 依赖 WebKitGTK 和 PyGObject：
@@ -50,7 +50,7 @@ mclauncher gui --no-browser --port 8765   # 只起服务
 sudo pacman -S webkit2gtk-4.1 python-gobject
 # Debian / Ubuntu
 sudo apt install python3-gi gir1.2-webkit2-4.1
-pip install "mclauncher[gui]"
+pip install "mcl[gui]"
 ```
 
 deb / rpm / Arch 包已经把 `python3-gi`、`webkit2gtk-4.1` 写成依赖，装包时自动带上。
@@ -72,17 +72,17 @@ cd gui
 npm install --include=dev   # 如果 npm 全局配置了 omit=dev 需要这个参数
 npm run build               # 产出 gui/dist
 cd ..
-python -m mclauncher gui --web
+python -m mcl gui --web
 ```
 
 单独跑 Electron 窗口：
 
 ```bash
-python -m mclauncher gui --web --no-browser --port 8765 &
-MCLAUNCHER_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
+python -m mcl gui --web --no-browser --port 8765 &
+MCL_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
 ```
 
-GUI 的后端是 `mclauncher/webui.py`，只监听 `127.0.0.1`，提供 `/api/state`、
+GUI 的后端是 `mcl/webui.py`，只监听 `127.0.0.1`，提供 `/api/state`、
 `/api/install`、`/api/mods`、`/api/launch` 这些接口；前端产物会打进 wheel / deb / rpm。
 
 ## 安装
@@ -90,36 +90,36 @@ GUI 的后端是 `mclauncher/webui.py`，只监听 `127.0.0.1`，提供 `/api/st
 ### pipx（推荐，隔离环境 + 自带命令）
 
 ```bash
-pipx install "mclauncher[cli]"
-mclauncher
+pipx install "mcl[cli]"
+mcl
 ```
 
-`[cli]` 是可选依赖（questionary），只有退回文本菜单 `mclauncher --cli` 时才需要；
-只装 TUI 的话 `pipx install mclauncher` 就够。
+`[cli]` 是可选依赖（questionary），只有退回文本菜单 `mcl --cli` 时才需要；
+只装 TUI 的话 `pipx install mcl` 就够。
 
 ### uv
 
 ```bash
-uv tool install "mclauncher[cli]"
+uv tool install "mcl[cli]"
 ```
 
 ### pip
 
 ```bash
-pip install --user "mclauncher[cli]"
+pip install --user "mcl[cli]"
 ```
 
-Windows 上用 `py -m pip install --user "mclauncher[cli]"`，然后在 **Windows Terminal** 里运行 `mclauncher`。
+Windows 上用 `py -m pip install --user "mcl[cli]"`，然后在 **Windows Terminal** 里运行 `mcl`。
 
 ### Arch Linux（本机 PKGBUILD）
 
 ```bash
 # 在项目根目录
-tar czf ../mclauncher-2.0.0.tar.gz --exclude=.venv --exclude=.git .
-cd .. && makepkg -si -p mclauncher/packaging/PKGBUILD
+tar czf ../mcl-2.0.0.tar.gz --exclude=.venv --exclude=.git .
+cd .. && makepkg -si -p mcl/packaging/PKGBUILD
 ```
 
-装完自带 `/usr/share/applications/mclauncher.desktop`。
+装完自带 `/usr/share/applications/mcl.desktop`。
 
 ### 从源码跑（开发）
 
@@ -130,21 +130,21 @@ git clone <repo> && cd mclauncher
 
 ## 系统集成
 
-- 配置：Linux `$XDG_CONFIG_HOME/mclauncher`，macOS `~/Library/Application Support/mclauncher`，Windows `%APPDATA%\mclauncher`
-- 缓存：`$XDG_CACHE_HOME/mclauncher` / `~/Library/Caches/mclauncher` / `%LOCALAPPDATA%\mclauncher\cache`
-- 自检：`mclauncher doctor`（`--network` 顺便测下载源）
-- 卸载：`pipx uninstall mclauncher` / `pacman -R mclauncher`，配置目录自己删
-- 版本：`mclauncher --version`
+- 配置：Linux `$XDG_CONFIG_HOME/mcl`，macOS `~/Library/Application Support/mcl`，Windows `%APPDATA%\mcl`
+- 缓存：`$XDG_CACHE_HOME/mcl` / `~/Library/Caches/mcl` / `%LOCALAPPDATA%\mcl\cache`
+- 自检：`mcl doctor`（`--network` 顺便测下载源）
+- 卸载：`pipx uninstall mcl` / `pacman -R mcl`，配置目录自己删
+- 版本：`mcl --version`
 
 ### 配置项
 
-配置文件在 `~/.config/mclauncher/config.json`（macOS/Windows 见上），也可以用命令改：
+配置文件在 `~/.config/mcl/config.json`（macOS/Windows 见上），也可以用命令改：
 
 ```bash
-mclauncher config                    # 查看
-mclauncher config set memory_mb 8192
-mclauncher config set download_source auto
-mclauncher config set curseforge_api_key 你的key
+mcl config                    # 查看
+mcl config set memory_mb 8192
+mcl config set download_source auto
+mcl config set curseforge_api_key 你的key
 ```
 
 | 配置 | 环境变量 | 说明 |
@@ -158,28 +158,28 @@ mclauncher config set curseforge_api_key 你的key
 | `download_source` | — | `official`（默认）/ `auto`（BMCLAPI 优先） |
 | `curseforge_api_key` | `CURSEFORGE_API_KEY` | 可选，用 CurseForge 模组源时需要，**由用户自己申请** |
 
-配置里的 key 是明文存的，介意的话 `chmod 600 ~/.config/mclauncher/config.json`，或者只用环境变量。
+配置里的 key 是明文存的，介意的话 `chmod 600 ~/.config/mcl/config.json`，或者只用环境变量。
 
 ## 命令行模式
 
 TUI 之外保留了完整子命令，脚本和 CI 里能用：
 
 ```bash
-mclauncher install 1.20.1                  # 装原版
-mclauncher install latest --no-assets -y
-mclauncher loaders fabric 1.20.1           # 装 Fabric
-mclauncher loaders forge 1.20.1            # 装 Forge（跑官方安装器）
-mclauncher loaders neoforge 1.21.1         # 装 NeoForge
-mclauncher mods search sodium --version 1.20.1
-mclauncher mods install iris --version fabric-loader-0.20.1-1.20.1 -y
-mclauncher launch 1.20.1                   # 启动
-mclauncher launch 1.20.1 --dry-run         # 只打印命令
-mclauncher java install 21                 # 从 Mojang 下 Java 运行时
-mclauncher versions                        # 版本列表
-mclauncher doctor --network
+mcl install 1.20.1                  # 装原版
+mcl install latest --no-assets -y
+mcl loaders fabric 1.20.1           # 装 Fabric
+mcl loaders forge 1.20.1            # 装 Forge（跑官方安装器）
+mcl loaders neoforge 1.21.1         # 装 NeoForge
+mcl mods search sodium --version 1.20.1
+mcl mods install iris --version fabric-loader-0.20.1-1.20.1 -y
+mcl launch 1.20.1                   # 启动
+mcl launch 1.20.1 --dry-run         # 只打印命令
+mcl java install 21                 # 从 Mojang 下 Java 运行时
+mcl versions                        # 版本列表
+mcl doctor --network
 ```
 
-`mclauncher --cli` 会回到原来的 questionary 文本菜单（需要 `[cli]` 依赖）。
+`mcl --cli` 会回到原来的 questionary 文本菜单（需要 `[cli]` 依赖）。
 
 ## 下载源
 
@@ -198,9 +198,9 @@ mclauncher doctor --network
 Quilt 没有镜像，始终走官方。
 
 ```bash
-mclauncher install 1.20.1 --source auto   # 这次用镜像
-mclauncher config set download_source auto   # 以后都用镜像
-mclauncher config set download_source official
+mcl install 1.20.1 --source auto   # 这次用镜像
+mcl config set download_source auto   # 以后都用镜像
+mcl config set download_source official
 ```
 
 ## CurseForge（可选）
@@ -225,18 +225,18 @@ mclauncher config set download_source official
 
 ```bash
 export CURSEFORGE_API_KEY=你的key               # 当前终端有效
-mclauncher config set curseforge_api_key 你的key  # 写入配置文件
+mcl config set curseforge_api_key 你的key  # 写入配置文件
 ```
 
 或者打开 TUI → 设置 → CurseForge key，粘贴后保存。
 
-配完 `mclauncher doctor` 能看到“已配置”。
+配完 `mcl doctor` 能看到“已配置”。
 
 **使用**
 
 ```bash
-mclauncher mods search jei --provider curseforge --version 1.20.1 --loader forge
-mclauncher mods install 238222 --provider curseforge --version 1.20.1 --loader forge
+mcl mods search jei --provider curseforge --version 1.20.1 --loader forge
+mcl mods install 238222 --provider curseforge --version 1.20.1 --loader forge
 ```
 
 TUI 模组页的「来源」下拉切到 CurseForge 即可（没配 key 会提示）。
@@ -272,7 +272,7 @@ TUI 模组页的「来源」下拉切到 CurseForge 即可（没配 key 会提�
 
 ```
 mclauncher/
-├── mclauncher/
+├── mcl/
 │   ├── cli.py          子命令解析；无参数且有 TTY 时进 TUI
 │   ├── tui/
 │   │   ├── app.py      Textual App（Header + 四个标签页 + Footer）
@@ -317,7 +317,7 @@ python -m unittest discover -s tests -v
 
 GNU General Public License v3.0 **或更新版本**（GPL-3.0-or-later），完整文本见 [LICENSE](LICENSE)。
 
-Copyright (C) 2026 mclauncher contributors
+Copyright (C) 2026 mcl contributors
 
 本项目是自由软件：你可以按自由软件基金会发布的 GNU 通用公共许可证（第 3 版或你选择的任何更新版本）的条款
 再分发和/或修改它。分发时不做任何担保，也不附带任何默示担保。详见 LICENSE。
@@ -338,12 +338,12 @@ Foundation, either version 3 of the License, or (at your option) any later versi
 
 | 文件 | 说明 |
 | --- | --- |
-| `mclauncher_<ver>_amd64.deb` | Debian / Ubuntu 安装包（自带 Python 依赖，只要求系统有 python3） |
-| `mclauncher-<ver>-1.x86_64.rpm` | Fedora / RHEL 安装包 |
-| `mclauncher-<ver>-1-x86_64.pkg.tar.zst` | Arch 包 |
-| `mclauncher-<ver>-py3-none-any.whl` | wheel |
-| `mclauncher-<ver>.tar.gz` / `.zip` | 源码包 |
-| `mclauncher-<ver>-portable.zip` | 便携版，解压后 `./mclauncher.sh` 或 `mclauncher.cmd`，自带依赖 |
+| `mcl_<ver>_amd64.deb` | Debian / Ubuntu 安装包（自带 Python 依赖，只要求系统有 python3） |
+| `mcl-<ver>-1.x86_64.rpm` | Fedora / RHEL 安装包 |
+| `mcl-<ver>-1-x86_64.pkg.tar.zst` | Arch 包 |
+| `mcl-<ver>-py3-none-any.whl` | wheel |
+| `mcl-<ver>.tar.gz` / `.zip` | 源码包 |
+| `mcl-<ver>-portable.zip` | 便携版，解压后 `./mcl.sh` 或 `mcl.cmd`，自带依赖 |
 
 需要 `nfpm`（脚本会提示下载地址）、`uv`、`zip`、`git`。
 包里的依赖是 vendor 进去的，所以不依赖发行版有没有 `python-textual`。
@@ -356,7 +356,7 @@ Foundation, either version 3 of the License, or (at your option) any later versi
 powershell -ExecutionPolicy Bypass -File packaging/build_windows.ps1
 ```
 
-产物：`dist\mclauncher.exe`（单文件）和 `dist\mclauncher-<ver>-setup.exe`（Inno Setup 安装包，
+产物：`dist\mcl.exe`（单文件）和 `dist\mcl-<ver>-setup.exe`（Inno Setup 安装包，
 带开始菜单/桌面快捷方式，快捷方式用 `cmd /k` 打开 TUI）。需要 Python 3.10+ 和 Inno Setup 6
 （脚本会尝试用 choco 装）。
 
@@ -368,7 +368,7 @@ powershell -ExecutionPolicy Bypass -File packaging/build_windows.ps1
 bash packaging/macos/build_app.sh
 ```
 
-产物：`dist/mclauncher.app` 和 `dist/mclauncher-<ver>-macos.dmg`。
+产物：`dist/mcl.app` 和 `dist/mcl-<ver>-macos.dmg`。
 `.app` 双击会打开 Terminal 跑 TUI。
 
 ### CI / 自动发布
@@ -402,9 +402,9 @@ ssh -i ~/.ssh/aur aur@aur.archlinux.org help
 
 AUR 的新包不能直接用 git 推出来，要先在 <https://aur.archlinux.org/submit> 提交一次：
 
-- 包名填 `mclauncher`
+- 包名填 `mcl`
 - 上传 `packaging/aur/PKGBUILD` 和 `packaging/aur/.SRCINFO`
-- 提交后 `<ssh://aur@aur.archlinux.org/mclauncher.git>` 这个仓库才会存在
+- 提交后 `<ssh://aur@aur.archlinux.org/mcl.git>` 这个仓库才会存在
 
 **4. 配 GitHub secrets**（仓库 → Settings → Secrets and variables → Actions）
 
@@ -438,4 +438,4 @@ cd packaging/aur
 需要 `~/.ssh/config` 里给 `aur.archlinux.org` 指定这把 key，或者用 `ssh-agent` 加载。
 
 注意：`PKGBUILD` 里 `url` 指向的仓库必须能公开访问，否则 AUR 构建时拉不到源码；
-包名 `mclauncher` 如果已被占用，需要换一个。
+包名 `mcl` 如果已被占用，需要换一个。

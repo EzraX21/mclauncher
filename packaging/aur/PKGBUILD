@@ -1,5 +1,5 @@
-# Maintainer: mclauncher contributors
-pkgname=mclauncher
+# Maintainer: mcl contributors
+pkgname=mcl
 pkgver=2.4.1
 pkgrel=1
 pkgdesc="Minecraft launcher with a full-screen TUI: download, versions, mods, launch"
@@ -20,6 +20,6 @@ build() {
 package() {
   cd "$pkgname-$pkgver"
   python -m installer --destdir="$pkgdir" dist/*.whl
-  install -Dm644 packaging/mclauncher.desktop "$pkgdir/usr/share/applications/mclauncher.desktop"
+  install -Dm644 packaging/mcl.desktop "$pkgdir/usr/share/applications/mcl.desktop"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

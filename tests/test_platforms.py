@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from mclauncher import platforms
+from mcl import platforms
 
 
 class PlatformTests(unittest.TestCase):
@@ -15,22 +15,22 @@ class PlatformTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.object(sys, "platform", "win32"), \
                     mock.patch.dict(os.environ, {"APPDATA": tmp, "LOCALAPPDATA": tmp}):
-                self.assertEqual(platforms.config_dir(), Path(tmp) / "mclauncher")
-                self.assertEqual(platforms.cache_dir(), Path(tmp) / "mclauncher" / "cache")
+                self.assertEqual(platforms.config_dir(), Path(tmp) / "mcl")
+                self.assertEqual(platforms.cache_dir(), Path(tmp) / "mcl" / "cache")
 
     def test_linux_xdg(self):
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.object(sys, "platform", "linux"), \
                     mock.patch.dict(os.environ, {"XDG_CONFIG_HOME": tmp, "XDG_CACHE_HOME": tmp}):
-                self.assertEqual(platforms.config_dir(), Path(tmp) / "mclauncher")
-                self.assertEqual(platforms.cache_dir(), Path(tmp) / "mclauncher")
+                self.assertEqual(platforms.config_dir(), Path(tmp) / "mcl")
+                self.assertEqual(platforms.cache_dir(), Path(tmp) / "mcl")
 
     def test_macos(self):
         with tempfile.TemporaryDirectory() as tmp:
             with mock.patch.object(sys, "platform", "darwin"), \
                     mock.patch("pathlib.Path.home", return_value=Path(tmp)):
                 self.assertEqual(platforms.config_dir(),
-                                 Path(tmp) / "Library" / "Application Support" / "mclauncher")
+                                 Path(tmp) / "Library" / "Application Support" / "mcl")
 
     def test_system_name(self):
         with mock.patch.object(sys, "platform", "linux"):

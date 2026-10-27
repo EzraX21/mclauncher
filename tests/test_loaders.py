@@ -4,7 +4,7 @@ import json
 import unittest
 from unittest import mock
 
-from mclauncher import loaders
+from mcl import loaders
 
 
 class LoaderVersionTests(unittest.TestCase):

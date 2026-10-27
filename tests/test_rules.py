@@ -2,8 +2,8 @@
 
 import unittest
 
-from mclauncher.rules import dedupe, is_allowed, rule_matches
-from mclauncher.net import DownloadTask
+from mcl.rules import dedupe, is_allowed, rule_matches
+from mcl.net import DownloadTask
 from pathlib import Path
 
 

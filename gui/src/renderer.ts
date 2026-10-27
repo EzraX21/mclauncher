@@ -43,7 +43,7 @@ function shell(): string {
       <div class="brand">
         <div class="brand-mark">M</div>
         <div>
-          <div class="brand-name">mclauncher</div>
+          <div class="brand-name">MCL</div>
           <div class="brand-version" id="brand-version">v—</div>
         </div>
       </div>

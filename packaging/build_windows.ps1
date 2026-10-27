@@ -1,4 +1,4 @@
-# 在 Windows 上构建 mclauncher.exe 和安装包
+# 在 Windows 上构建 mcl.exe 和安装包
 $ErrorActionPreference = "Stop"
 # 让原生命令（pyinstaller / ISCC）失败时也终止脚本
 $PSNativeCommandUseErrorActionPreference = $true
@@ -7,18 +7,18 @@ Set-Location (Join-Path $PSScriptRoot "..")
 $python = if (Get-Command py -ErrorAction SilentlyContinue) { "py" } else { "python" }
 
 # 版本号从包里读，Inno Setup 用同一个
-$versionLine = Select-String -Path "mclauncher/__init__.py" -Pattern '__version__ = "([^"]+)"'
-$env:MCLAUNCHER_VERSION = $versionLine.Matches[0].Groups[1].Value
-Write-Host "mclauncher $env:MCLAUNCHER_VERSION"
+$versionLine = Select-String -Path "mcl/__init__.py" -Pattern '__version__ = "([^"]+)"'
+$env:MCL_VERSION = $versionLine.Matches[0].Groups[1].Value
+Write-Host "mcl $env:MCL_VERSION"
 & $python -m pip install --upgrade pip
 & $python -m pip install ".[cli]" pyinstaller
 
 if (Test-Path "gui/dist") {
-    Remove-Item -Recurse -Force "mclauncher/webui_dist" -ErrorAction SilentlyContinue
-    Copy-Item -Recurse "gui/dist" "mclauncher/webui_dist"
+    Remove-Item -Recurse -Force "mcl/webui_dist" -ErrorAction SilentlyContinue
+    Copy-Item -Recurse "gui/dist" "mcl/webui_dist"
 }
 
-& $python -m PyInstaller packaging/windows/mclauncher.spec --noconfirm `
+& $python -m PyInstaller packaging/windows/mcl.spec --noconfirm `
     --distpath dist --workpath build/pyinstaller
 
 $iscc = $env:ISCC
@@ -38,4 +38,4 @@ if (-not $iscc) {
     }
 }
 & $iscc packaging/windows/installer.iss
-Write-Host "完成：dist\mclauncher-setup.exe 和 dist\mclauncher.exe"
+Write-Host "完成：dist\mcl-setup.exe 和 dist\mcl.exe"

@@ -115,11 +115,11 @@ jobs:
         run: python3 packaging/aur/update_version.py "${GITHUB_REF_NAME}" --checksum
       - uses: KSXGitHub/github-actions-deploy-aur@v3.0.1
         with:
-          pkgname: mclauncher
+          pkgname: mcl
           pkgbuild: ./packaging/aur/PKGBUILD
           assets: ./packaging/aur/.SRCINFO
           commit_username: ${{ secrets.AUR_USERNAME }}
           commit_email: ${{ secrets.AUR_EMAIL }}
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: mclauncher ${{ github.ref_name }}
+          commit_message: mcl ${{ github.ref_name }}
           force_push: "true"

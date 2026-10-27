@@ -2,7 +2,7 @@
 
 import sys
 
-from mclauncher.cli import main
+from mcl.cli import main
 
 if __name__ == "__main__":
     sys.exit(main())

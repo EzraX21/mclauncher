@@ -4,9 +4,9 @@ import os
 import unittest
 from pathlib import Path
 
-from mclauncher.config import Config
-from mclauncher.launch import LaunchCommand, build_arguments, build_command, offline_uuid
-from mclauncher.versions import Resolved
+from mcl.config import Config
+from mcl.launch import LaunchCommand, build_arguments, build_command, offline_uuid
+from mcl.versions import Resolved
 
 
 class ArgumentTests(unittest.TestCase):
@@ -69,7 +69,7 @@ class CommandTests(unittest.TestCase):
         import tempfile
         from pathlib import Path as P
 
-        from mclauncher.java import JavaRuntime
+        from mcl.java import JavaRuntime
 
         with tempfile.TemporaryDirectory() as directory:
             wrong = JavaRuntime(path=P("/java21"), major=21, version="21.0.1")

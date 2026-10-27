@@ -7,4 +7,4 @@ if [ ! -x ".venv/bin/python" ]; then
   ./.venv/bin/python -m pip install --quiet --upgrade pip
 fi
 ./.venv/bin/python -m pip install --quiet -r requirements.txt
-exec ./.venv/bin/python -m mclauncher "$@"
+exec ./.venv/bin/python -m mcl "$@"

@@ -9,9 +9,9 @@ from unittest import mock
 
 from textual.widgets import TabbedContent
 
-from mclauncher.config import Config
-from mclauncher.manifest import Manifest
-from mclauncher.tui.app import MclauncherApp
+from mcl.config import Config
+from mcl.manifest import Manifest
+from mcl.tui.app import MclauncherApp
 
 FAKE_MANIFEST = {
     "latest": {"release": "1.20.1", "snapshot": "26.4-snapshot-5"},
@@ -39,8 +39,8 @@ def make_version(root: Path):
 class TuiTests(unittest.IsolatedAsyncioTestCase):
     async def test_boots_and_switches_tabs(self):
         with tempfile.TemporaryDirectory() as tmp:
-            previous = os.environ.get("MCLAUNCHER_CONFIG")
-            os.environ["MCLAUNCHER_CONFIG"] = str(Path(tmp) / "config.json")
+            previous = os.environ.get("MCL_CONFIG")
+            os.environ["MCL_CONFIG"] = str(Path(tmp) / "config.json")
             try:
                 root = Path(tmp) / "game"
                 make_version(root)
@@ -67,15 +67,15 @@ class TuiTests(unittest.IsolatedAsyncioTestCase):
                         await pilot.press("q")
             finally:
                 if previous is None:
-                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                    os.environ.pop("MCL_CONFIG", None)
                 else:
-                    os.environ["MCLAUNCHER_CONFIG"] = previous
+                    os.environ["MCL_CONFIG"] = previous
 
     async def test_settings_save_is_written_to_config(self):
         with tempfile.TemporaryDirectory() as tmp:
-            previous = os.environ.get("MCLAUNCHER_CONFIG")
+            previous = os.environ.get("MCL_CONFIG")
             config_file = Path(tmp) / "config.json"
-            os.environ["MCLAUNCHER_CONFIG"] = str(config_file)
+            os.environ["MCL_CONFIG"] = str(config_file)
             try:
                 cfg = Config(game_dir=str(Path(tmp) / "game"), memory_mb=1024)
                 cfg.memory_mb = 8192
@@ -84,9 +84,9 @@ class TuiTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(Config.load().memory_mb, 8192)
             finally:
                 if previous is None:
-                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                    os.environ.pop("MCL_CONFIG", None)
                 else:
-                    os.environ["MCLAUNCHER_CONFIG"] = previous
+                    os.environ["MCL_CONFIG"] = previous
 
 
 if __name__ == "__main__":
@@ -95,12 +95,12 @@ if __name__ == "__main__":
 
 class LoaderDialogTests(unittest.IsolatedAsyncioTestCase):
     async def test_dialog_lists_versions_and_dismisses(self):
-        from mclauncher import loaders
-        from mclauncher.tui.panes.loader import LoaderScreen
+        from mcl import loaders
+        from mcl.tui.panes.loader import LoaderScreen
 
         with tempfile.TemporaryDirectory() as tmp:
-            previous = os.environ.get("MCLAUNCHER_CONFIG")
-            os.environ["MCLAUNCHER_CONFIG"] = str(Path(tmp) / "config.json")
+            previous = os.environ.get("MCL_CONFIG")
+            os.environ["MCL_CONFIG"] = str(Path(tmp) / "config.json")
             try:
                 cfg = Config(game_dir=str(Path(tmp) / "game"))
                 app = MclauncherApp(cfg)
@@ -119,9 +119,9 @@ class LoaderDialogTests(unittest.IsolatedAsyncioTestCase):
                         self.assertNotIsInstance(app.screen, LoaderScreen)
             finally:
                 if previous is None:
-                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                    os.environ.pop("MCL_CONFIG", None)
                 else:
-                    os.environ["MCLAUNCHER_CONFIG"] = previous
+                    os.environ["MCL_CONFIG"] = previous
 
 
 class CancelButtonTests(unittest.IsolatedAsyncioTestCase):
@@ -129,12 +129,12 @@ class CancelButtonTests(unittest.IsolatedAsyncioTestCase):
         import time
         from types import SimpleNamespace
 
-        from mclauncher.installer import InstallResult
-        from mclauncher.tui.panes import install as install_pane
+        from mcl.installer import InstallResult
+        from mcl.tui.panes import install as install_pane
 
         with tempfile.TemporaryDirectory() as tmp:
-            previous = os.environ.get("MCLAUNCHER_CONFIG")
-            os.environ["MCLAUNCHER_CONFIG"] = str(Path(tmp) / "config.json")
+            previous = os.environ.get("MCL_CONFIG")
+            os.environ["MCL_CONFIG"] = str(Path(tmp) / "config.json")
             try:
                 cfg = Config(game_dir=str(Path(tmp) / "game"))
                 app = MclauncherApp(cfg)
@@ -170,16 +170,16 @@ class CancelButtonTests(unittest.IsolatedAsyncioTestCase):
                         self.assertTrue(app.query_one("#i-cancel").disabled)
             finally:
                 if previous is None:
-                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                    os.environ.pop("MCL_CONFIG", None)
                 else:
-                    os.environ["MCLAUNCHER_CONFIG"] = previous
+                    os.environ["MCL_CONFIG"] = previous
 
 
 class CurseForgeKeyTests(unittest.IsolatedAsyncioTestCase):
     async def test_key_saved_from_settings(self):
         with tempfile.TemporaryDirectory() as tmp:
-            previous = os.environ.get("MCLAUNCHER_CONFIG")
-            os.environ["MCLAUNCHER_CONFIG"] = str(Path(tmp) / "config.json")
+            previous = os.environ.get("MCL_CONFIG")
+            os.environ["MCL_CONFIG"] = str(Path(tmp) / "config.json")
             try:
                 cfg = Config(game_dir=str(Path(tmp) / "game"))
                 app = MclauncherApp(cfg)
@@ -197,18 +197,18 @@ class CurseForgeKeyTests(unittest.IsolatedAsyncioTestCase):
                         await pilot.press("q")
             finally:
                 if previous is None:
-                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                    os.environ.pop("MCL_CONFIG", None)
                 else:
-                    os.environ["MCLAUNCHER_CONFIG"] = previous
+                    os.environ["MCL_CONFIG"] = previous
 
 
 class ModsPaneTests(unittest.IsolatedAsyncioTestCase):
     async def test_vanilla_version_warns_instead_of_silent_empty(self):
-        from mclauncher.tui.panes.mods import ModsPane
+        from mcl.tui.panes.mods import ModsPane
 
         with tempfile.TemporaryDirectory() as tmp:
-            previous = os.environ.get("MCLAUNCHER_CONFIG")
-            os.environ["MCLAUNCHER_CONFIG"] = str(Path(tmp) / "config.json")
+            previous = os.environ.get("MCL_CONFIG")
+            os.environ["MCL_CONFIG"] = str(Path(tmp) / "config.json")
             try:
                 root = Path(tmp) / "game"
                 make_version(root)
@@ -228,6 +228,6 @@ class ModsPaneTests(unittest.IsolatedAsyncioTestCase):
                         await pilot.press("q")
             finally:
                 if previous is None:
-                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                    os.environ.pop("MCL_CONFIG", None)
                 else:
-                    os.environ["MCLAUNCHER_CONFIG"] = previous
+                    os.environ["MCL_CONFIG"] = previous
