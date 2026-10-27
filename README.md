@@ -1,10 +1,40 @@
 # MCL（mclauncher）
 
-> 全名 **mclauncher**，命令和包名是 `mcl`。Minecraft 启动器：全屏 TUI + 图形界面，下载原版、装 Fabric/Quilt/Forge/NeoForge、搜模组、启动游戏。
+> 全名 **mclauncher**，命令是 `mcl`，发行包名是 `mcl-launcher`。Minecraft 启动器：全屏 TUI + 图形界面，下载原版、装 Fabric/Quilt/Forge/NeoForge、搜模组、启动游戏。
 > 默认走 **官方源**；想要镜像可以切 BMCLAPI（和 PCL 同一套）。
 
 PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加载器 → 装模组 → 启动」这条链路自己做了一遍，
 文件来源和 PCL 一致（BMCLAPI 优先、官方兜底），启动参数按官方 launcher 的规则构建。
+
+## 命名约定
+
+| 层 | 名称 |
+| --- | --- |
+| 产品 | **MCL** |
+| 全名 | **mclauncher** |
+| 命令 | `mcl` / `mcl-tui` |
+| Python 包（import） | `mcl` |
+| 发行包 / AUR / PyPI | `mcl-launcher` |
+| 仓库 | `mclauncher`（地址不变） |
+| 配置目录 | `~/.config/mcl` |
+| 环境变量 | `MCL_*` |
+| 窗口标题 | `MCL · mclauncher` |
+
+**版本号**
+
+- Git tag：`v3.7.0`、`v3.7.0-beta.1`、`v3.7.0-rc.1`
+- 代码 / Python 包（PEP 440）：`3.7.0`、`3.7.0b1`、`3.7.0rc1`
+- 产物文件名用 PEP 440 版本：`mcl-3.7.0-setup.exe`、`mcl-launcher_3.7.0_amd64.deb`、
+  `mcl-3.7.0-portable.zip`
+
+**发版**
+
+```bash
+python3 packaging/release.py          # 交互问版本号，改文件
+python3 packaging/release.py --version 3.7.0 --commit
+```
+
+预发布（beta/rc）会发成 GitHub Pre-release，AUR 那步自动跳过。
 
 ## 界面
 
@@ -422,11 +452,11 @@ Foundation, either version 3 of the License, or (at your option) any later versi
 powershell -ExecutionPolicy Bypass -File packaging/build_windows.ps1
 ```
 
-产物：`dist\mcl.exe`（单文件）和 `dist\mcl-<ver>-setup.exe`（Inno Setup 安装包，
-带开始菜单/桌面快捷方式，快捷方式用 `cmd /k` 打开 TUI）。需要 Python 3.10+ 和 Inno Setup 6
+产物：`dist\mcl.exe`、`dist\mclw.exe`（原生窗口）和 `dist\mcl-<ver>-setup.exe`
+（Inno Setup 安装包，快捷方式指向 `mclw.exe`）。需要 Python 3.10+ 和 Inno Setup 6
 （脚本会尝试用 choco 装）。
 
-### macOS
+### macOS（手动构建，Release 默认不发布）
 
 必须在 macOS 上构建：
 
@@ -443,8 +473,8 @@ bash packaging/macos/build_app.sh
 
 - Ubuntu 上打 deb / rpm / Arch / wheel / 源码包 / 便携包
 - Windows 上打 exe + 安装包
-- macOS 上打 .app + dmg
-- 汇总到 GitHub Release
+- 汇总到 GitHub Release（macOS dmg 已从自动发布移除）
+- beta/rc tag 发成 Pre-release，AUR 跳过
 - 用 `KSXGitHub/github-actions-deploy-aur` 更新 AUR
 
 ### AUR 自动发布怎么配

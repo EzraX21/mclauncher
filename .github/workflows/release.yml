@@ -66,32 +66,9 @@ jobs:
           name: windows
           path: dist/*.exe
 
-  macos:
-    name: macOS app / dmg
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - name: 构建 GUI
-        working-directory: gui
-        run: |
-          npm install --include=dev
-          npm run build
-      - name: 构建 .app + dmg
-        run: bash packaging/macos/build_app.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: macos
-          path: dist/*.dmg
-
   release:
     name: 发布 Release
-    needs: [linux, windows, macos]
+    needs: [linux, windows]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
@@ -103,10 +80,11 @@ jobs:
         with:
           files: release/*
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-beta.') || contains(github.ref_name, '-rc.') }}
 
   aur:
     name: 提交 AUR
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-beta.') && !contains(github.ref_name, '-rc.')
     continue-on-error: true   # 没配 AUR secrets 时不要让整个 release 变红
     runs-on: ubuntu-latest
     steps:
