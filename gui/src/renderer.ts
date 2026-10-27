@@ -37,12 +37,24 @@ const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLEleme
 type ThemePref = "light" | "dark" | "system";
 const darkMedia = window.matchMedia("(prefers-color-scheme: dark)");
 
+function storedTheme(): string {
+  try {
+    return localStorage.getItem("mcl-theme") || "light";
+  } catch {
+    return "light";
+  }
+}
+
 function applyTheme(pref: string): void {
   const value: ThemePref = pref === "dark" || pref === "system" ? pref : "light";
   const resolved = value === "system" ? (darkMedia.matches ? "dark" : "light") : value;
   document.documentElement.dataset.theme = resolved;
   document.documentElement.dataset.themePref = value;
-  localStorage.setItem("mcl-theme", value);
+  try {
+    localStorage.setItem("mcl-theme", value);
+  } catch {
+    // WebKit 隐私模式 / 禁用存储时忽略
+  }
 }
 
 darkMedia.addEventListener("change", () => {
@@ -856,7 +868,7 @@ function watchTask(task: TaskInfo, title: string): void {
 
 // ---------------------------------------------------------------- 启动
 async function boot(): Promise<void> {
-  applyTheme(localStorage.getItem("mcl-theme") || "light");
+  applyTheme(storedTheme());
   view = viewFromHash();
   app.innerHTML = shell();
   window.addEventListener("hashchange", () => {
@@ -887,4 +899,6 @@ function viewFromHash(): View {
     : "versions";
 }
 
-void boot();
+boot().catch((error) => {
+  console.error("MCL UI failed to start", error);
+});
