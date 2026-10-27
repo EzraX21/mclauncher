@@ -10,7 +10,7 @@ depends=('python' 'python-textual')
 optdepends=('python-questionary: 文本模式交互菜单（--cli）')
 makedepends=('python-build' 'python-installer' 'python-wheel')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('08a1c7e0025dc61e468aa9be20ce943b961f5cebe59e7a7ffb71779b52e72513')
+sha256sums=('9a02563a595b1b54a9159374f1cfd82c7c362384680314a2a315cbf67a8ed369')
 
 build() {
   cd "$pkgname-$pkgver"

@@ -12,6 +12,6 @@ pkgbase = mclauncher
 	depends = python-textual
 	optdepends = python-questionary: 文本模式交互菜单（--cli）
 	source = mclauncher-2.4.0.tar.gz::https://github.com/ezrax21/mclauncher/archive/v2.4.0.tar.gz
-	sha256sums = 08a1c7e0025dc61e468aa9be20ce943b961f5cebe59e7a7ffb71779b52e72513
+	sha256sums = 9a02563a595b1b54a9159374f1cfd82c7c362384680314a2a315cbf67a8ed369
 
 pkgname = mclauncher
