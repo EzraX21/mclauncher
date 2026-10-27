@@ -24,9 +24,10 @@ jobs:
         with:
           node-version: "22"
       - name: 构建 GUI
+        working-directory: gui
         run: |
-          npm --prefix gui install --include=dev
-          npm --prefix gui run build
+          npm install --include=dev
+          npm run build
       - name: 安装 nfpm
         run: |
           curl -sSL https://github.com/goreleaser/nfpm/releases/download/v2.48.0/nfpm_2.48.0_Linux_x86_64.tar.gz | tar -xz nfpm
@@ -53,9 +54,10 @@ jobs:
           node-version: "22"
       - name: 构建 GUI
         shell: pwsh
+        working-directory: gui
         run: |
-          npm --prefix gui install --include=dev
-          npm --prefix gui run build
+          npm install --include=dev
+          npm run build
       - name: 构建 exe + 安装包
         shell: pwsh
         run: ./packaging/build_windows.ps1
@@ -76,9 +78,10 @@ jobs:
         with:
           node-version: "22"
       - name: 构建 GUI
+        working-directory: gui
         run: |
-          npm --prefix gui install --include=dev
-          npm --prefix gui run build
+          npm install --include=dev
+          npm run build
       - name: 构建 .app + dmg
         run: bash packaging/macos/build_app.sh
       - uses: actions/upload-artifact@v4
