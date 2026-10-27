@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mcl ───────────────────────────── v3.1.0 · Minecraft 启动器 ─┐
+┌ mcl ───────────────────────────── v3.2.0 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -86,6 +86,31 @@ MCL_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
 
 GUI 的后端是 `mcl/webui.py`，只监听 `127.0.0.1`，提供 `/api/state`、
 `/api/install`、`/api/mods`、`/api/launch` 这些接口；前端产物会打进 wheel / deb / rpm。
+
+## 微软登录（可选）
+
+默认离线启动；想要正版皮肤、进正版服务器，可以登微软账号。
+
+**注册 Azure 应用（免费，5 分钟）**
+
+1. 打开 https://portal.azure.com → **Microsoft Entra ID** → **应用注册** → **新注册**
+2. 名称随便填（例如 `MCL`）；账户类型选 **仅个人 Microsoft 账户**；重定向 URI **留空**
+3. 进应用 → **身份验证** → **允许公共客户端流** → **是** → 保存
+4. 回到 **概述**，复制 **应用程序(客户端) ID**
+5. 不需要创建 client secret，也不用配 API 权限
+
+**配置并登录**
+
+```bash
+mcl config set ms_client_id 你的-client-id
+mcl login        # 按提示打开 microsoft.com/devicelogin 输入代码
+mcl account      # 查看当前账号
+mcl logout       # 退出
+```
+
+GUI 里在「设置 → 微软账号」填 client id 点登录，窗口会显示设备代码。
+登录成功后会缓存到 `~/.config/mcl/accounts.json`，启动时自动刷新，过期就退回离线。
+`mcl launch --offline` 可以强制离线。
 
 ## 安装
 
@@ -302,7 +327,7 @@ mclauncher/
 │   ├── prompts.py      questionary 封装（CLI 用）
 │   ├── home.py         CLI 文本菜单
 │   └── ui.py           颜色 / 对齐 / 摘要框
-├── tests/              70 个测试（含无头 TUI 测试）
+├── tests/              87 个测试（含无头 TUI、GUI API、微软登录）
 ├── packaging/          PKGBUILD、.desktop
 ├── run.sh / run.bat    开发用启动脚本
 └── pyproject.toml

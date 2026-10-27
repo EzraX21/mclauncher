@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, loaders, modrinth
+from . import __version__, auth, loaders, modrinth
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -94,6 +94,7 @@ def _config_dict(cfg: Config) -> dict:
         "jobs": cfg.jobs,
         "download_source": cfg.download_source,
         "theme": getattr(cfg, "theme", "light"),
+        "ms_client_id": cfg.ms_client_id,
         "curseforge_configured": bool(cfg.curseforge_api_key),
         "last_version": cfg.last_version or "",
         "config_path": str(config_path()),
@@ -209,13 +210,45 @@ def start_mod_install(version_id: str, slug: str) -> dict:
     return task
 
 
+def start_login(client_id: str) -> dict:
+    cfg = _ACTIVE_CFG
+    client_id = (client_id or cfg.ms_client_id or "").strip()
+    if not client_id:
+        raise RuntimeError("先填 Azure 应用的 client id")
+    cfg.ms_client_id = client_id
+    cfg.save()
+    task = _new_task("login")
+
+    def run() -> None:
+        def on_code(device: dict) -> None:
+            with TASKS_LOCK:
+                task["result"] = {
+                    "user_code": device.get("user_code", ""),
+                    "verification_uri": device.get("verification_uri", ""),
+                }
+            _log(task, f"打开 {task['result']['verification_uri']}，输入 {task['result']['user_code']}")
+
+        try:
+            account = auth.login(client_id, on_code=on_code, on_status=lambda message: _log(task, message))
+            with TASKS_LOCK:
+                task["result"] = {"account": account.public()}
+            task["state"] = "done"
+        except Exception as exc:  # noqa: BLE001
+            task["error"] = str(exc)
+            task["state"] = "error"
+
+    threading.Thread(target=run, daemon=True).start()
+    return task
+
+
 def launch_version(version_id: str) -> dict:
     cfg = _ACTIVE_CFG
     resolved = resolve(cfg.root(), version_id)
     java = ensure_java(cfg, resolved.java_major, note=lambda message: None)
     ensure_libraries(resolved, cfg.root(), jobs=cfg.jobs, source=cfg.download_source)
     prepare_natives(resolved, cfg.root())
-    command = build_command(resolved, cfg, java)
+    account = auth.ensure_account(cfg)
+    command = build_command(resolved, cfg, java, account=account)
     if command.missing:
         raise RuntimeError(f"缺少 {len(command.missing)} 个文件")
     process = spawn(command)
@@ -267,10 +300,12 @@ class Handler(BaseHTTPRequestHandler):
         query = parse_qs(parsed.query)
         try:
             if parsed.path == "/api/state":
+                account = auth.load_account()
                 return self._json({
                     "version": __version__,
                     "config": _config_dict(_ACTIVE_CFG),
                     "versions": _versions(),
+                    "account": account.public() if account else None,
                     "platform": os_name(),
                 })
             if parsed.path == "/api/remote":
@@ -334,6 +369,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(start_loader(body.get("id", ""), body.get("loader", "fabric")))
             if parsed.path == "/api/mods/install":
                 return self._json(start_mod_install(body.get("version", ""), body.get("slug", "")))
+            if parsed.path == "/api/login/start":
+                return self._json(start_login(body.get("client_id", "")))
+            if parsed.path == "/api/logout":
+                auth.clear_account()
+                return self._json({"ok": True})
             if parsed.path == "/api/launch":
                 return self._json(launch_version(body.get("id", "")))
             if parsed.path == "/api/cancel":
@@ -364,6 +404,8 @@ class Handler(BaseHTTPRequestHandler):
                         setattr(cfg, key, body[key])
                 if body.get("theme") in ("light", "dark", "system"):
                     cfg.theme = body["theme"]
+                if "ms_client_id" in body:
+                    cfg.ms_client_id = str(body["ms_client_id"]).strip()
                 cfg.save()
                 return self._json({"config": _config_dict(cfg), "versions": _versions()})
             return self._error("未知接口", 404)

@@ -38,7 +38,7 @@ class ArgumentTests(unittest.TestCase):
 
 
 class CommandTests(unittest.TestCase):
-    def build(self, tmp_path: Path, java=None) -> LaunchCommand:
+    def build(self, tmp_path: Path, java=None, account=None) -> LaunchCommand:
         root = tmp_path / "mc"
         (root / "versions" / "demo").mkdir(parents=True)
         (root / "versions" / "demo" / "demo.jar").write_bytes(b"jar")
@@ -50,7 +50,9 @@ class CommandTests(unittest.TestCase):
                 "type": "release",
                 "arguments": {
                     "jvm": ["-Djava.library.path=${natives_directory}", "-cp", "${classpath}"],
-                    "game": ["--username", "${auth_player_name}", "--version", "${version_name}"],
+                    "game": ["--username", "${auth_player_name}", "--uuid", "${auth_uuid}",
+                             "--accessToken", "${auth_access_token}", "--userType", "${user_type}",
+                             "--version", "${version_name}"],
                 },
             },
             client_jar=root / "versions" / "demo" / "demo.jar",
@@ -63,7 +65,7 @@ class CommandTests(unittest.TestCase):
             assets_dir=root / "assets",
         )
         cfg = Config(game_dir=str(root), username="Alex", memory_mb=1024, isolate_versions=False)
-        return build_command(resolved, cfg, java=java)
+        return build_command(resolved, cfg, java=java, account=account)
 
     def test_warns_when_java_major_mismatch(self):
         import tempfile
@@ -75,6 +77,22 @@ class CommandTests(unittest.TestCase):
             wrong = JavaRuntime(path=P("/java21"), major=21, version="21.0.1")
             command = self.build(Path(directory), java=wrong)
             self.assertTrue(any("要求 Java 17" in warning for warning in command.warnings))
+
+    def test_online_account_arguments(self):
+        import tempfile
+        import time
+
+        from mcl.auth import Account
+
+        account = Account(name="Notch", uuid="069a79f4-44e9-4726-a5be-fca90e38aaf5",
+                          access_token="mc-token", refresh_token="refresh",
+                          expires_at=time.time() + 3600)
+        with tempfile.TemporaryDirectory() as directory:
+            command = self.build(Path(directory), account=account)
+        self.assertIn("Notch", command.argv)
+        self.assertIn("mc-token", command.argv)
+        self.assertIn("msa", command.argv)
+        self.assertIn("069a79f4-44e9-4726-a5be-fca90e38aaf5", command.argv)
 
     def test_offline_uuid_stable(self):
         first = offline_uuid("Alex")

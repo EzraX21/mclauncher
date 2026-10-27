@@ -7,8 +7,10 @@ interface ConfigInfo {
   game_dir: string; java_path: string; memory_mb: number; username: string;
   isolate_versions: boolean; jobs: number; download_source: string;
   curseforge_configured: boolean; last_version: string; config_path: string; theme: string;
+  ms_client_id: string;
 }
-interface StateInfo { version: string; config: ConfigInfo; versions: VersionInfo[]; platform: string; }
+interface AccountInfo { name: string; uuid: string; }
+interface StateInfo { version: string; config: ConfigInfo; versions: VersionInfo[]; platform: string; account: AccountInfo | null; }
 interface RemoteVersion { id: string; type: string; release: string; }
 interface RemoteInfo { latest: { release: string; snapshot: string }; versions: RemoteVersion[]; }
 interface ModHit { slug: string; title: string; description: string; downloads: number; author: string; }
@@ -173,6 +175,9 @@ function render(): void {
   } else {
     renderSettings();
   }
+  actions.insertAdjacentHTML("beforeend",
+    `<button class="btn sm" id="account-btn">${state.account ? esc(state.account.name) : "离线"}</button>`);
+  actions.querySelector("#account-btn")?.addEventListener("click", () => setView("settings"));
 }
 
 // ---------------------------------------------------------------- 版本
@@ -457,7 +462,28 @@ function renderSettings(): void {
   setHeader("设置", "修改会立即写入配置文件");
   const cfg = state.config;
   const content = document.getElementById("content") as HTMLElement;
+  const account = state.account;
   content.innerHTML = `
+    <div class="card">
+      <div class="card-head"><span class="card-title">微软账号</span></div>
+      <div class="card-body">
+        ${account ? `
+          <div class="row-between">
+            <div class="grow">
+              <div class="title">${esc(account.name)}</div>
+              <div class="desc">${esc(account.uuid)}</div>
+            </div>
+            <button class="btn danger" id="ms-logout">退出登录</button>
+          </div>` : `
+          <div class="field"><label>Azure 应用 client id（公开标识，不是密码）</label>
+            <input id="ms-client-id" type="text" value="${esc(cfg.ms_client_id)}" placeholder="00000000-0000-0000-0000-000000000000" />
+          </div>
+          <div class="inline">
+            <button class="btn primary" id="ms-login">登录微软账号</button>
+            <span class="small muted">注册步骤见 README「微软登录」；离线也能玩</span>
+          </div>`}
+      </div>
+    </div>
     <div class="card">
       <div class="card-head"><span class="card-title">常规</span></div>
       <div class="card-body">
@@ -497,6 +523,24 @@ function renderSettings(): void {
       toast((error as Error).message, "error");
     }
   });
+  content.querySelector("#ms-logout")?.addEventListener("click", async () => {
+    await api("/api/logout", { method: "POST", body: "{}" });
+    toast("已退出微软账号", "ok");
+    await refreshState();
+  });
+  content.querySelector("#ms-login")?.addEventListener("click", async () => {
+    const clientId = (content.querySelector("#ms-client-id") as HTMLInputElement).value.trim();
+    if (!clientId) { toast("先填 client id", "error"); return; }
+    try {
+      await api("/api/config", { method: "POST", body: JSON.stringify({ ms_client_id: clientId }) });
+      const task = await api<TaskInfo>("/api/login/start", {
+        method: "POST", body: JSON.stringify({ client_id: clientId }),
+      });
+      showLogin(task);
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
   content.querySelector("#set-save")?.addEventListener("click", async () => {
     try {
       await api("/api/config", {
@@ -509,6 +553,7 @@ function renderSettings(): void {
           download_source: (content.querySelector("#set-source") as HTMLSelectElement).value,
           isolate_versions: (content.querySelector("#set-isolate") as HTMLInputElement).checked,
           theme: (content.querySelector("#set-theme") as HTMLSelectElement).value,
+          ms_client_id: (content.querySelector("#ms-client-id") as HTMLInputElement)?.value.trim() ?? cfg.ms_client_id,
         }),
       });
       toast("设置已保存", "ok");
@@ -517,6 +562,54 @@ function renderSettings(): void {
       toast((error as Error).message, "error");
     }
   });
+}
+
+function showLogin(task: TaskInfo): void {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `
+    <div class="modal">
+      <h3>微软登录</h3>
+      <div class="field"><label>在浏览器打开</label>
+        <div class="inline"><code id="login-uri">https://microsoft.com/devicelogin</code></div>
+      </div>
+      <div class="field"><label>输入代码</label>
+        <div class="title" id="login-code" style="font-size:22px;letter-spacing:2px">等待微软返回…</div>
+      </div>
+      <div class="small muted" id="login-status">正在申请设备代码…</div>
+      <div class="actions"><button class="btn" id="login-close">关闭</button></div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => { window.clearInterval(timer); overlay.remove(); };
+  overlay.querySelector("#login-close")?.addEventListener("click", close);
+  const timer = window.setInterval(async () => {
+    try {
+      const info = await api<TaskInfo>(`/api/task/${task.id}`);
+      const result = info.result as { user_code?: string; verification_uri?: string } | null;
+      if (result?.user_code) {
+        (overlay.querySelector("#login-code") as HTMLElement).textContent = result.user_code;
+        if (result.verification_uri) {
+          (overlay.querySelector("#login-uri") as HTMLElement).textContent = result.verification_uri;
+        }
+      }
+      (overlay.querySelector("#login-status") as HTMLElement).textContent =
+        (info.log || []).slice(-1)[0] || "等待浏览器里完成登录…";
+      if (info.state !== "running") {
+        window.clearInterval(timer);
+        if (info.state === "done") {
+          overlay.remove();
+          toast("登录成功", "ok");
+          await refreshState();
+        } else {
+          (overlay.querySelector("#login-status") as HTMLElement).textContent = info.error || "登录失败";
+          (overlay.querySelector("#login-close") as HTMLElement).textContent = "关闭";
+        }
+      }
+    } catch (error) {
+      window.clearInterval(timer);
+      (overlay.querySelector("#login-status") as HTMLElement).textContent = (error as Error).message;
+    }
+  }, 1200);
 }
 
 // ---------------------------------------------------------------- 任务

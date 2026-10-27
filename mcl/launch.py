@@ -213,9 +213,14 @@ def build_command(
     username: Optional[str] = None,
     features: Optional[dict] = None,
     memory_mb: Optional[int] = None,
+    account=None,
 ) -> LaunchCommand:
     features = features or {}
-    username = username or cfg.username or "Player"
+    username = account.name if account is not None else (username or cfg.username or "Player")
+    account_uuid = account.uuid if account is not None else offline_uuid(username)
+    access_token = account.access_token if account is not None else "0"
+    user_type = "msa" if account is not None else "legacy"
+    xuid = "0"
     memory = int(memory_mb or cfg.memory_mb or 2048)
     root = cfg.root()
 
@@ -239,12 +244,12 @@ def build_command(
 
     context = {
         "auth_player_name": username,
-        "auth_uuid": offline_uuid(username),
-        "auth_access_token": "0",
-        "auth_session": "0",
+        "auth_uuid": account_uuid,
+        "auth_access_token": access_token,
+        "auth_session": access_token,
         "clientid": "0",
-        "auth_xuid": "0",
-        "user_type": "legacy",
+        "auth_xuid": xuid,
+        "user_type": user_type,
         "version_name": resolved.id,
         "version_type": resolved.version_type,
         "game_directory": str(command.cwd),

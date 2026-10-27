@@ -10,6 +10,7 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, DataTable, ProgressBar, RichLog, Static
 
 from ...java import ensure_java
+from ... import auth
 from ...launch import build_command, ensure_libraries, prepare_natives, spawn, wait
 from ...loaders import install as install_loader
 from ...mods import list_mods
@@ -184,7 +185,9 @@ class VersionsPane(Vertical):
             self._finish_progress()
             prepare_natives(resolved, self.cfg.root())
 
-            command = build_command(resolved, self.cfg, java)
+            account = auth.ensure_account(self.cfg)
+            self._log_threadsafe(f"账号：{account.name}（微软正版）" if account else "账号：离线模式")
+            command = build_command(resolved, self.cfg, java, account=account)
             if command.missing:
                 self._log_threadsafe(f"[red]缺少 {len(command.missing)} 个文件，先补全[/]")
                 return

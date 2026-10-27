@@ -6,7 +6,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from . import __version__, doctor, home, install_cmd, java_cmd, launch_cmd, loaders_cmd, mods_cmd, settings_cmd
+from . import (__version__, auth_cmd, doctor, home, install_cmd, java_cmd, launch_cmd,
+               loaders_cmd, mods_cmd, settings_cmd)
 from .config import Config
 from .installer import PlanError
 from .manifest import ApiError
@@ -14,7 +15,8 @@ from .prompts import Cancelled, PromptsUnavailable
 from .ui import UI
 from .versions import VersionError
 
-COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor", "gui"}
+COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor", "gui",
+            "login", "logout", "account"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -70,6 +72,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_dir(p)
 
     p = sub.add_parser("launch", help="启动游戏")
+    p.add_argument("--offline", action="store_true", help="强制离线模式，不用微软账号")
     p.add_argument("version", nargs="?", help="版本号")
     add_dir(p)
     add_source(p)
@@ -105,6 +108,11 @@ def build_parser() -> argparse.ArgumentParser:
     add_source(p)
 
     sub.add_parser("tui", help="打开全屏 TUI")
+
+    p = sub.add_parser("login", help="微软正版登录（设备代码）")
+    p.add_argument("--client-id", help="Azure 应用的 client id")
+    sub.add_parser("logout", help="退出微软账号")
+    sub.add_parser("account", help="查看当前登录的账号")
 
     p = sub.add_parser("gui", help="打开图形界面")
     p.add_argument("--web", action="store_true", help="用浏览器打开，不启动 Electron")
@@ -184,6 +192,12 @@ def main(argv=None) -> int:
             return run_tui(cfg)
         if args.command == "doctor":
             return doctor.run(args, ui, cfg)
+        if args.command == "login":
+            return auth_cmd.run_login(args, ui, cfg)
+        if args.command == "logout":
+            return auth_cmd.run_logout(args, ui, cfg)
+        if args.command == "account":
+            return auth_cmd.run_account(args, ui, cfg)
         if args.command == "gui":
             from .gui_cmd import run_gui
 

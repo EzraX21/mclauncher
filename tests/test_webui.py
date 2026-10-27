@@ -56,6 +56,10 @@ class WebuiTests(unittest.TestCase):
         self.assertEqual(data["config"]["username"], "Steve")
         self.assertEqual(Config.load().memory_mb, 8192)  # 写进的是临时配置
 
+    def test_microsoft_client_id(self):
+        data = post_json(self.url + "api/config", {"ms_client_id": " 7808d7d9-test "})
+        self.assertEqual(data["config"]["ms_client_id"], "7808d7d9-test")
+
     def test_theme(self):
         data = post_json(self.url + "api/config", {"theme": "dark"})
         self.assertEqual(data["config"]["theme"], "dark")

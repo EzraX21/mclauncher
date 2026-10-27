@@ -52,6 +52,7 @@ class Config:
     jobs: int = 8
     download_source: str = "official"
     theme: str = "light"
+    ms_client_id: str = ""
     curseforge_api_key: str = ""
     last_version: Optional[str] = None
     width: int = 854

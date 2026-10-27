@@ -14,6 +14,8 @@ EDITABLE = {
     "jobs": "下载并发数",
     "download_source": "下载源（auto/official）",
     "curseforge_api_key": "CurseForge API key",
+    "ms_client_id": "微软 Azure 应用 client id",
+    "theme": "GUI 主题（light/dark/system）",
 }
 
 
@@ -27,6 +29,8 @@ def show(ui: UI, cfg: Config) -> None:
     ui.kv("并发", str(cfg.jobs))
     ui.kv("下载源", "BMCLAPI 优先" if cfg.download_source == "auto" else "仅官方（默认）")
     ui.kv("CurseForge", "已配置" if cfg.curseforge_api_key else "未配置（模组页可选 Modrinth）")
+    ui.kv("微软登录", "已配置 client id" if cfg.ms_client_id else "未配置（可选）")
+    ui.kv("主题", cfg.theme)
     ui.kv("上次版本", cfg.last_version or "—")
 
 
@@ -41,6 +45,10 @@ def _coerce(key: str, value: str):
     if key == "download_source":
         if value not in ("auto", "official"):
             raise ValueError("只能是 auto 或 official")
+        return value
+    if key == "theme":
+        if value not in ("light", "dark", "system"):
+            raise ValueError("只能是 light / dark / system")
         return value
     if key == "isolate_versions":
         if value.lower() not in ("true", "false", "1", "0", "on", "off", "开", "关"):

@@ -1,7 +1,7 @@
 {
   "name": "mcl-gui",
   "private": true,
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "MCL (mclauncher) GUI (Electron + TypeScript)",
   "main": "dist/main.cjs",
   "scripts": {

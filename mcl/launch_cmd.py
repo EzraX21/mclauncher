@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from . import prompts
+from . import auth, prompts
 from .config import Config
 from .java import JavaRuntime, component_for, ensure_java, find_all, pick, pick_exact, probe
 from .launch import build_command, ensure_libraries, prepare_natives, run
@@ -83,12 +83,18 @@ def run_launch(args, ui: UI, cfg: Config) -> int:
                                              on_phase=on_phase, source=cfg.download_source))
     prompts.spinner(ui, "解压 natives", lambda: prepare_natives(resolved, cfg.root()))
 
+    account = None
+    if not getattr(args, "offline", False):
+        account = auth.ensure_account(cfg)
+    ui.note(f"账号：{account.name}（微软正版）" if account else "账号：离线模式")
+
     command = build_command(
         resolved,
         cfg,
         java,
         username=args.username,
         memory_mb=args.memory,
+        account=account,
     )
 
     rows = [
