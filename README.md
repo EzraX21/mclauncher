@@ -4,7 +4,7 @@
 
 <h1 align="center">MCL · mclauncher</h1>
 
-<p align="center">Minecraft: Java Edition 启动器：下载原版、装加载器、装模组/整合包、光影材质、启动游戏。</p>
+<p align="center">Minecraft: Java Edition 启动器：默认图形界面，TUI 作为特色入口。下载原版、装加载器、装模组/整合包、光影材质、启动游戏。</p>
 
 <p align="center">
   <a href="https://github.com/EzraX21/mclauncher/releases"><img src="https://img.shields.io/github/v/release/EzraX21/mclauncher?style=flat-square" alt="Release"/></a>
@@ -50,7 +50,7 @@
 
 | 状态 | 功能 |
 | --- | --- |
-| ✅ 已完成 | 原版下载、版本管理、Fabric/Quilt/Forge/NeoForge、模组搜索/安装、整合包、光影/材质、崩溃分析、Java 运行时、TUI、GUI、多主题、原生窗口、Linux/Windows 打包 |
+| ✅ 已完成 | 原版下载、版本管理、Fabric/Quilt/Forge/NeoForge、模组搜索/安装、整合包、光影/材质、崩溃分析、Java 运行时、GUI（默认）、TUI（特色）、多主题、原生窗口、Linux/Windows 打包 |
 | 🚧 等待外部 | **微软登录**：代码已完整实现，内置 Azure 应用已提交 Mojang 白名单审核；通过前 Minecraft 接口会返回 `Invalid app registration` |
 | 🚧 待验证 | **CurseForge 整合包**：下载逻辑已实现，需要 API key；手头没有 key，还没跑真实整合包回归 |
 | 🚧 未发布 | **AUR**：`mcl-launcher` 的 PKGBUILD 已就绪，尚未首次提交；CI 的 AUR 步骤在配 secrets 前会失败（已 continue-on-error） |
@@ -68,8 +68,8 @@
 | 崩溃分析 | 解析 crash-report / latest.log，给出 Java 版本、内存、缺前置、Mixin 冲突等建议 |
 | 账号 | 离线 + 微软正版（设备代码流），token 本地缓存、自动刷新 |
 | Java | 按版本要求选主版本，缺了自动从 Mojang 下载，不会拿新 Java 硬启动老版本 |
-| GUI | 原生窗口（Linux WebKitGTK / Windows WebView2），浅色/深色/跟随系统 |
-| TUI | 全屏终端界面，SSH / 无桌面环境也能用 |
+| GUI | **默认入口**：原生窗口（Linux WebKitGTK / Windows WebView2），浅色/深色/跟随系统 |
+| TUI | **特色入口**：全屏终端界面，SSH / 无桌面环境也能用，`mcl tui` |
 
 ## 截图
 
@@ -123,19 +123,21 @@ mcl
 ```
 
 `[gui]` 是 pywebview（原生窗口），`[cli]` 是 questionary（`mcl --cli` 文本菜单）。
-只跑 TUI 可以只装 `.[cli]`。开发时也可以 `./run.sh` 自动建 `.venv`。
+只跑 TUI 可以只装 `.[cli]`（没有 `[gui]` 时 `mcl` 会自动退回 TUI）。开发时也可以 `./run.sh` 自动建 `.venv`。
 
 ## 运行
 
 ```bash
-mcl            # 有 TTY 时进 TUI
-mcl gui        # 原生桌面窗口
+mcl            # 默认：图形界面（没有窗口后端时自动退回 TUI）
+mcl tui        # 全屏 TUI（特色入口，适合 SSH / 无桌面）
+mcl gui        # 显式打开图形界面
 mcl --cli      # questionary 文本菜单
 ```
 
 ## 图形界面
 
-`mcl gui` 打开的是**桌面窗口**，不是浏览器标签：
+GUI 是默认入口：直接运行 `mcl` 就会打开桌面窗口（`mcl gui` 等价）。
+它是**桌面窗口**，不是浏览器标签：
 
 - Linux：GTK + WebKitGTK，需要 `webkit2gtk-4.1`、`python-gobject`
 - Windows：WebView2（Win10/11 自带）；安装包里的 `mclw.exe` 直接双击
@@ -175,7 +177,8 @@ MCL_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
 
 ## TUI
 
-无桌面环境 / SSH 里用 TUI，四个标签页：版本、安装、模组、设置。
+TUI 是 MCL 的特色入口，不是默认界面：`mcl tui` 显式进入；在没有图形后端或没有
+桌面环境时，`mcl` 也会自动退回 TUI。四个标签页：版本、安装、模组、设置。
 
 - `Tab` 切标签，`q` 退出，`ctrl+r` 刷新，`ctrl+s` 保存设置
 - 日志默认折叠，开始安装 / 启动时自动展开
@@ -356,7 +359,7 @@ AUR 配置好 secrets 后会自动更新；首次提交仍需要手动在 AUR �
 ```
 mclauncher/
 ├── mcl/                  Python 包
-│   ├── cli.py            子命令；无参数进 TUI
+│   ├── cli.py            子命令；无参数打开 GUI，失败退回 TUI
 │   ├── tui/              Textual TUI
 │   ├── gui_cmd.py        GUI 启动（pywebview / Electron / 浏览器）
 │   ├── webui.py          GUI 的本地 HTTP + JSON 服务

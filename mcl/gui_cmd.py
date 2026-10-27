@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -34,6 +35,25 @@ def _native_window(url: str) -> bool:
         return True
     except Exception:  # noqa: BLE001 - 没有可用的 webview 后端就交给后面的兜底
         return False
+
+
+def _display_available() -> bool:
+    if os.name == "nt" or sys.platform == "darwin":
+        return True
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
+def run_default(ui: UI, cfg: Config) -> bool:
+    """无参数启动：优先开原生窗口；没有后端/没有显示就返回 False，让调用方退回 TUI。"""
+    if not _display_available():
+        return False
+    httpd, url = serve(cfg)
+    ui.note(f"界面地址：{url}")
+    try:
+        ui.note("打开主窗口 …")
+        return _native_window(url)
+    finally:
+        httpd.shutdown()
 
 
 def run_gui(args, ui: UI, cfg: Config) -> int:

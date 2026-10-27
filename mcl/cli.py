@@ -1,4 +1,4 @@
-"""命令行入口：子命令分发，无参数时进交互主菜单。"""
+"""命令行入口：子命令分发，无参数时打开图形界面。"""
 
 from __future__ import annotations
 
@@ -37,7 +37,9 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "示例:\n"
-            "  mcl                        交互主菜单\n"
+            "  mcl                        打开图形界面（默认）\n"
+            "  mcl tui                    全屏终端界面\n"
+            "  mcl --cli                  文本菜单\n"
             "  mcl install 1.20.1         装原版\n"
             "  mcl loaders fabric 1.20.1  装 Fabric / Quilt / Forge / NeoForge\n"
             "  mcl mods search sodium     搜模组\n"
@@ -161,6 +163,16 @@ def main(argv=None) -> int:
     cfg = Config.load()
 
     if not args.command:
+        # 默认图形界面；没有窗口后端/没有显示时退回 TUI
+        if not args.cli:
+            try:
+                from .gui_cmd import run_default
+
+                if run_default(ui, cfg):
+                    return 0
+                ui.warn("没有可用的图形界面后端，改用 TUI（mcl tui）")
+            except Exception as exc:  # noqa: BLE001 - GUI 失败不应该挡住启动器
+                ui.warn(f"图形界面启动失败：{exc}")
         if not sys.stdout.isatty():
             build_parser().print_help()
             return 0

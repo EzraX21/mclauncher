@@ -4,7 +4,7 @@
 
 <h1 align="center">MCL · mclauncher</h1>
 
-<p align="center">A Minecraft: Java Edition launcher: vanilla installs, loaders, mods/modpacks, shaders, and launching.</p>
+<p align="center">A Minecraft: Java Edition launcher with a GUI-first interface and a TUI mode. Vanilla installs, loaders, mods/modpacks, shaders, and launching.</p>
 
 <p align="center">
   <a href="https://github.com/EzraX21/mclauncher/releases"><img src="https://img.shields.io/github/v/release/EzraX21/mclauncher?style=flat-square" alt="Release"/></a>
@@ -50,7 +50,7 @@ Current version: **v3.6.0**
 
 | Status | Area |
 | --- | --- |
-| ✅ Done | Vanilla downloads, version management, Fabric/Quilt/Forge/NeoForge, mod search/install, modpacks, shaders/resource packs, crash analysis, Java runtimes, TUI, GUI, themes, native windows, Linux/Windows packaging |
+| ✅ Done | Vanilla downloads, version management, Fabric/Quilt/Forge/NeoForge, mod search/install, modpacks, shaders/resource packs, crash analysis, Java runtimes, GUI (default), TUI (feature), themes, native windows, Linux/Windows packaging |
 | 🚧 External | **Microsoft login**: fully implemented; the built-in Azure app is waiting for Mojang's allowlist. Until approved, Minecraft returns `Invalid app registration` |
 | 🚧 Unverified | **CurseForge modpacks**: download path implemented, requires an API key; no real-pack regression yet |
 | 🚧 Not published | **AUR**: PKGBUILD for `mcl-launcher` is ready, first submission pending; the AUR CI step stays red until secrets are configured (`continue-on-error`) |
@@ -68,8 +68,8 @@ Current version: **v3.6.0**
 | Crash analysis | Reads crash reports / latest.log and explains Java, memory, missing deps, Mixin conflicts, etc. |
 | Accounts | Offline + Microsoft device-code login, local token cache with refresh |
 | Java | Picks the exact major version; downloads the matching Mojang runtime instead of using a newer Java |
-| GUI | Native window (WebKitGTK on Linux / WebView2 on Windows), light/dark/system themes |
-| TUI | Full-screen terminal UI for SSH and headless machines |
+| GUI | **Default entry point**: native window (WebKitGTK on Linux / WebView2 on Windows), light/dark/system themes |
+| TUI | **Feature entry point**: full-screen terminal UI for SSH and headless machines, `mcl tui` |
 
 ## Screenshots
 
@@ -123,19 +123,21 @@ mcl
 ```
 
 `[gui]` pulls pywebview (native window); `[cli]` pulls questionary for `mcl --cli`.
-For TUI only, install `.[cli]`. For development, `./run.sh` creates a `.venv` for you.
+For TUI only, install `.[cli]` (without `[gui]`, `mcl` falls back to the TUI). For development, `./run.sh` creates a `.venv` for you.
 
 ## Running
 
 ```bash
-mcl            # TUI when attached to a TTY
-mcl gui        # native desktop window
+mcl            # default: GUI (falls back to TUI when no window backend)
+mcl tui        # full-screen TUI (SSH / headless)
+mcl gui        # explicitly open the GUI
 mcl --cli      # questionary text menu
 ```
 
 ## GUI
 
-`mcl gui` opens a **desktop window**, not a browser tab:
+The GUI is the default: running `mcl` opens a **desktop window** (same as `mcl gui`),
+not a browser tab:
 
 - Linux: GTK + WebKitGTK (`webkit2gtk-4.1`, `python-gobject`)
 - Windows: WebView2 (bundled with Windows 10/11); `mclw.exe` in the installer opens it directly
@@ -175,6 +177,8 @@ MCL_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
 
 ## TUI
 
+The TUI is a first-class alternative, not the default. Run `mcl tui` explicitly; `mcl`
+falls back to it automatically when no window backend/desktop is available.
 Four tabs: Versions, Install, Mods, Settings.
 
 - `Tab` switches tabs, `q` quits, `ctrl+r` refreshes, `ctrl+s` saves settings
@@ -361,7 +365,7 @@ submission still has to be created on the AUR website.
 ```
 mclauncher/
 ├── mcl/                  Python package
-│   ├── cli.py            subcommands; no args -> TUI
+│   ├── cli.py            subcommands; no args -> GUI, TUI fallback
 │   ├── tui/              Textual TUI
 │   ├── gui_cmd.py        GUI launcher (pywebview / Electron / browser)
 │   ├── webui.py          local HTTP + JSON API for the GUI
