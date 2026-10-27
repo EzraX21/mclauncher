@@ -38,6 +38,11 @@ sed "s/@VERSION@/$VERSION/g" packaging/nfpm.yaml.tpl > build/nfpm.yaml
 "$NFPM" package -f build/nfpm.yaml -p rpm       -t dist/
 "$NFPM" package -f build/nfpm.yaml -p archlinux -t dist/
 
+# 产物统一成 mcl-<ver>-<platform>-<arch>.<ext>（包内元数据仍是 mcl-launcher）
+mv "dist/mcl-launcher_${VERSION}_amd64.deb" "dist/mcl-${VERSION}-linux-x64.deb"
+mv "dist/mcl-launcher-${VERSION}-1.x86_64.rpm" "dist/mcl-${VERSION}-linux-x64.rpm"
+mv "dist/mcl-launcher-${VERSION}-1-x86_64.pkg.tar.zst" "dist/mcl-${VERSION}-linux-x64.pkg.tar.zst"
+
 echo "==> wheel"
 uv build --wheel -o dist >/dev/null
 
@@ -48,10 +53,9 @@ mkdir -p "$PORTABLE"
 cp -R build/vendor "$PORTABLE/vendor"
 cp packaging/portable/mcl.sh packaging/portable/mcl.cmd "$PORTABLE/"
 cp LICENSE README.md "$PORTABLE/"
-( cd build/portable && zip -qr "../../dist/mcl-$VERSION-portable.zip" "mcl-$VERSION" )
+( cd build/portable && tar -czf "../../dist/mcl-$VERSION-linux-x64-portable.tar.gz" "mcl-$VERSION" )
 
 echo "==> 源码包"
-git archive --format=tar.gz --prefix="mcl-$VERSION/" -o "dist/mcl-$VERSION.tar.gz" HEAD
-git archive --format=zip    --prefix="mcl-$VERSION/" -o "dist/mcl-$VERSION.zip" HEAD
+git archive --format=tar.gz --prefix="mcl-$VERSION/" -o "dist/mcl-$VERSION-source.tar.gz" HEAD
 
 ls -lh dist

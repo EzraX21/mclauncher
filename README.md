@@ -24,8 +24,10 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 
 - Git tag：`v3.7.0`、`v3.7.0-beta.1`、`v3.7.0-rc.1`
 - 代码 / Python 包（PEP 440）：`3.7.0`、`3.7.0b1`、`3.7.0rc1`
-- 产物文件名用 PEP 440 版本：`mcl-3.7.0-setup.exe`、`mcl-launcher_3.7.0_amd64.deb`、
-  `mcl-3.7.0-portable.zip`
+- 产物文件名：`mcl-<版本>-<平台>-<架构>[-变体].<扩展名>`，例如
+  `mcl-3.7.0-windows-x64-setup.exe`、`mcl-3.7.0-linux-x64.deb`、
+  `mcl-3.7.0-linux-x64-portable.tar.gz`；wheel 按 PEP 427 保持 `mcl_launcher-3.7.0-py3-none-any.whl`
+- 每个 Release 附一个 `SHA256SUMS.txt`
 
 **发版**
 
@@ -434,14 +436,15 @@ Foundation, either version 3 of the License, or (at your option) any later versi
 
 | 文件 | 说明 |
 | --- | --- |
-| `mcl_<ver>_amd64.deb` | Debian / Ubuntu 安装包（自带 Python 依赖，只要求系统有 python3） |
-| `mcl-<ver>-1.x86_64.rpm` | Fedora / RHEL 安装包 |
-| `mcl-<ver>-1-x86_64.pkg.tar.zst` | Arch 包 |
-| `mcl-<ver>-py3-none-any.whl` | wheel |
-| `mcl-<ver>.tar.gz` / `.zip` | 源码包 |
-| `mcl-<ver>-portable.zip` | 便携版，解压后 `./mcl.sh` 或 `mcl.cmd`，自带依赖 |
+| `mcl-<ver>-linux-x64.deb` | Debian / Ubuntu 安装包（自带 Python 依赖，只要求系统有 python3） |
+| `mcl-<ver>-linux-x64.rpm` | Fedora / RHEL 安装包 |
+| `mcl-<ver>-linux-x64.pkg.tar.zst` | Arch 包 |
+| `mcl_launcher-<ver>-py3-none-any.whl` | wheel（PEP 427 命名） |
+| `mcl-<ver>-source.tar.gz` | 源码包 |
+| `mcl-<ver>-linux-x64-portable.tar.gz` | 便携版，解压后 `./mcl.sh`，自带依赖 |
 
-需要 `nfpm`（脚本会提示下载地址）、`uv`、`zip`、`git`。
+包内元数据/包名仍是 `mcl-launcher`，只是产物文件名统一。
+需要 `nfpm`（脚本会提示下载地址）、`uv`、`tar`、`git`。
 包里的依赖是 vendor 进去的，所以不依赖发行版有没有 `python-textual`。
 
 ### Windows
@@ -452,8 +455,12 @@ Foundation, either version 3 of the License, or (at your option) any later versi
 powershell -ExecutionPolicy Bypass -File packaging/build_windows.ps1
 ```
 
-产物：`dist\mcl.exe`、`dist\mclw.exe`（原生窗口）和 `dist\mcl-<ver>-setup.exe`
-（Inno Setup 安装包，快捷方式指向 `mclw.exe`）。需要 Python 3.10+ 和 Inno Setup 6
+产物：
+
+- `dist\mcl-<ver>-windows-x64-setup.exe`（Inno Setup 安装包，快捷方式指向 `mclw.exe`）
+- `dist\mcl-<ver>-windows-x64-portable.zip`（解压即用，含 `mcl.exe` 和 `mclw.exe`）
+
+需要 Python 3.10+ 和 Inno Setup 6
 （脚本会尝试用 choco 装）。
 
 ### macOS（手动构建，Release 默认不发布）

@@ -38,4 +38,10 @@ if (-not $iscc) {
     }
 }
 & $iscc packaging/windows/installer.iss
-Write-Host "完成：dist\mcl-$env:MCL_VERSION-setup.exe、dist\mcl.exe、dist\mclw.exe"
+
+# 统一产物命名
+$version = $env:MCL_VERSION
+Move-Item "dist\mcl-$version-setup.exe" "dist\mcl-$version-windows-x64-setup.exe" -Force
+Compress-Archive -Path "dist\mcl.exe", "dist\mclw.exe", "LICENSE", "README.md" `
+    -DestinationPath "dist\mcl-$version-windows-x64-portable.zip" -Force
+Write-Host "完成：dist\mcl-$version-windows-x64-setup.exe、dist\mcl-$version-windows-x64-portable.zip"
