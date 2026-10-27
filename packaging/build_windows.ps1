@@ -11,7 +11,7 @@ $versionLine = Select-String -Path "mcl/__init__.py" -Pattern '__version__ = "([
 $env:MCL_VERSION = $versionLine.Matches[0].Groups[1].Value
 Write-Host "mcl $env:MCL_VERSION"
 & $python -m pip install --upgrade pip
-& $python -m pip install ".[cli]" pyinstaller
+& $python -m pip install ".[cli,gui]" pyinstaller
 
 if (Test-Path "gui/dist") {
     Remove-Item -Recurse -Force "mcl/webui_dist" -ErrorAction SilentlyContinue
@@ -38,4 +38,4 @@ if (-not $iscc) {
     }
 }
 & $iscc packaging/windows/installer.iss
-Write-Host "完成：dist\mcl-setup.exe 和 dist\mcl.exe"
+Write-Host "完成：dist\mcl-$env:MCL_VERSION-setup.exe、dist\mcl.exe、dist\mclw.exe"

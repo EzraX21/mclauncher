@@ -21,6 +21,8 @@ contents:
       mode: 0755
   - src: packaging/mcl.desktop
     dst: /usr/share/applications/mcl.desktop
+  - src: gui/assets/mcl.png
+    dst: /usr/share/icons/hicolor/256x256/apps/mcl.png
   - src: LICENSE
     dst: /usr/share/licenses/mcl-launcher/LICENSE
 overrides:

@@ -1,11 +1,11 @@
-; Inno Setup 脚本：mcl.exe 安装包
+; Inno Setup 脚本：MCL 桌面安装包（mclw.exe + mcl.exe）
 #define MyAppName "MCL"
 #define MyAppVersion GetEnv("MCL_VERSION")
 #if MyAppVersion == ""
   #define MyAppVersion "0.0.0"
 #endif
 #define MyAppPublisher "mclauncher"
-#define MyAppExeName "mcl.exe"
+#define MyAppExeName "mclw.exe"
 
 [Setup]
 AppId={{8E4B2C5A-3F1D-4C7E-9B2A-6D5F1A0C3E21}
@@ -22,18 +22,20 @@ SolidCompression=yes
 WizardStyle=modern
 ArchitecturesInstallIn64BitMode=x64compatible
 ArchitecturesAllowed=x64compatible
+SetupIconFile=..\..\gui\assets\mcl.ico
 
 [Files]
-Source: "..\..\dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\dist\mclw.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\dist\mcl.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-; TUI 需要终端，快捷方式直接用 cmd 打开
-Name: "{group}\{#MyAppName}"; Filename: "{cmd}"; Parameters: "/k ""{app}\{#MyAppExeName}"""; WorkingDir: "{app}"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
+Name: "{group}\{#MyAppName} 命令行"; Filename: "{cmd}"; Parameters: "/k ""{app}\mcl.exe"""; WorkingDir: "{app}"
 Name: "{group}\卸载 {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{cmd}"; Parameters: "/k ""{app}\{#MyAppExeName}"""; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "创建桌面快捷方式"; GroupDescription: "附加任务:"
 
 [Run]
-Filename: "{cmd}"; Parameters: "/k ""{app}\{#MyAppExeName}"""; WorkingDir: "{app}"; Description: "启动 MCL"; Flags: postinstall nowait skipifsilent
+Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Description: "启动 MCL"; Flags: postinstall nowait skipifsilent
