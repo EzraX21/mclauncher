@@ -212,9 +212,7 @@ def start_mod_install(version_id: str, slug: str) -> dict:
 
 def start_login(client_id: str) -> dict:
     cfg = _ACTIVE_CFG
-    client_id = (client_id or cfg.ms_client_id or "").strip()
-    if not client_id:
-        raise RuntimeError("先填 Azure 应用的 client id")
+    client_id = (client_id or cfg.ms_client_id or auth.DEFAULT_CLIENT_ID).strip()
     cfg.ms_client_id = client_id
     cfg.save()
     task = _new_task("login")
@@ -306,6 +304,7 @@ class Handler(BaseHTTPRequestHandler):
                     "config": _config_dict(_ACTIVE_CFG),
                     "versions": _versions(),
                     "account": account.public() if account else None,
+                    "default_client_id": auth.DEFAULT_CLIENT_ID,
                     "platform": os_name(),
                 })
             if parsed.path == "/api/remote":

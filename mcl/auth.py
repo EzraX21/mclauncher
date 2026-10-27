@@ -26,6 +26,12 @@ XSTS_URL = "https://xsts.auth.xboxlive.com/xsts/authorize"
 MC_LOGIN_URL = "https://api.minecraftservices.com/authentication/login_with_xbox"
 MC_PROFILE_URL = "https://api.minecraftservices.com/minecraft/profile"
 USER_AGENT = "MCL/1.0"
+DEFAULT_CLIENT_ID = "7808d7d9-1895-4b8c-b915-b5fb1a600dd7"
+
+
+def client_id_for(cfg) -> str:
+    """用户自己填的优先，否则用内置的 MCL Azure 应用。"""
+    return (getattr(cfg, "ms_client_id", "") or DEFAULT_CLIENT_ID).strip()
 
 
 class AuthError(RuntimeError):
@@ -180,9 +186,9 @@ def _xsts(xbl_token: str) -> tuple[str, str]:
     except AuthError as exc:
         text = str(exc)
         if "2148916233" in text:
-            raise AuthError("这个微软账号还没有 Xbox 档案，先去 xbox.com 登录创建一次") from exc
+            raise AuthError("这个微软账号还没有 Xbox 档案：先打开 https://www.xbox.com 登录一次创建档案") from exc
         if "2148916238" in text:
-            raise AuthError("这是儿童账号，需要家长在 Microsoft 家庭里批准") from exc
+            raise AuthError("这是儿童账号：需要家长在 https://family.microsoft.com 把你加入家庭并批准 Xbox Live") from exc
         if "2148916235" in text:
             raise AuthError("这个账号所在地区不支持 Xbox Live") from exc
         raise
@@ -274,7 +280,7 @@ def ensure_account(cfg) -> Optional[Account]:
     if account.expires_at > time.time() + 120:
         return account
     try:
-        return refresh_account(account, getattr(cfg, "ms_client_id", "") or account.client_id)
+        return refresh_account(account, client_id_for(cfg) if not account.client_id else account.client_id)
     except AuthError:
         return None
 

@@ -29,7 +29,7 @@ def show(ui: UI, cfg: Config) -> None:
     ui.kv("并发", str(cfg.jobs))
     ui.kv("下载源", "BMCLAPI 优先" if cfg.download_source == "auto" else "仅官方（默认）")
     ui.kv("CurseForge", "已配置" if cfg.curseforge_api_key else "未配置（模组页可选 Modrinth）")
-    ui.kv("微软登录", "已配置 client id" if cfg.ms_client_id else "未配置（可选）")
+    ui.kv("微软登录", "自定义 client id" if cfg.ms_client_id else "内置默认（可直接登录）")
     ui.kv("主题", cfg.theme)
     ui.kv("上次版本", cfg.last_version or "—")
 

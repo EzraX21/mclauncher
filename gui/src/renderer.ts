@@ -10,7 +10,8 @@ interface ConfigInfo {
   ms_client_id: string;
 }
 interface AccountInfo { name: string; uuid: string; }
-interface StateInfo { version: string; config: ConfigInfo; versions: VersionInfo[]; platform: string; account: AccountInfo | null; }
+interface StateInfo { version: string; config: ConfigInfo; versions: VersionInfo[]; platform: string;
+  account: AccountInfo | null; default_client_id: string; }
 interface RemoteVersion { id: string; type: string; release: string; }
 interface RemoteInfo { latest: { release: string; snapshot: string }; versions: RemoteVersion[]; }
 interface ModHit { slug: string; title: string; description: string; downloads: number; author: string; }
@@ -475,12 +476,12 @@ function renderSettings(): void {
             </div>
             <button class="btn danger" id="ms-logout">退出登录</button>
           </div>` : `
-          <div class="field"><label>Azure 应用 client id（公开标识，不是密码）</label>
-            <input id="ms-client-id" type="text" value="${esc(cfg.ms_client_id)}" placeholder="00000000-0000-0000-0000-000000000000" />
+          <div class="field"><label>Azure 应用 client id（留空用内置 MCL 应用）</label>
+            <input id="ms-client-id" type="text" value="${esc(cfg.ms_client_id)}" placeholder="${esc(state.default_client_id)}" />
           </div>
           <div class="inline">
             <button class="btn primary" id="ms-login">登录微软账号</button>
-            <span class="small muted">注册步骤见 README「微软登录」；离线也能玩</span>
+            <span class="small muted">内置应用开箱即用；想用自己的 app 再填</span>
           </div>`}
       </div>
     </div>
@@ -530,9 +531,10 @@ function renderSettings(): void {
   });
   content.querySelector("#ms-login")?.addEventListener("click", async () => {
     const clientId = (content.querySelector("#ms-client-id") as HTMLInputElement).value.trim();
-    if (!clientId) { toast("先填 client id", "error"); return; }
     try {
-      await api("/api/config", { method: "POST", body: JSON.stringify({ ms_client_id: clientId }) });
+      if (clientId) {
+        await api("/api/config", { method: "POST", body: JSON.stringify({ ms_client_id: clientId }) });
+      }
       const task = await api<TaskInfo>("/api/login/start", {
         method: "POST", body: JSON.stringify({ client_id: clientId }),
       });

@@ -8,12 +8,7 @@ from .ui import UI
 
 
 def run_login(args, ui: UI, cfg: Config) -> int:
-    client_id = getattr(args, "client_id", None) or cfg.ms_client_id
-    if not client_id:
-        ui.error("还没配置微软 client id")
-        ui.note("先运行：mcl config set ms_client_id <你的 client id>")
-        ui.note("注册方法见 README 的「微软登录」一节")
-        return 2
+    client_id = getattr(args, "client_id", None) or cfg.ms_client_id or auth.DEFAULT_CLIENT_ID
 
     shown = {"done": False}
 
