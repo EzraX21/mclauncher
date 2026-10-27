@@ -166,7 +166,14 @@ class ModsPane(Vertical):
         if not version_id:
             self.app.notify("先选一个版本", severity="warning")
             return
+        self.log_view.display = True
         loader, game = self._loader_and_game(version_id)
+        if loader == "vanilla":
+            self._log("[yellow]这个版本是原版，没有加载器，搜不到模组。"
+                      "先去「版本」页点「装加载器」。[/]")
+            self.app.notify("原版版本没有加载器：先装 Fabric / Quilt / Forge / NeoForge",
+                            severity="warning", timeout=8)
+            return
         provider = self.provider()
         if provider == "curseforge" and not curseforge.api_key(self.cfg):
             self._log("[yellow]没配 CurseForge API key，先用 Modrinth，"
@@ -191,7 +198,12 @@ class ModsPane(Vertical):
         if not version_id:
             return
         loader, game = self._loader_and_game(version_id)
+        if loader == "vanilla":
+            self.app.notify("这个版本是原版，装不了模组：先装加载器",
+                            severity="warning", timeout=8)
+            return
         hit = self.results[row]
+        self.log_view.display = True
         provider = self.provider()
         if self.cancel_event is not None:
             self.cancel_event.set()
@@ -221,7 +233,10 @@ class ModsPane(Vertical):
             return
         self.results = hits
         ui_call(self, self._fill_results)
-        self._log_threadsafe(f"找到 {len(hits)} 个结果")
+        if hits:
+            self._log_threadsafe(f"找到 {len(hits)} 个结果")
+        else:
+            self._log_threadsafe("[yellow]没搜到结果，换个关键词或检查加载器/游戏版本[/]")
 
     def _fill_results(self) -> None:
         table = self.query_one("#results-table", DataTable)

@@ -200,3 +200,34 @@ class CurseForgeKeyTests(unittest.IsolatedAsyncioTestCase):
                     os.environ.pop("MCLAUNCHER_CONFIG", None)
                 else:
                     os.environ["MCLAUNCHER_CONFIG"] = previous
+
+
+class ModsPaneTests(unittest.IsolatedAsyncioTestCase):
+    async def test_vanilla_version_warns_instead_of_silent_empty(self):
+        from mclauncher.tui.panes.mods import ModsPane
+
+        with tempfile.TemporaryDirectory() as tmp:
+            previous = os.environ.get("MCLAUNCHER_CONFIG")
+            os.environ["MCLAUNCHER_CONFIG"] = str(Path(tmp) / "config.json")
+            try:
+                root = Path(tmp) / "game"
+                make_version(root)
+                app = MclauncherApp(Config(game_dir=str(root), download_source="official"))
+                with mock.patch.object(Manifest, "load",
+                                       classmethod(lambda cls, source="official": Manifest(FAKE_MANIFEST))):
+                    async with app.run_test(size=(120, 40)) as pilot:
+                        await pilot.pause()
+                        app.query_one(TabbedContent).active = "tab-mods"
+                        await pilot.pause()
+                        pane = app.query_one(ModsPane)
+                        app.query_one("#m-query").value = "sodium"
+                        pane._search()
+                        await pilot.pause(0.5)
+                        self.assertTrue(pane.log_view.display)
+                        self.assertEqual(pane.results, [])
+                        await pilot.press("q")
+            finally:
+                if previous is None:
+                    os.environ.pop("MCLAUNCHER_CONFIG", None)
+                else:
+                    os.environ["MCLAUNCHER_CONFIG"] = previous
