@@ -21,9 +21,32 @@ def _electron() -> tuple[Path, Path] | None:
     return None
 
 
+def _native_window(url: str) -> bool:
+    """用 pywebview 开一个真正的桌面窗口（GTK/WebKit、WebView2、WKWebView）。"""
+    try:
+        import webview
+    except ImportError:
+        return False
+    try:
+        webview.create_window("mclauncher", url, width=1180, height=760,
+                              min_size=(900, 600), background_color="#f5f6f8")
+        webview.start()
+        return True
+    except Exception:  # noqa: BLE001 - 没有可用的 webview 后端就交给后面的兜底
+        return False
+
+
 def run_gui(args, ui: UI, cfg: Config) -> int:
     httpd, url = serve(cfg, args.port)
     ui.note(f"界面地址：{url}")
+
+    if not args.web and not getattr(args, "electron", False):
+        ui.note("打开原生窗口 …")
+        if _native_window(url):
+            httpd.shutdown()
+            return 0
+        ui.warn("没有可用的原生窗口后端，尝试 Electron / 浏览器")
+
     electron = None if args.web else _electron()
     if electron is None:
         if not getattr(args, "no_browser", False):

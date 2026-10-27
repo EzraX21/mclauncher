@@ -109,7 +109,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = sub.add_parser("gui", help="打开图形界面")
     p.add_argument("--web", action="store_true", help="用浏览器打开，不启动 Electron")
     p.add_argument("--port", type=int, default=0, help="固定端口（默认随机）")
-    p.add_argument("--no-browser", action="store_true", help="只启动服务，不自动打开浏览器")
+    p.add_argument("--no-browser", action="store_true", help="只启动服务，不打开窗口/浏览器")
+    p.add_argument("--electron", action="store_true", help="强制用 Electron 窗口")
 
     p = sub.add_parser("doctor", help="检查运行环境")
     p.add_argument("--network", action="store_true", help="顺便测一下下载源连通性")

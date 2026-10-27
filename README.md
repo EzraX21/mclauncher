@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mclauncher ───────────────────────────── v2.4.0 · Minecraft 启动器 ─┐
+┌ mclauncher ───────────────────────────── v2.4.1 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -37,10 +37,24 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ![版本列表](docs/gui-versions.png)
 
 ```bash
-mclauncher gui          # 有 Electron 就开窗口，没有就用浏览器
-mclauncher gui --web    # 强制浏览器
-mclauncher gui --web --no-browser --port 8765   # 只起服务
+mclauncher gui           # 原生桌面窗口（pywebview：GTK/WebView2/WKWebView）
+mclauncher gui --web     # 浏览器
+mclauncher gui --electron  # 开发时用仓库里的 Electron
+mclauncher gui --no-browser --port 8765   # 只起服务
 ```
+
+窗口是真正的桌面窗口，不是浏览器标签页。Linux 依赖 WebKitGTK 和 PyGObject：
+
+```bash
+# Arch
+sudo pacman -S webkit2gtk-4.1 python-gobject
+# Debian / Ubuntu
+sudo apt install python3-gi gir1.2-webkit2-4.1
+pip install "mclauncher[gui]"
+```
+
+deb / rpm / Arch 包已经把 `python3-gi`、`webkit2gtk-4.1` 写成依赖，装包时自动带上。
+没有 pywebview 时会退回 Electron（仓库里）或浏览器。
 
 TUI 里能干的事 GUI 里都有：版本列表（启动 / 装加载器）、安装原版（进度条）、
 Modrinth 搜索与本地模组管理、设置。

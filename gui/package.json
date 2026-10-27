@@ -1,7 +1,7 @@
 {
   "name": "mclauncher-gui",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "mclauncher GUI (Electron + TypeScript)",
   "main": "dist/main.cjs",
   "scripts": {

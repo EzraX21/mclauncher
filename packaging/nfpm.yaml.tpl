@@ -27,9 +27,15 @@ overrides:
   deb:
     depends:
       - python3 (>= 3.10)
+      - python3-gi
+      - gir1.2-webkit2-4.1
   rpm:
     depends:
       - python3 >= 3.10
+      - python3-gobject
+      - webkit2gtk4.1
   archlinux:
     depends:
       - python>=3.10
+      - python-gobject
+      - webkit2gtk-4.1

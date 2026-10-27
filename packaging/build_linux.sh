@@ -29,7 +29,7 @@ if [ -d gui/dist ]; then
 fi
 
 echo "==> 收集依赖到 build/vendor"
-uv pip install --target build/vendor --no-compile -q ".[cli]"
+uv pip install --target build/vendor --no-compile -q ".[cli,gui]"
 rm -rf build/vendor/bin
 
 echo "==> deb / rpm / archlinux"
