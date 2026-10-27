@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, auth, crash, loaders, modpacks, modrinth
+from . import __version__, auth, crash, loaders, modpacks, modrinth, resources
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -271,6 +271,24 @@ def start_modpack(data: bytes, filename: str, name: str = "") -> dict:
     return task
 
 
+def start_resource_install(kind: str, version_id: str, slug: str) -> dict:
+    cfg = _ACTIVE_CFG
+    task = _new_task("resource")
+
+    def run() -> None:
+        try:
+            path = resources.install(kind, version_id, slug, cfg)
+            _log(task, f"已安装 {path.name}")
+            task["result"] = {"file": path.name}
+            task["state"] = "done"
+        except Exception as exc:  # noqa: BLE001
+            task["error"] = str(exc)
+            task["state"] = "error"
+
+    threading.Thread(target=run, daemon=True).start()
+    return task
+
+
 def launch_version(version_id: str) -> dict:
     cfg = _ACTIVE_CFG
     resolved = resolve(cfg.root(), version_id)
@@ -375,6 +393,17 @@ class Handler(BaseHTTPRequestHandler):
                               "description": hit.description, "downloads": hit.downloads,
                               "author": hit.author} for hit in hits],
                 })
+            if parsed.path == "/api/resources":
+                kind = query.get("kind", ["shader"])[0]
+                version_id = query.get("version", [""])[0]
+                text = query.get("q", [""])[0]
+                if not version_id:
+                    return self._error("缺少 version")
+                if text:
+                    return self._json({"hits": resources.search(
+                        kind, text, version_id, _ACTIVE_CFG.download_source)})
+                return self._json({"files": resources.local(
+                    kind, _ACTIVE_CFG, version_id)})
             if parsed.path == "/api/crash":
                 version_id = query.get("version", [""])[0] or None
                 return self._json(crash.analyze_version(_ACTIVE_CFG, version_id))
@@ -428,6 +457,14 @@ class Handler(BaseHTTPRequestHandler):
                     if task and task["state"] == "running":
                         task["state"] = "cancelled"
                 return self._json({"ok": True})
+            if parsed.path == "/api/resources/install":
+                return self._json(start_resource_install(
+                    body.get("kind", "shader"), body.get("version", ""),
+                    body.get("slug", "")))
+            if parsed.path == "/api/resources/delete":
+                ok = resources.remove(body.get("kind", "shader"), _ACTIVE_CFG,
+                                      body.get("version", ""), body.get("name", ""))
+                return self._json({"ok": ok})
             if parsed.path == "/api/mods/local/toggle":
                 version_id = body.get("version", "")
                 matches = find_mods(_ACTIVE_CFG.mods_path(version_id), body.get("name", ""))

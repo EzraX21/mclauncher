@@ -1,4 +1,4 @@
-type View = "versions" | "install" | "mods" | "settings";
+type View = "versions" | "install" | "resources" | "mods" | "settings";
 
 interface VersionInfo {
   id: string; loader: string; java: number | null; mods: number; has_jar: boolean; type: string;
@@ -28,6 +28,8 @@ let remote: RemoteVersion[] = [];
 let remoteLoaded = false;
 let modsVersion = "";
 let modsTimer: number | null = null;
+let resourceKind = "shader";
+let resourceVersion = "";
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
@@ -50,6 +52,7 @@ darkMedia.addEventListener("change", () => {
 const icons: Record<View, string> = {
   versions: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z"/></svg>',
   install: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a1 1 0 0 1 1 1v6.6l2.3-2.3 1.4 1.4L8 12.4 3.3 7.7l1.4-1.4L7 8.6V2a1 1 0 0 1 1-1zM2 13h12v2H2v-2z"/></svg>',
+  resources: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.4 2.6a2 2 0 0 0-2.8 0L4 9.2V12h2.8l6.6-6.6a2 2 0 0 0 0-2.8zM3 13h10v1.5H3z"/></svg>',
   mods: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 1v2h4V1h2v2h2v2h-2v4h2v2h-2v2H2v-2H1V9h2V5H1V3h2V1h3zm0 2H3v2h2v4H3v2h10v-2h-2V5h2V3h-2v2H6V3z"/></svg>',
   settings: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 5.5A2.5 2.5 0 1 0 8 10.5 2.5 2.5 0 0 0 8 5.5zm0-1.5 1.1-1.9 1.7.7.2 2.2 1.9 1.1V8l-1.9 1.1-.2 2.2-1.7.7L8 12l-1.1 1.9-1.7-.7-.2-2.2L3.1 9.9V8L5 6.9l.2-2.2 1.7-.7L8 4z"/></svg>',
 };
@@ -66,7 +69,7 @@ function shell(): string {
         </div>
       </div>
       <nav class="nav" id="nav">
-        ${(["versions", "install", "mods", "settings"] as View[]).map((name) => `
+        ${(["versions", "install", "resources", "mods", "settings"] as View[]).map((name) => `
           <button class="nav-item" data-view="${name}">
             ${icons[name]}<span>${labelOf(name)}</span>
           </button>`).join("")}
@@ -97,7 +100,7 @@ function shell(): string {
 }
 
 function labelOf(value: View): string {
-  return { versions: "版本列表", install: "安装", mods: "模组", settings: "设置" }[value];
+  return { versions: "版本列表", install: "安装", resources: "资源", mods: "模组", settings: "设置" }[value];
 }
 
 function esc(text: unknown): string {
@@ -171,6 +174,8 @@ function render(): void {
     renderVersions();
   } else if (view === "install") {
     renderInstall();
+  } else if (view === "resources") {
+    renderResources();
   } else if (view === "mods") {
     renderMods();
   } else {
@@ -377,6 +382,125 @@ function paintRemote(): void {
       }
     });
   });
+}
+
+// ---------------------------------------------------------------- 资源
+function renderResources(): void {
+  setHeader("资源", "光影 / 材质包，来自 Modrinth");
+  const content = document.getElementById("content") as HTMLElement;
+  if (!resourceVersion || !state.versions.some((item) => item.id === resourceVersion)) {
+    resourceVersion = state.config.last_version || state.versions[0]?.id || "";
+  }
+  const options = state.versions.map((version) =>
+    `<option value="${esc(version.id)}" ${version.id === resourceVersion ? "selected" : ""}>${esc(version.id)}</option>`).join("");
+  content.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">已安装</span>
+        <div class="inline">
+          <select id="res-kind">
+            <option value="shader" ${resourceKind === "shader" ? "selected" : ""}>光影</option>
+            <option value="resourcepack" ${resourceKind === "resourcepack" ? "selected" : ""}>材质包</option>
+          </select>
+          <select id="res-version">${options || '<option value="">没有已装版本</option>'}</select>
+          <button class="btn" id="res-refresh">刷新</button>
+        </div>
+      </div>
+      <div class="list" id="res-local"><div class="empty">加载中…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">搜索 Modrinth</span>
+        <div class="inline">
+          <input class="search" id="res-query" placeholder="例如 Complementary" />
+          <button class="btn primary" id="res-search">搜索</button>
+        </div>
+      </div>
+      <div class="list" id="res-results"><div class="empty">输入关键词搜索</div></div>
+    </div>`;
+  (content.querySelector("#res-kind") as HTMLSelectElement).addEventListener("change", (event) => {
+    resourceKind = (event.target as HTMLSelectElement).value;
+    void loadResourceLocal();
+  });
+  (content.querySelector("#res-version") as HTMLSelectElement).addEventListener("change", (event) => {
+    resourceVersion = (event.target as HTMLSelectElement).value;
+    void loadResourceLocal();
+  });
+  content.querySelector("#res-refresh")?.addEventListener("click", () => void loadResourceLocal());
+  content.querySelector("#res-search")?.addEventListener("click", () => void searchResources());
+  (content.querySelector("#res-query") as HTMLInputElement).addEventListener("keydown", (event) => {
+    if (event.key === "Enter") void searchResources();
+  });
+  void loadResourceLocal();
+}
+
+async function loadResourceLocal(): Promise<void> {
+  const list = document.getElementById("res-local");
+  if (!list || !resourceVersion) return;
+  try {
+    const data = await api<{ files: { name: string; size: number; dir: boolean }[] }>(
+      `/api/resources?kind=${resourceKind}&version=${encodeURIComponent(resourceVersion)}`);
+    if (!data.files.length) {
+      list.innerHTML = `<div class="empty">还没有安装</div>`;
+      return;
+    }
+    list.innerHTML = data.files.map((item) => `
+      <div class="list-row">
+        <div class="grow"><div class="title">${esc(item.name)}</div>
+          <div class="desc">${item.size ? `${(item.size / 1048576).toFixed(1)} MB` : "文件夹"}</div></div>
+        <button class="btn sm danger" data-res-del="${esc(item.name)}">删除</button>
+      </div>`).join("");
+    list.querySelectorAll<HTMLButtonElement>("[data-res-del]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        await api("/api/resources/delete", { method: "POST", body: JSON.stringify({
+          kind: resourceKind, version: resourceVersion, name: button.dataset.resDel,
+        }) });
+        toast("已删除", "ok");
+        void loadResourceLocal();
+      });
+    });
+  } catch (error) {
+    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
+}
+
+async function searchResources(): Promise<void> {
+  const input = document.getElementById("res-query") as HTMLInputElement;
+  const query = input.value.trim();
+  const list = document.getElementById("res-results");
+  if (!query || !resourceVersion || !list) return;
+  list.innerHTML = `<div class="empty">搜索中…</div>`;
+  try {
+    const data = await api<{ hits: { slug: string; title: string; description: string; downloads: number }[] }>(
+      `/api/resources?kind=${resourceKind}&version=${encodeURIComponent(resourceVersion)}&q=${encodeURIComponent(query)}`);
+    if (!data.hits.length) {
+      list.innerHTML = `<div class="empty">没有搜到结果</div>`;
+      return;
+    }
+    list.innerHTML = data.hits.map((hit) => `
+      <div class="list-row">
+        <div class="grow"><div class="title">${esc(hit.title)}</div>
+          <div class="desc">${esc(hit.description)}</div></div>
+        <span class="small muted">${hit.downloads.toLocaleString()} 次</span>
+        <button class="btn primary sm" data-res-install="${esc(hit.slug)}">安装</button>
+      </div>`).join("");
+    list.querySelectorAll<HTMLButtonElement>("[data-res-install]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        try {
+          const task = await api<TaskInfo>("/api/resources/install", {
+            method: "POST", body: JSON.stringify({
+              kind: resourceKind, version: resourceVersion, slug: button.dataset.resInstall,
+            }),
+          });
+          watchTask(task, "安装资源");
+        } catch (error) {
+          toast((error as Error).message, "error");
+        }
+      });
+    });
+  } catch (error) {
+    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
 }
 
 // ---------------------------------------------------------------- 模组
@@ -758,7 +882,7 @@ function setView(next: View): void {
 
 function viewFromHash(): View {
   const value = location.hash.replace(/^#\/?/, "");
-  return (["versions", "install", "mods", "settings"] as View[]).includes(value as View)
+  return (["versions", "install", "resources", "mods", "settings"] as View[]).includes(value as View)
     ? (value as View)
     : "versions";
 }
