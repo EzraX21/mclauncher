@@ -13,6 +13,11 @@ Write-Host "mclauncher $env:MCLAUNCHER_VERSION"
 & $python -m pip install --upgrade pip
 & $python -m pip install ".[cli]" pyinstaller
 
+if (Test-Path "gui/dist") {
+    Remove-Item -Recurse -Force "mclauncher/webui_dist" -ErrorAction SilentlyContinue
+    Copy-Item -Recurse "gui/dist" "mclauncher/webui_dist"
+}
+
 & $python -m PyInstaller packaging/windows/mclauncher.spec --noconfirm `
     --distpath dist --workpath build/pyinstaller
 

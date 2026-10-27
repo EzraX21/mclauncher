@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mclauncher"
-version = "2.3.3"
+version = "2.4.0"
 description = "Minecraft launcher with a full-screen TUI: download, version management, mods and launching"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -36,4 +36,4 @@ Homepage = "https://github.com/ezrax21/mclauncher"
 packages = ["mclauncher", "mclauncher.tui", "mclauncher.tui.panes"]
 
 [tool.setuptools.package-data]
-mclauncher = ["tui/*.tcss"]
+mclauncher = ["tui/*.tcss", "webui_dist/*"]

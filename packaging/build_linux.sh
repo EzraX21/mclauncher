@@ -17,6 +17,17 @@ command -v "$NFPM" >/dev/null || { echo "需要 nfpm：https://nfpm.goreleaser.c
 rm -rf build/vendor dist
 mkdir -p dist build
 
+echo "==> 构建前端"
+if [ -d gui/node_modules ]; then
+  ( cd gui && npm run build >/dev/null )
+else
+  echo "    跳过：gui/node_modules 不存在（先 cd gui && npm install --include=dev）"
+fi
+if [ -d gui/dist ]; then
+  rm -rf mclauncher/webui_dist
+  cp -R gui/dist mclauncher/webui_dist
+fi
+
 echo "==> 收集依赖到 build/vendor"
 uv pip install --target build/vendor --no-compile -q ".[cli]"
 rm -rf build/vendor/bin

@@ -1,0 +1,17 @@
+{
+  "name": "mclauncher-gui",
+  "private": true,
+  "version": "2.4.0",
+  "description": "mclauncher GUI (Electron + TypeScript)",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "npm run build && electron .",
+    "electron": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.0"
+  }
+}

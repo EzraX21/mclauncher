@@ -16,6 +16,10 @@ for package in ("textual", "rich", "questionary", "markdown_it", "mdit_py_plugin
     except Exception:
         pass
 
+webui = os.path.join(ROOT, "mclauncher", "webui_dist")
+if os.path.isdir(webui):
+    datas.append((webui, "mclauncher/webui_dist"))
+
 a = Analysis(
     [os.path.join(ROOT, "packaging", "entry.py")],
     pathex=[ROOT],

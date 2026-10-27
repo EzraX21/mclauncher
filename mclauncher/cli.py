@@ -14,7 +14,7 @@ from .prompts import Cancelled, PromptsUnavailable
 from .ui import UI
 from .versions import VersionError
 
-COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor"}
+COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor", "gui"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -106,6 +106,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("tui", help="打开全屏 TUI")
 
+    p = sub.add_parser("gui", help="打开图形界面")
+    p.add_argument("--web", action="store_true", help="用浏览器打开，不启动 Electron")
+    p.add_argument("--port", type=int, default=0, help="固定端口（默认随机）")
+    p.add_argument("--no-browser", action="store_true", help="只启动服务，不自动打开浏览器")
+
     p = sub.add_parser("doctor", help="检查运行环境")
     p.add_argument("--network", action="store_true", help="顺便测一下下载源连通性")
 
@@ -178,6 +183,10 @@ def main(argv=None) -> int:
             return run_tui(cfg)
         if args.command == "doctor":
             return doctor.run(args, ui, cfg)
+        if args.command == "gui":
+            from .gui_cmd import run_gui
+
+            return run_gui(args, ui, cfg)
     except Cancelled:
         ui.blank()
         ui.warn("已取消。")

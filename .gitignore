@@ -11,3 +11,4 @@ dist/
 .pkgtest/
 
 *.log
+mclauncher/webui_dist/

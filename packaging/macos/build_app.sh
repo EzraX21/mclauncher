@@ -12,6 +12,11 @@ PY
 python3 -m pip install --upgrade pip
 python3 -m pip install ".[cli]" pyinstaller
 
+if [ -d gui/dist ]; then
+    rm -rf mclauncher/webui_dist
+    cp -R gui/dist mclauncher/webui_dist
+fi
+
 python3 -m PyInstaller packaging/macos/mclauncher.spec --noconfirm \
     --distpath dist --workpath build/pyinstaller-macos
 

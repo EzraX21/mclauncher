@@ -1,6 +1,6 @@
 # mclauncher
 
-> 全屏 TUI 的 Minecraft 启动器：下载原版、装 Fabric/Quilt、搜模组、启动游戏，一个终端窗口里全干完。
+> Minecraft 启动器：全屏 TUI + 图形界面，下载原版、装 Fabric/Quilt/Forge/NeoForge、搜模组、启动游戏。
 > 默认走 **官方源**；想要镜像可以切 BMCLAPI（和 PCL 同一套）。
 
 PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加载器 → 装模组 → 启动」这条链路自己做了一遍，
@@ -9,7 +9,7 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 ## 界面
 
 ```
-┌ mclauncher ───────────────────────────── v2.3.3 · Minecraft 启动器 ─┐
+┌ mclauncher ───────────────────────────── v2.4.0 · Minecraft 启动器 ─┐
 │ 版本 │ 安装 │ 模组 │ 设置                                              │
 ├──────────────────────────────────────────────────────────────────────┤
 │ 版本                    加载器      Java    模组   客户端             │
@@ -28,6 +28,48 @@ PCL 2.99 起不再提供游戏本体下载。这个项目把「下载 → 装加
 - **设置**：游戏目录、Java、内存、用户名、版本隔离、下载源
 
 按键：`Tab` 切标签，`q` 退出，`ctrl+r` 刷新，`ctrl+s` 保存设置。日志默认折叠，点「日志」按钮展开；开始安装 / 启动时会自动展开。
+
+## 图形界面
+
+除了 TUI，还有一套 Electron + TypeScript 的图形界面，配色和布局参考 PCL：
+左侧图标导航、顶部标题栏、白底卡片、蓝色主色。
+
+![版本列表](docs/gui-versions.png)
+
+```bash
+mclauncher gui          # 有 Electron 就开窗口，没有就用浏览器
+mclauncher gui --web    # 强制浏览器
+mclauncher gui --web --no-browser --port 8765   # 只起服务
+```
+
+TUI 里能干的事 GUI 里都有：版本列表（启动 / 装加载器）、安装原版（进度条）、
+Modrinth 搜索与本地模组管理、设置。
+
+| 安装 | 模组 |
+| --- | --- |
+| ![安装](docs/gui-install.png) | ![模组](docs/gui-mods.png) |
+
+![设置](docs/gui-settings.png)
+
+**开发**
+
+```bash
+cd gui
+npm install --include=dev   # 如果 npm 全局配置了 omit=dev 需要这个参数
+npm run build               # 产出 gui/dist
+cd ..
+python -m mclauncher gui --web
+```
+
+单独跑 Electron 窗口：
+
+```bash
+python -m mclauncher gui --web --no-browser --port 8765 &
+MCLAUNCHER_GUI_URL=http://127.0.0.1:8765/ npm --prefix gui start
+```
+
+GUI 的后端是 `mclauncher/webui.py`，只监听 `127.0.0.1`，提供 `/api/state`、
+`/api/install`、`/api/mods`、`/api/launch` 这些接口；前端产物会打进 wheel / deb / rpm。
 
 ## 安装
 
@@ -231,6 +273,7 @@ mclauncher/
 │   ├── installer.py    下载计划与落地
 │   ├── net.py          并发下载 + SHA-1 + 断点续传 + 连接复用
 │   ├── sources.py      下载源候选（官方 / BMCLAPI / mcimirror）
+│   ├── webui.py        GUI 的本地 HTTP + JSON 服务
 │   ├── java.py         Java 探测与 Mojang 运行时下载
 │   ├── modrinth.py     Modrinth API
 │   ├── curseforge.py   CurseForge API（需要 key）
