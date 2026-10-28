@@ -374,6 +374,30 @@ CI (`.github/workflows/release.yml`) builds Linux + Windows on `v*` tags and pub
 release. AUR updates automatically once secrets are configured; the first `mcl-launcher`
 submission still has to be created on the AUR website.
 
+### R2 direct downloads (optional)
+
+After a Release is published, an extra `r2` job syncs every asset to Cloudflare R2 so the
+website can serve downloads from your own domain:
+
+```
+releases/<tag>/<file>     # versioned, immutable cache
+latest/<file>             # copy of the latest release
+latest.json               # tag + name/size/sha256
+```
+
+Configure repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `R2_ACCOUNT_ID` | Cloudflare account ID |
+| `R2_ACCESS_KEY_ID` | R2 API token Access Key ID |
+| `R2_SECRET_ACCESS_KEY` | R2 API token Secret Access Key |
+| `R2_BUCKET` | bucket name |
+
+Create the token under R2 → Manage R2 API Tokens with Object Read & Write scoped to the
+bucket, then attach a custom domain to it. Without secrets the job is skipped and the
+Release is unaffected. Set `downloadBase` in `MCL-web/public/config.js` on the site side.
+
 ## Project layout
 
 ```

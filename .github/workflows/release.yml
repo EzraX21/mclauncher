@@ -89,6 +89,66 @@ jobs:
           generate_release_notes: true
           prerelease: ${{ contains(github.ref_name, '-beta.') || contains(github.ref_name, '-rc.') }}
 
+  r2:
+    name: 同步到 Cloudflare R2
+    needs: [release]
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-beta.') && !contains(github.ref_name, '-rc.')
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: 检查 R2 配置
+        id: check
+        run: |
+          if [ -z "$R2_BUCKET" ] || [ -z "$R2_ACCOUNT_ID" ] || [ -z "$R2_ACCESS_KEY_ID" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "R2 secrets 未配置，跳过同步"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 下载 Release 产物
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          mkdir -p dist
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist
+      - name: 安装 AWS CLI
+        if: steps.check.outputs.configured == 'true'
+        run: pip install --quiet awscli
+      - name: 生成 latest.json
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          files = []
+          for path in sorted(pathlib.Path("dist").iterdir()):
+              if not path.is_file():
+                  continue
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              files.append({"name": path.name, "size": path.stat().st_size, "sha256": digest})
+          manifest = {"tag": os.environ["TAG"], "assets": files}
+          pathlib.Path("latest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+          print(f"latest.json: {len(files)} files")
+          PY
+      - name: 上传到 R2
+        if: steps.check.outputs.configured == 'true'
+        run: |
+          ENDPOINT="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          aws s3 cp dist "s3://${R2_BUCKET}/releases/${TAG}/" --recursive             --endpoint-url "$ENDPOINT" --cache-control "public, max-age=31536000, immutable"
+          for file in dist/*; do
+            [ -f "$file" ] || continue
+            aws s3 cp "$file" "s3://${R2_BUCKET}/latest/$(basename "$file")"               --endpoint-url "$ENDPOINT" --cache-control "public, max-age=300"
+          done
+          aws s3 cp latest.json "s3://${R2_BUCKET}/latest.json"             --endpoint-url "$ENDPOINT" --content-type "application/json"             --cache-control "public, max-age=300"
+
   aur:
     name: 提交 AUR
     if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-beta.') && !contains(github.ref_name, '-rc.')
