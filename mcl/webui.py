@@ -22,7 +22,7 @@ from .java import ensure_java
 from .launch import build_command, ensure_libraries, prepare_natives, spawn
 from .manifest import Manifest
 from .rules import os_name
-from .versions import detect_loader, resolve, scan
+from .versions import VersionError, detect_loader, remove as remove_version, resolve, scan
 
 TASKS: dict[str, dict] = {}
 TASKS_LOCK = threading.Lock()
@@ -452,6 +452,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": True})
             if parsed.path == "/api/launch":
                 return self._json(launch_version(body.get("id", "")))
+            if parsed.path == "/api/versions/remove":
+                version_id = str(body.get("id", "")).strip()
+                try:
+                    remove_version(_ACTIVE_CFG.root(), version_id)
+                except VersionError as exc:
+                    return self._error(str(exc), 404)
+                if _ACTIVE_CFG.last_version == version_id:
+                    _ACTIVE_CFG.last_version = None
+                    _ACTIVE_CFG.save()
+                return self._json({"ok": True, "versions": _versions()})
             if parsed.path == "/api/cancel":
                 with TASKS_LOCK:
                     task = TASKS.get(body.get("id", ""))

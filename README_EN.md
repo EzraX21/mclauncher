@@ -268,6 +268,8 @@ permission problems, with suggested fixes. The GUI exposes it per version.
 mcl install 1.20.1                  # install vanilla
 mcl install latest --no-assets -y
 mcl versions                        # installed versions
+mcl remove 1.20.1                   # delete a version (-y skips confirmation)
+mcl versions remove 1.20.1          # same
 mcl loaders fabric 1.20.1           # install Fabric
 mcl loaders forge 1.20.1            # install Forge (official installer)
 mcl loaders neoforge 1.21.1         # install NeoForge

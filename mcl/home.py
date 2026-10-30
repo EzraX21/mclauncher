@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -13,7 +12,7 @@ from . import install_cmd, launch_cmd, loaders, mods_cmd, prompts, settings_cmd
 from .config import Config
 from .java import find_all, probe
 from .ui import UI
-from .versions import VersionError, resolve, scan
+from .versions import VersionError, remove as remove_version, resolve, scan
 
 def _menu():
     """questionary 是可选依赖，菜单在真正用到时才构造。"""
@@ -90,8 +89,17 @@ def _versions(ui: UI, cfg: Config) -> None:
             _open_path(cfg.version_dir(version_id))
             continue
         if action == "delete":
-            if prompts.confirm(ui, f"确定删除 {version_id}？存档不会动，但版本文件会没", default=False):
-                shutil.rmtree(cfg.version_dir(version_id), ignore_errors=True)
+            detail = ("该版本目录里的存档、模组和配置会一起删除"
+                      if cfg.isolate_versions else "公共存档和模组不会动")
+            if prompts.confirm(ui, f"确定删除 {version_id}？{detail}。", default=False):
+                try:
+                    remove_version(cfg.root(), version_id)
+                except VersionError as exc:
+                    ui.error(str(exc))
+                    return
+                if cfg.last_version == version_id:
+                    cfg.last_version = None
+                    cfg.save()
                 ui.ok(f"已删除 {version_id}")
                 return
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -127,6 +128,22 @@ def _java_major_of(root: Path, data: dict, depth: int = 0) -> Optional[int]:
         return _java_major_of(root, load_version(root, parent), depth + 1)
     except VersionError:
         return None
+
+
+def remove(root: Path, version_id: str) -> None:
+    """删除已安装版本目录；只允许删除 versions/ 下的一级目录。"""
+    if not version_id or version_id in (".", "..") or "/" in version_id or "\\" in version_id:
+        raise VersionError(f"非法版本名：{version_id}")
+    base = (Path(root) / "versions").resolve()
+    target = (base / version_id).resolve()
+    if target.parent != base:
+        raise VersionError(f"非法版本路径：{version_id}")
+    if not target.is_dir():
+        raise VersionError(f"找不到版本 {version_id}")
+    try:
+        shutil.rmtree(target)
+    except OSError as exc:
+        raise VersionError(f"删除失败：{exc}") from exc
 
 
 def scan(root: Path) -> list[InstalledVersion]:

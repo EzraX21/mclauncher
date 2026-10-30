@@ -224,6 +224,7 @@ function renderVersions(): void {
             <button class="btn" data-crash="${esc(version.id)}">崩溃分析</button>
             <button class="btn" data-loader="${esc(version.id)}">装加载器</button>
             <button class="btn primary" data-launch="${esc(version.id)}">启动</button>
+            <button class="btn danger" data-delete="${esc(version.id)}">删除</button>
           </div>`).join("")}
       </div>
     </div>`;
@@ -235,6 +236,42 @@ function renderVersions(): void {
   });
   content.querySelectorAll<HTMLButtonElement>("[data-crash]").forEach((button) => {
     button.addEventListener("click", () => openCrash(button.dataset.crash as string));
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-delete]").forEach((button) => {
+    button.addEventListener("click", () => openDelete(button.dataset.delete as string));
+  });
+}
+
+function openDelete(id: string): void {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  const detail = state.config.isolate_versions
+    ? "该版本目录里的存档、模组和配置会一起删除。"
+    : "只删除版本文件，公共存档和模组不会动。";
+  overlay.innerHTML = `<div class="modal">
+    <h3>删除 ${esc(id)}</h3>
+    <div class="small muted" style="margin-bottom:16px">${detail}</div>
+    <div class="actions">
+      <button class="btn" id="delete-cancel">取消</button>
+      <button class="btn danger" id="delete-confirm">删除</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector("#delete-cancel")?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  overlay.querySelector("#delete-confirm")?.addEventListener("click", async () => {
+    const button = overlay.querySelector("#delete-confirm") as HTMLButtonElement;
+    button.disabled = true;
+    try {
+      await api("/api/versions/remove", { method: "POST", body: JSON.stringify({ id }) });
+      close();
+      toast(`已删除 ${id}`, "ok");
+      await refreshState();
+    } catch (error) {
+      button.disabled = false;
+      toast(`删除失败：${(error as Error).message}`, "error");
+    }
   });
 }
 

@@ -5,8 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mcl.versions import (detect_loader, library_key, maven_path,
-                                   resolve, scan)
+from mcl.versions import (VersionError, detect_loader, library_key, maven_path,
+                                   remove, resolve, scan)
 
 
 def write_version(root: Path, version_id: str, payload: dict, jar: bool = False):
@@ -86,6 +86,19 @@ class VersionTests(unittest.TestCase):
             # 子版本的参数追加在父版本后面
             self.assertIn("-DFabricMcEmu=net.minecraft.client.main.Main", resolved.data["arguments"]["jvm"])
             self.assertIn("-cp", resolved.data["arguments"]["jvm"])
+
+    def test_remove_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_version(root, "1.20.1", BASE, jar=True)
+            write_version(root, "1.20.2", BASE, jar=True)
+            remove(root, "1.20.1")
+            self.assertFalse((root / "versions" / "1.20.1").exists())
+            self.assertTrue((root / "versions" / "1.20.2").exists())
+            with self.assertRaises(VersionError):
+                remove(root, "1.20.1")
+            with self.assertRaises(VersionError):
+                remove(root, "../outside")
 
     def test_scan(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -265,6 +265,8 @@ GUI 版本列表每行有「崩溃分析」按钮。
 mcl install 1.20.1                  # 装原版
 mcl install latest --no-assets -y
 mcl versions                        # 已装版本
+mcl remove 1.20.1                   # 删除版本（-y 跳过确认）
+mcl versions remove 1.20.1          # 同上
 mcl loaders fabric 1.20.1           # 装 Fabric
 mcl loaders forge 1.20.1            # 装 Forge（官方安装器）
 mcl loaders neoforge 1.21.1         # 装 NeoForge

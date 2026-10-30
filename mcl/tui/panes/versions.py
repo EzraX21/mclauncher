@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import shutil
-
 from textual import work
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
@@ -14,7 +12,7 @@ from ... import auth
 from ...launch import build_command, ensure_libraries, prepare_natives, spawn, wait
 from ...loaders import install as install_loader
 from ...mods import list_mods
-from ...versions import load_version, resolve, scan
+from ...versions import VersionError, load_version, remove as remove_version, resolve, scan
 from ..common import Confirm, PaneTitle, UiProgress, ui_call
 from .loader import LoaderScreen
 
@@ -120,12 +118,22 @@ class VersionsPane(Vertical):
             return
 
         def done(confirmed: bool | None) -> None:
-            if confirmed:
-                shutil.rmtree(self.cfg.version_dir(version_id), ignore_errors=True)
-                self._log(f"[red]已删除 {version_id}[/]")
-                self.refresh_versions()
+            if not confirmed:
+                return
+            try:
+                remove_version(self.cfg.root(), version_id)
+            except VersionError as exc:
+                self.app.notify(str(exc), severity="error")
+                return
+            if self.cfg.last_version == version_id:
+                self.cfg.last_version = None
+                self.cfg.save()
+            self._log(f"[red]已删除 {version_id}[/]")
+            self.refresh_versions()
 
-        self.app.push_screen(Confirm(f"删除版本 {version_id}？存档不会动。"), done)
+        detail = ("该版本目录里的存档、模组和配置会一起删除"
+                  if self.cfg.isolate_versions else "公共存档和模组不会动")
+        self.app.push_screen(Confirm(f"删除版本 {version_id}？{detail}。"), done)
 
     def _open_loader(self) -> None:
         version_id = self.selected()

@@ -84,6 +84,16 @@ class WebuiTests(unittest.TestCase):
         post_json(self.url + "api/config", {"theme": "system"})
         self.assertEqual(Config.load().theme, "system")
 
+    def test_remove_version(self):
+        root = Path(self.tmp.name) / "game"
+        version_dir = root / "versions" / "1.20.1"
+        version_dir.mkdir(parents=True)
+        (version_dir / "1.20.1.json").write_text(json.dumps({"id": "1.20.1"}), encoding="utf-8")
+        data = post_json(self.url + "api/versions/remove", {"id": "1.20.1"})
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["versions"], [])
+        self.assertFalse(version_dir.exists())
+
     def test_modpack_upload(self):
         root = Path(self.tmp.name) / "game"
         version_dir = root / "versions" / "1.20.1"

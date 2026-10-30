@@ -16,8 +16,9 @@ from .prompts import Cancelled, PromptsUnavailable
 from .ui import UI
 from .versions import VersionError
 
-COMMANDS = {"install", "versions", "launch", "loaders", "mods", "java", "config", "tui", "doctor", "gui",
-            "login", "logout", "account", "modpack", "crash", "resources", "desktop"}
+COMMANDS = {"install", "versions", "remove", "uninstall", "launch", "loaders", "mods", "java",
+            "config", "tui", "doctor", "gui", "login", "logout", "account", "modpack",
+            "crash", "resources", "desktop"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -73,8 +74,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--list", action="store_true", help="列出官方版本")
     p.add_argument("-y", "--yes", action="store_true", help="全部用默认值")
 
-    p = sub.add_parser("versions", help="列出已装版本")
+    p = sub.add_parser("versions", help="列出 / 删除已装版本")
+    p.add_argument("action", nargs="?", default="list", choices=["list", "remove"])
+    p.add_argument("version", nargs="?", help="要删除的版本号")
     add_dir(p)
+    p.add_argument("-y", "--yes", action="store_true", help="删除时不确认")
+
+    p = sub.add_parser("remove", aliases=["uninstall"], help="删除已安装版本")
+    p.add_argument("version", help="版本号")
+    add_dir(p)
+    p.add_argument("-y", "--yes", action="store_true", help="不确认直接删除")
 
     p = sub.add_parser("launch", help="启动游戏")
     p.add_argument("--offline", action="store_true", help="强制离线模式，不用微软账号")
@@ -205,6 +214,10 @@ def main(argv=None) -> int:
     try:
         if args.command == "install":
             return install_cmd.run(args, ui, cfg)
+        if args.command in ("remove", "uninstall"):
+            from .versions_cmd import remove as versions_remove
+
+            return versions_remove(args, ui, cfg)
         if args.command == "versions":
             from .versions_cmd import run as versions_run
 
