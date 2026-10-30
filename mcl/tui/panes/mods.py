@@ -227,7 +227,7 @@ class ModsPane(Vertical):
                                          config=self.cfg)
             else:
                 hits = modrinth.search(query, loader=loader, game_version=game, limit=12,
-                                       source=self.cfg.download_source)
+                                       source=self.cfg.source)
         except Exception as exc:  # noqa: BLE001
             self._log_threadsafe(f"[red]搜索失败：{exc}[/]")
             return
@@ -284,7 +284,7 @@ class ModsPane(Vertical):
     @work(thread=True, group="mod-install", exclusive=True)
     def _install_worker(self, version_id: str, slug: str, loader: str, game: str,
                         provider: str = "modrinth") -> None:
-        source = self.cfg.download_source
+        source = self.cfg.source
         cancel = self.cancel_event
         try:
             if provider == "curseforge":

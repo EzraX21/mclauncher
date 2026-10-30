@@ -306,7 +306,8 @@ Paths:
 | `username` | Offline username |
 | `isolate_versions` | Per-version isolation, default on |
 | `jobs` | Download concurrency, default 8 |
-| `download_source` | `official` (default) / `auto` (BMCLAPI first) |
+| `download_source` | `official` (default) / `auto` (BMCLAPI first) / `custom` |
+| `mirror_url` | Custom BMCLAPI-compatible mirror base URL |
 | `theme` | GUI theme: `light` / `dark` / `system` |
 | `ms_client_id` | Override the built-in Azure client ID (optional) |
 | `curseforge_api_key` | CurseForge API key (optional) |
@@ -325,6 +326,22 @@ mcl config set download_source auto
 
 Mirrored: version manifest/JSON/client jar, libraries, asset objects, Java runtimes,
 Fabric meta. Modrinth API/CDN uses `mod.mcimirror.top`. Quilt always uses the official source.
+
+### Custom mirror
+
+If you have a **BMCLAPI-compatible** mirror (same path layout), point MCL at its base URL:
+
+```bash
+mcl config set download_source custom
+mcl config set mirror_url https://mirror.example.com
+
+# or for a single command
+mcl install 1.20.1 --mirror https://mirror.example.com
+```
+
+Only Mojang resources (manifest/JSON/jars/libraries/assets/Java/Fabric meta) are rewritten;
+Modrinth still uses the official API/CDN. Failed mirror requests fall back to Mojang.
+The GUI and TUI settings also expose a custom mirror option and URL field.
 
 ## CurseForge (optional)
 
@@ -421,7 +438,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                102 tests
+├── tests/                105 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -432,7 +449,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-102 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+105 tests covering rules, download plans, version merging, launch arguments, Java, mods,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations

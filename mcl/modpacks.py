@@ -168,11 +168,11 @@ def _ensure_base(cfg: Config, minecraft: str, on_log: Callable[[str], None],
     if target.exists():
         return
     on_log(f"先安装原版 {minecraft} …")
-    manifest = Manifest.load(cfg.download_source)
+    manifest = Manifest.load(cfg.source)
     entry = manifest.resolve(minecraft)
     version_json = manifest.version_json(entry)
     plan = build_plan(version_json, cfg.root(), with_assets=False,
-                      source=cfg.download_source)
+                      source=cfg.source)
     result = execute(plan, jobs=cfg.jobs, on_phase=on_phase, on_note=on_log)
     if result.errors:
         raise PackError(result.errors[0])
@@ -205,7 +205,7 @@ def install(path: Path, cfg: Config, name: Optional[str] = None,
         note(f"安装 {info.loader} {info.loader_version} …")
         loader_id = loaders.install(
             info.loader, info.minecraft, root, loader_version=info.loader_version,
-            source=cfg.download_source, java=java.path if java else None,
+            source=cfg.source, java=java.path if java else None,
             on_log=note,
         )
 
@@ -229,7 +229,7 @@ def install(path: Path, cfg: Config, name: Optional[str] = None,
                 continue
             destination = instance_dir / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
-            urls = sources.modrinth_candidates(pack_file.urls[0], cfg.download_source) \
+            urls = sources.modrinth_candidates(pack_file.urls[0], cfg.source) \
                 if "modrinth" in pack_file.urls[0] else [pack_file.urls[0]]
             alternates = tuple(urls[1:] + pack_file.urls[1:])
             tasks.append(DownloadTask(url=urls[0], dest=destination,

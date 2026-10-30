@@ -80,7 +80,7 @@ def run_launch(args, ui: UI, cfg: Config) -> int:
 
     prompts.spinner(ui, "检查依赖库",
                     lambda: ensure_libraries(resolved, cfg.root(), jobs=cfg.jobs,
-                                             on_phase=on_phase, source=cfg.download_source))
+                                             on_phase=on_phase, source=cfg.source))
     prompts.spinner(ui, "解压 natives", lambda: prepare_natives(resolved, cfg.root()))
 
     account = None

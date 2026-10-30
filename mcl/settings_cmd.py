@@ -12,7 +12,8 @@ EDITABLE = {
     "username": "离线用户名",
     "isolate_versions": "版本隔离（true/false）",
     "jobs": "下载并发数",
-    "download_source": "下载源（auto/official）",
+    "download_source": "下载源（auto/official/custom）",
+    "mirror_url": "自定义镜像 URL（BMCLAPI 兼容）",
     "curseforge_api_key": "CurseForge API key",
     "ms_client_id": "微软 Azure 应用 client id",
     "theme": "GUI 主题（light/dark/system）",
@@ -27,7 +28,10 @@ def show(ui: UI, cfg: Config) -> None:
     ui.kv("用户名", cfg.username)
     ui.kv("版本隔离", "开" if cfg.isolate_versions else "关")
     ui.kv("并发", str(cfg.jobs))
-    ui.kv("下载源", "BMCLAPI 优先" if cfg.download_source == "auto" else "仅官方（默认）")
+    ui.kv("下载源", {
+        "auto": "BMCLAPI 优先",
+        "custom": f"自定义镜像 {cfg.mirror_url or '（未填 URL）'}",
+    }.get(cfg.download_source, "仅官方（默认）"))
     ui.kv("CurseForge", "已配置" if cfg.curseforge_api_key else "未配置（模组页可选 Modrinth）")
     ui.kv("微软登录", "自定义 client id" if cfg.ms_client_id else "内置默认（可直接登录）")
     ui.kv("主题", cfg.theme)
@@ -43,9 +47,13 @@ def _coerce(key: str, value: str):
             raise ValueError("内存至少 512 MB")
         return number
     if key == "download_source":
-        if value not in ("auto", "official"):
-            raise ValueError("只能是 auto 或 official")
+        if value not in ("auto", "official", "custom"):
+            raise ValueError("只能是 auto / official / custom")
         return value
+    if key == "mirror_url":
+        if not value.startswith(("https://", "http://")):
+            raise ValueError("镜像 URL 要以 https:// 或 http:// 开头")
+        return value.rstrip("/")
     if key == "theme":
         if value not in ("light", "dark", "system"):
             raise ValueError("只能是 light / dark / system")

@@ -56,7 +56,7 @@ def _print_mods(ui: UI, cfg: Config, version_id: str) -> None:
 def _install_project(ui: UI, cfg: Config, version_id: str, reference: str,
                      loader: str, game_version: str, interactive: bool,
                      install_deps: bool = True) -> int:
-    source = cfg.download_source
+    source = cfg.source
     project = modrinth.get_project(reference, source)
     title = project.get("title", reference)
     version = modrinth.latest_version(project.get("id", reference), loader, game_version, source)
@@ -179,7 +179,7 @@ def run(args, ui: UI, cfg: Config) -> int:
                                      limit=10, config=cfg)
         else:
             hits = modrinth.search(query, loader=loader, game_version=game_version, limit=10,
-                                   source=cfg.download_source)
+                                   source=cfg.source)
         if not hits:
             ui.warn("没搜到结果，换个关键词？")
             return 0

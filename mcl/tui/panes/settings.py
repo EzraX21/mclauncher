@@ -37,7 +37,11 @@ class SettingsPane(Vertical):
             yield Static("版本隔离", classes="label")
             yield Switch(value=True, id="s-isolate")
             yield Static("下载源", classes="label")
-            yield Select([("仅官方（默认）", "official"), ("BMCLAPI 镜像优先", "auto")], id="s-source")
+            yield Select([("仅官方（默认）", "official"), ("BMCLAPI 镜像优先", "auto"),
+                          ("自定义镜像", "custom")], id="s-source")
+        with Horizontal(classes="row"):
+            yield Static("镜像 URL", classes="label")
+            yield Input(placeholder="https://bmclapi2.bangbang93.com", id="s-mirror")
         with Horizontal(classes="row"):
             yield Button("保存", id="s-save", variant="success")
             yield Button("检测 Java", id="s-java-check")
@@ -55,6 +59,7 @@ class SettingsPane(Vertical):
         self.query_one("#s-cf-key", Input).value = cfg.curseforge_api_key
         self.query_one("#s-isolate", Switch).value = cfg.isolate_versions
         self.query_one("#s-source", Select).value = cfg.download_source
+        self.query_one("#s-mirror", Input).value = cfg.mirror_url
         self._log(
             f"[bold]mcl {__version__}[/]  ·  Python {sys.version.split()[0]}  ·  "
             f"{platform.system()} {platform.machine()}"
@@ -103,6 +108,7 @@ class SettingsPane(Vertical):
         value = self.query_one("#s-source", Select).value
         if isinstance(value, str):
             cfg.download_source = value
+        cfg.mirror_url = self.query_one("#s-mirror", Input).value.strip().rstrip("/")
         path = cfg.save()
         self._log(f"[green]已保存到 {path}[/]")
         self.app.notify("设置已保存", severity="information")

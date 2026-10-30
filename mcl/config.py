@@ -51,6 +51,7 @@ class Config:
     isolate_versions: bool = True
     jobs: int = 8
     download_source: str = "official"
+    mirror_url: str = ""
     theme: str = "light"
     ms_client_id: str = ""
     curseforge_api_key: str = ""
@@ -78,6 +79,15 @@ class Config:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(asdict(self), ensure_ascii=False, indent=2), encoding="utf-8")
         return target
+
+    @property
+    def source(self) -> str:
+        """下载源标识：official / auto / custom:<URL>。"""
+        mode = (self.download_source or "official").lower()
+        if mode == "custom":
+            base = (self.mirror_url or "").strip().rstrip("/")
+            return f"custom:{base}" if base else "official"
+        return mode if mode in ("official", "auto") else "official"
 
     # ------------------------------------------------------------ 路径
     def root(self) -> Path:

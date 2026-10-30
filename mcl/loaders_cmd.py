@@ -32,7 +32,7 @@ def run(args, ui: UI, cfg: Config) -> int:
         ui, f"安装 {args.name} 到 {args.game}",
         lambda: loaders.install(
             args.name, args.game, cfg.root(), args.loader_version,
-            source=cfg.download_source, java=java,
+            source=cfg.source, java=java,
         ),
     )
     ui.ok(f"已创建版本 {version_id}")

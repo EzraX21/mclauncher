@@ -55,8 +55,10 @@ def build_parser() -> argparse.ArgumentParser:
         p.add_argument("-d", "--dir", dest="directory", help="游戏目录（默认读配置）")
 
     def add_source(p):
-        p.add_argument("--source", choices=["auto", "official"],
-                       help="下载源：official=只走官方（默认），auto=BMCLAPI 优先（PCL 同款）")
+        p.add_argument("--source", choices=["auto", "official", "custom"],
+                       help="下载源：official=只走官方，auto=BMCLAPI 优先，custom=自定义镜像")
+        p.add_argument("--mirror", metavar="URL",
+                       help="自定义 BMCLAPI 兼容镜像 base URL（隐含 --source custom）")
 
     p = sub.add_parser("install", help="下载 / 安装原版")
     p.add_argument("target", nargs="?", help="版本号，或 latest / latest-snapshot")
@@ -191,7 +193,13 @@ def main(argv=None) -> int:
             return 1
 
     _apply_directory(args, cfg)
-    if getattr(args, "source", None):
+    if getattr(args, "mirror", None):
+        cfg.mirror_url = args.mirror.strip()
+        cfg.download_source = "custom"
+    elif getattr(args, "source", None):
+        if args.source == "custom" and not cfg.mirror_url:
+            ui.error("--source custom 需要同时给 --mirror，或先 mcl config set mirror_url <URL>")
+            return 2
         cfg.download_source = args.source
 
     try:

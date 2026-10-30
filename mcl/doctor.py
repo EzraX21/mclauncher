@@ -77,7 +77,7 @@ def run(args, ui: UI, cfg: Config) -> int:
         ui.warn("没找到 Java，可以在 TUI 里让它从 Mojang 下载")
 
     ui.blank()
-    ui.kv("下载源", sources.describe(cfg.download_source))
+    ui.kv("下载源", sources.describe(cfg.source))
     if getattr(args, "network", False):
         from .manifest import Manifest
 

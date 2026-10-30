@@ -104,7 +104,7 @@ class InstallPane(Vertical):
     @work(thread=True, group="manifest", exclusive=True)
     def load_manifest(self) -> None:
         try:
-            manifest = Manifest.load(self.cfg.download_source)
+            manifest = Manifest.load(self.cfg.source)
         except Exception as exc:  # noqa: BLE001
             self._log_threadsafe(f"[red]读取清单失败：{exc}[/]")
             return
@@ -159,7 +159,7 @@ class InstallPane(Vertical):
                 version_json,
                 self.cfg.root(),
                 with_assets=with_assets,
-                source=self.cfg.download_source,
+                source=self.cfg.source,
             )
             ui_call(self, self.show_log)
             self._log_threadsafe(

@@ -48,6 +48,26 @@ class SourceTests(unittest.TestCase):
         self.assertEqual(sources.fabric_meta_candidates(url, "auto")[0],
                          "https://bmclapi2.bangbang93.com/fabric-meta/v2/versions/loader/1.20.1")
 
+    def test_custom_mirror(self):
+        mode = "custom:https://mirror.example.com/"
+        manifest = sources.manifest_candidates(mode)
+        self.assertEqual(manifest[0], "https://mirror.example.com/mc/game/version_manifest_v2.json")
+        self.assertTrue(manifest[-1].startswith("https://piston-meta.mojang.com"))
+        url = "https://piston-meta.mojang.com/v1/packages/abc/1.20.1.json"
+        self.assertEqual(sources.meta_candidates(url, mode)[0],
+                         "https://mirror.example.com/v1/packages/abc/1.20.1.json")
+        library = "https://libraries.minecraft.net/com/x/y.jar"
+        self.assertEqual(sources.library_candidates(library, mode)[0],
+                         "https://mirror.example.com/maven/com/x/y.jar")
+        # 自定义镜像只管 Mojang 资源，Modrinth 仍走官方
+        mod = "https://api.modrinth.com/v2/search?query=a"
+        self.assertEqual(sources.modrinth_candidates(mod, mode), [mod])
+        self.assertIn("自定义镜像", sources.describe(mode))
+
+        nested = "custom:https://mirror.example.com/mc"
+        self.assertEqual(sources.library_candidates(library, nested)[0],
+                         "https://mirror.example.com/mc/maven/com/x/y.jar")
+
     def test_unknown_hosts_untouched(self):
         url = "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.16.9/fabric-loader-0.16.9.jar"
         self.assertEqual(sources.library_candidates(url, "auto"), [url])

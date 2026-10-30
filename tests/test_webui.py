@@ -69,6 +69,14 @@ class WebuiTests(unittest.TestCase):
         data = post_json(self.url + "api/config", {"ms_client_id": " 7808d7d9-test "})
         self.assertEqual(data["config"]["ms_client_id"], "7808d7d9-test")
 
+    def test_custom_download_source(self):
+        data = post_json(self.url + "api/config", {
+            "download_source": "custom",
+            "mirror_url": "https://mirror.example.com/",
+        })
+        self.assertEqual(data["config"]["download_source"], "custom")
+        self.assertEqual(data["config"]["mirror_url"], "https://mirror.example.com")
+
     def test_theme(self):
         data = post_json(self.url + "api/config", {"theme": "dark"})
         self.assertEqual(data["config"]["theme"], "dark")

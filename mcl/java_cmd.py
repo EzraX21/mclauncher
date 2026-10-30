@@ -29,7 +29,7 @@ def run(args, ui: UI, cfg: Config) -> int:
 
     ui.note(f"从 Mojang 下载 {component} …")
     path = install_runtime(component, cfg.root(), jobs=cfg.jobs, on_phase=on_phase,
-                           source=cfg.download_source)
+                           source=cfg.source)
     runtime = probe(path)
     if runtime is None:
         ui.error(f"装好了但跑不起来：{path}")

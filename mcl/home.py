@@ -170,7 +170,11 @@ def _settings(ui: UI, cfg: Config) -> None:
             cfg.download_source = prompts.select(ui, "下载源", [
                 prompts.Choice(title="BMCLAPI 镜像优先（国内快，PCL 同款）", value="auto"),
                 prompts.Choice(title="仅官方源（慢但最正统）", value="official"),
+                prompts.Choice(title="自定义镜像（BMCLAPI 兼容）", value="custom"),
             ])
+            if cfg.download_source == "custom":
+                cfg.mirror_url = prompts.text(
+                    ui, "镜像 base URL", default=cfg.mirror_url or "https://").rstrip("/")
         elif action == "isolate":
             cfg.isolate_versions = prompts.confirm(
                 ui, "每个版本独立存档/模组目录？", default=cfg.isolate_versions)

@@ -303,7 +303,8 @@ mcl doctor --network                # 环境自检
 | `username` | 离线用户名 |
 | `isolate_versions` | 版本隔离，默认开 |
 | `jobs` | 下载并发，默认 8 |
-| `download_source` | `official`（默认）/ `auto`（BMCLAPI 优先） |
+| `download_source` | `official`（默认）/ `auto`（BMCLAPI 优先）/ `custom`（自定义镜像） |
+| `mirror_url` | 自定义镜像的 base URL（BMCLAPI 兼容） |
 | `theme` | GUI 主题：`light` / `dark` / `system` |
 | `ms_client_id` | 覆盖内置 Azure client id（可选） |
 | `curseforge_api_key` | CurseForge API key（可选） |
@@ -321,6 +322,22 @@ mcl config set download_source auto
 
 覆盖：版本清单 / JSON / client jar / 库 / 资源对象 / Java 运行时 / Fabric meta，
 Modrinth API 与 CDN 走 `mod.mcimirror.top`。Quilt 没有镜像，始终官方。
+
+### 自定义镜像
+
+如果有一个 **BMCLAPI 兼容**的镜像（路径规则和 BMCLAPI 一样），可以自己填 base URL：
+
+```bash
+mcl config set download_source custom
+mcl config set mirror_url https://mirror.example.com
+
+# 或者只对这一次生效
+mcl install 1.20.1 --mirror https://mirror.example.com
+```
+
+自定义镜像只改写 Mojang 的版本清单 / JSON / jar / 库 / 资源 / Java / Fabric meta；
+Modrinth 仍走官方（或 `auto` 的 mcimirror）。镜像失败会自动回退官方源。
+GUI 和 TUI 的设置里也能选「自定义镜像」并填 URL。
 
 ## CurseForge（可选）
 
@@ -391,7 +408,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript 前端（esbuild）
 ├── docs/                 README 截图
-├── tests/                102 个测试
+├── tests/                105 个测试
 ├── packaging/            deb/rpm/Arch、Windows、macOS、AUR、发版脚本
 └── pyproject.toml
 ```
@@ -402,7 +419,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-102 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+105 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
 崩溃分析、微软登录、TUI（无需终端）和 GUI API；不需要网络。
 
 ## 已知限制

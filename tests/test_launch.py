@@ -123,12 +123,19 @@ class ConfigTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "config.json"
-            cfg = Config(memory_mb=3072, username="Tester")
+            cfg = Config(memory_mb=3072, username="Tester",
+                         download_source="custom", mirror_url="https://m.example.com")
             cfg.save(path)
             loaded = Config.load(path)
             self.assertEqual(loaded.memory_mb, 3072)
             self.assertEqual(loaded.username, "Tester")
             self.assertIn("memory_mb", json.loads(path.read_text(encoding="utf-8")))
+            self.assertEqual(loaded.mirror_url, "https://m.example.com")
+
+    def test_custom_source(self):
+        cfg = Config(download_source="custom", mirror_url="https://mirror.example.com/")
+        self.assertEqual(cfg.source, "custom:https://mirror.example.com")
+        self.assertEqual(Config(download_source="custom").source, "official")
 
 
 if __name__ == "__main__":

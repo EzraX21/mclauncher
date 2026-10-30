@@ -19,7 +19,7 @@ def run(args, ui: UI, cfg: Config) -> int:
             if not args.query:
                 ui.error("搜索要带关键词")
                 return 2
-            hits = resources.search(kind, args.query, version, cfg.download_source)
+            hits = resources.search(kind, args.query, version, cfg.source)
             if not hits:
                 ui.warn("没有搜到")
                 return 1

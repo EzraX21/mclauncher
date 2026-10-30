@@ -62,11 +62,11 @@ def latest(kind: str, project_id: str, game_version: str,
 
 def install(kind: str, game_version: str, project: str, cfg: Config,
             source: Optional[str] = None) -> Path:
-    version = latest(kind, project, game_version, source or cfg.download_source)
+    version = latest(kind, project, game_version, source or cfg.source)
     if version is None:
         raise ResourceError(f"{project} 没有适配 {game_version} 的文件")
     target = directory(kind, cfg, game_version)
-    path = modrinth.download_version(version, target, source or cfg.download_source)
+    path = modrinth.download_version(version, target, source or cfg.source)
     return path
 
 

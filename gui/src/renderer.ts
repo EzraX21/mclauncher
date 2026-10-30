@@ -5,7 +5,7 @@ interface VersionInfo {
 }
 interface ConfigInfo {
   game_dir: string; java_path: string; memory_mb: number; username: string;
-  isolate_versions: boolean; jobs: number; download_source: string;
+  isolate_versions: boolean; jobs: number; download_source: string; mirror_url: string;
   curseforge_configured: boolean; last_version: string; config_path: string; theme: string;
   ms_client_id: string;
 }
@@ -702,7 +702,11 @@ function renderSettings(): void {
           <select id="set-source">
             <option value="official" ${cfg.download_source === "official" ? "selected" : ""}>仅官方</option>
             <option value="auto" ${cfg.download_source === "auto" ? "selected" : ""}>BMCLAPI 优先</option>
+            <option value="custom" ${cfg.download_source === "custom" ? "selected" : ""}>自定义镜像</option>
           </select>
+        </div>
+        <div class="field"><label>自定义镜像 URL（BMCLAPI 兼容）</label>
+          <input id="set-mirror" type="text" value="${esc(cfg.mirror_url)}" placeholder="https://bmclapi2.bangbang93.com" />
         </div>
         <div class="field"><label>主题</label>
           <select id="set-theme">
@@ -759,6 +763,7 @@ function renderSettings(): void {
           memory_mb: Number((content.querySelector("#set-memory") as HTMLInputElement).value),
           username: (content.querySelector("#set-username") as HTMLInputElement).value.trim() || "Player",
           download_source: (content.querySelector("#set-source") as HTMLSelectElement).value,
+          mirror_url: (content.querySelector("#set-mirror") as HTMLInputElement).value.trim(),
           isolate_versions: (content.querySelector("#set-isolate") as HTMLInputElement).checked,
           theme: (content.querySelector("#set-theme") as HTMLSelectElement).value,
           ms_client_id: (content.querySelector("#ms-client-id") as HTMLInputElement)?.value.trim() ?? cfg.ms_client_id,

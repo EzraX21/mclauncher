@@ -67,7 +67,7 @@ class LoaderScreen(ModalScreen[tuple[str, str] | None]):
     @work(thread=True, group="loader-versions", exclusive=True)
     def _fetch_versions(self, loader: str, request_id: int) -> None:
         try:
-            versions = loaders.list_versions(loader, self.game_version, self.app.cfg.download_source)
+            versions = loaders.list_versions(loader, self.game_version, self.app.cfg.source)
         except Exception as exc:  # noqa: BLE001
             ui_call(self, self._apply_error, request_id, str(exc))
             return

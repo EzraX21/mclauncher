@@ -181,7 +181,7 @@ class VersionsPane(Vertical):
             self._log_threadsafe(f"Java：{java.display}")
 
             ensure_libraries(resolved, self.cfg.root(), jobs=self.cfg.jobs,
-                             on_phase=self._progress, source=self.cfg.download_source)
+                             on_phase=self._progress, source=self.cfg.source)
             self._finish_progress()
             prepare_natives(resolved, self.cfg.root())
 
@@ -212,7 +212,7 @@ class VersionsPane(Vertical):
             self._log_threadsafe(f"使用 {java.display}")
             version_id = install_loader(
                 loader, game, self.cfg.root(), loader_version,
-                source=self.cfg.download_source, java=java.path,
+                source=self.cfg.source, java=java.path,
                 on_log=self._log_threadsafe,
             )
             self._log_threadsafe(f"[green]已创建 {version_id}[/]")

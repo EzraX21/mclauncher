@@ -11,7 +11,7 @@ from .config import Config
 from .installer import PlanError, build_plan, execute
 from .manifest import ApiError, Manifest, fetch_json
 from .progress import ProgressReporter, human_size, human_time
-from . import prompts
+from . import prompts, sources
 from .ui import UI
 
 
@@ -24,7 +24,7 @@ def print_summary(ui: UI, plan, jobs: int, source: str = "auto") -> None:
         ("体积", human_size(plan.total_bytes)),
         ("Java", f"需要 Java {plan.java_major}+（会尝试复用或下载）" if plan.java_major else "未知"),
         ("并发", f"{jobs} 线程"),
-        ("下载源", "BMCLAPI 镜像优先" if source != "official" else "仅官方"),
+        ("下载源", sources.describe(source)),
     ]
     ui.box("安装计划", rows)
 
@@ -39,7 +39,7 @@ def print_next_steps(ui: UI, plan) -> None:
 
 def run(args, ui: UI, cfg: Config) -> int:
     manifest = prompts.spinner(ui, "读取 Mojang 版本清单",
-                               lambda: Manifest.load(cfg.download_source))
+                               lambda: Manifest.load(cfg.source))
 
     if args.list:
         ui.title("官方版本清单")
@@ -82,7 +82,7 @@ def run(args, ui: UI, cfg: Config) -> int:
     full_plan = prompts.spinner(
         ui, "生成下载计划",
         lambda: build_plan(version_json, root, with_assets=True, index_loader=index_loader,
-                           source=cfg.download_source),
+                           source=cfg.source),
     )
 
     if args.assets is None:
@@ -91,14 +91,14 @@ def run(args, ui: UI, cfg: Config) -> int:
         with_assets = args.assets
 
     plan = full_plan if with_assets else build_plan(
-        version_json, root, with_assets=False, source=cfg.download_source)
+        version_json, root, with_assets=False, source=cfg.source)
 
     jobs = args.jobs
     if jobs is None:
         jobs = prompts.ask_jobs(ui) if interactive else 8
     jobs = min(32, max(1, jobs))
 
-    print_summary(ui, plan, jobs, cfg.download_source)
+    print_summary(ui, plan, jobs, cfg.source)
     if not with_assets:
         ui.warn("已跳过资源文件：游戏里会没有音效和语言文件。之后去掉 --no-assets 重跑即可补上。")
 

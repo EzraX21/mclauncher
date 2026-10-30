@@ -79,9 +79,9 @@ def _new_task(kind: str) -> dict:
 
 
 def _manifest(cfg: Config) -> Manifest:
-    key = cfg.download_source
+    key = cfg.source
     if key not in MANIFEST_CACHE:
-        MANIFEST_CACHE[key] = Manifest.load(cfg.download_source)
+        MANIFEST_CACHE[key] = Manifest.load(cfg.source)
     return MANIFEST_CACHE[key]
 
 
@@ -94,6 +94,7 @@ def _config_dict(cfg: Config) -> dict:
         "isolate_versions": cfg.isolate_versions,
         "jobs": cfg.jobs,
         "download_source": cfg.download_source,
+        "mirror_url": cfg.mirror_url,
         "theme": getattr(cfg, "theme", "light"),
         "ms_client_id": cfg.ms_client_id,
         "curseforge_configured": bool(cfg.curseforge_api_key),
@@ -139,7 +140,7 @@ def start_install(version_id: str, with_assets: bool) -> dict:
             manifest = _manifest(cfg)
             version_json = manifest.version_json(manifest.resolve(version_id))
             plan = build_plan(version_json, cfg.root(), with_assets=with_assets,
-                              source=cfg.download_source)
+                              source=cfg.source)
             _log(task, f"计划：{plan.total_files} 个文件，{round(plan.total_bytes / 1048576, 1)} MB")
             result = execute(plan, jobs=cfg.jobs, on_phase=lambda label, files, size: _progress(task, label, files, size),
                              on_note=lambda message: _log(task, message))
@@ -166,7 +167,7 @@ def start_loader(version_id: str, loader: str) -> dict:
             java = ensure_java(cfg, resolved.java_major,
                                on_phase=lambda label, files, size: _progress(task, label, files, size),
                                note=lambda message: _log(task, message))
-            created = loaders.install(loader, game, cfg.root(), source=cfg.download_source,
+            created = loaders.install(loader, game, cfg.root(), source=cfg.source,
                                       java=java.path, on_log=lambda message: _log(task, message))
             task["result"] = {"version": created}
             task["state"] = "done"
@@ -187,19 +188,19 @@ def start_mod_install(version_id: str, slug: str) -> dict:
             resolved = resolve(cfg.root(), version_id)
             loader = detect_loader(version_id, resolved.data)
             game = resolved.chain[0]
-            project = modrinth.get_project(slug, cfg.download_source)
-            version = modrinth.latest_version(project.get("id", slug), loader, game, cfg.download_source)
+            project = modrinth.get_project(slug, cfg.source)
+            version = modrinth.latest_version(project.get("id", slug), loader, game, cfg.source)
             if version is None:
                 raise RuntimeError(f"没有适配 {game} / {loader} 的版本")
-            path = modrinth.download_version(version, cfg.mods_dir(version_id), cfg.download_source)
+            path = modrinth.download_version(version, cfg.mods_dir(version_id), cfg.source)
             _log(task, f"已安装 {path.name}")
             for dependency in modrinth.required_dependencies(version):
-                dep = (modrinth.get_version(dependency["version_id"], cfg.download_source)
+                dep = (modrinth.get_version(dependency["version_id"], cfg.source)
                        if dependency.get("version_id")
-                       else modrinth.latest_version(dependency.get("project_id", ""), loader, game, cfg.download_source))
+                       else modrinth.latest_version(dependency.get("project_id", ""), loader, game, cfg.source))
                 if not dep:
                     continue
-                dep_path = modrinth.download_version(dep, cfg.mods_dir(version_id), cfg.download_source)
+                dep_path = modrinth.download_version(dep, cfg.mods_dir(version_id), cfg.source)
                 _log(task, f"前置 {dep_path.name}")
             task["result"] = {"file": path.name}
             task["state"] = "done"
@@ -293,7 +294,7 @@ def launch_version(version_id: str) -> dict:
     cfg = _ACTIVE_CFG
     resolved = resolve(cfg.root(), version_id)
     java = ensure_java(cfg, resolved.java_major, note=lambda message: None)
-    ensure_libraries(resolved, cfg.root(), jobs=cfg.jobs, source=cfg.download_source)
+    ensure_libraries(resolved, cfg.root(), jobs=cfg.jobs, source=cfg.source)
     prepare_natives(resolved, cfg.root())
     account = auth.ensure_account(cfg)
     command = build_command(resolved, cfg, java, account=account)
@@ -386,7 +387,7 @@ class Handler(BaseHTTPRequestHandler):
                 if loader == "vanilla":
                     return self._error("这个版本没有加载器，先装 Fabric/Forge")
                 hits = modrinth.search(text, loader=loader, game_version=game, limit=20,
-                                       source=_ACTIVE_CFG.download_source)
+                                       source=_ACTIVE_CFG.source)
                 return self._json({
                     "loader": loader, "game": game,
                     "hits": [{"slug": hit.slug, "title": hit.title,
@@ -401,7 +402,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self._error("缺少 version")
                 if text:
                     return self._json({"hits": resources.search(
-                        kind, text, version_id, _ACTIVE_CFG.download_source)})
+                        kind, text, version_id, _ACTIVE_CFG.source)})
                 return self._json({"files": resources.local(
                     kind, _ACTIVE_CFG, version_id)})
             if parsed.path == "/api/crash":
@@ -481,8 +482,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"ok": True})
             if parsed.path == "/api/config":
                 cfg = _ACTIVE_CFG
+                if "mirror_url" in body:
+                    mirror = str(body["mirror_url"]).strip().rstrip("/")
+                    if mirror and not mirror.startswith(("http://", "https://")):
+                        return self._error("镜像 URL 要以 https:// 或 http:// 开头")
+                    body["mirror_url"] = mirror
                 for key in ("game_dir", "java_path", "memory_mb", "username",
-                            "isolate_versions", "jobs", "download_source"):
+                            "isolate_versions", "jobs", "download_source", "mirror_url"):
                     if key in body:
                         setattr(cfg, key, body[key])
                 if body.get("theme") in ("light", "dark", "system"):

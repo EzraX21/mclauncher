@@ -162,7 +162,7 @@ def ensure_java(cfg: Config, required: Optional[int],
         note(f"缺少 Java {required}，正在从 Mojang 下载 {component} …")
     try:
         path = install_runtime(component, cfg.root(), jobs=cfg.jobs, on_phase=on_phase,
-                               source=source or cfg.download_source)
+                               source=source or cfg.source)
     except Exception as exc:  # noqa: BLE001 - 下载失败时退回最接近的版本并提示
         fallback = pick(runtimes, required)
         if fallback is not None and (required is None or fallback.major >= required):
