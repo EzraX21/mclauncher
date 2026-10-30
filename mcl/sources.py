@@ -68,7 +68,12 @@ def manifest_candidates(mode: str = "auto") -> list[str]:
     base = _mirror_base(mode)
     if not base:
         return [OFFICIAL_MANIFEST]
-    return _rank(OFFICIAL_MANIFEST, [f"{base}/mc/game/version_manifest_v2.json"], mode)
+    if normalize_mode(mode) == "custom":
+        mirrors = [f"{base}/version_manifest_v2.json",
+                   f"{base}/mc/game/version_manifest_v2.json"]
+    else:
+        mirrors = [f"{base}/mc/game/version_manifest_v2.json"]
+    return _rank(OFFICIAL_MANIFEST, mirrors, mode)
 
 
 def meta_candidates(url: str, mode: str = "auto") -> list[str]:

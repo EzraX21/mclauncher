@@ -51,7 +51,8 @@ class SourceTests(unittest.TestCase):
     def test_custom_mirror(self):
         mode = "custom:https://mirror.example.com/"
         manifest = sources.manifest_candidates(mode)
-        self.assertEqual(manifest[0], "https://mirror.example.com/mc/game/version_manifest_v2.json")
+        self.assertEqual(manifest[0], "https://mirror.example.com/version_manifest_v2.json")
+        self.assertIn("https://mirror.example.com/mc/game/version_manifest_v2.json", manifest)
         self.assertTrue(manifest[-1].startswith("https://piston-meta.mojang.com"))
         url = "https://piston-meta.mojang.com/v1/packages/abc/1.20.1.json"
         self.assertEqual(sources.meta_candidates(url, mode)[0],

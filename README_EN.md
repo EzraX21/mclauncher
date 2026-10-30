@@ -307,7 +307,7 @@ Paths:
 | `isolate_versions` | Per-version isolation, default on |
 | `jobs` | Download concurrency, default 8 |
 | `download_source` | `official` (default) / `auto` (BMCLAPI first) / `custom` |
-| `mirror_url` | Custom BMCLAPI-compatible mirror base URL |
+| `mirror_url` | Custom mirror base URL (serves version_manifest_v2.json at root; BMCLAPI fallback) |
 | `theme` | GUI theme: `light` / `dark` / `system` |
 | `ms_client_id` | Override the built-in Azure client ID (optional) |
 | `curseforge_api_key` | CurseForge API key (optional) |
@@ -329,7 +329,7 @@ Fabric meta. Modrinth API/CDN uses `mod.mcimirror.top`. Quilt always uses the of
 
 ### Custom mirror
 
-If you have a **BMCLAPI-compatible** mirror (same path layout), point MCL at its base URL:
+If your mirror serves `/version_manifest_v2.json` at its root, point MCL at its base URL (a BMCLAPI `/mc/game/...` URL is also tried as fallback):
 
 ```bash
 mcl config set download_source custom

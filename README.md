@@ -304,7 +304,7 @@ mcl doctor --network                # 环境自检
 | `isolate_versions` | 版本隔离，默认开 |
 | `jobs` | 下载并发，默认 8 |
 | `download_source` | `official`（默认）/ `auto`（BMCLAPI 优先）/ `custom`（自定义镜像） |
-| `mirror_url` | 自定义镜像的 base URL（BMCLAPI 兼容） |
+| `mirror_url` | 自定义镜像 base URL（根路径提供 version_manifest_v2.json；兼容 BMCLAPI 回退） |
 | `theme` | GUI 主题：`light` / `dark` / `system` |
 | `ms_client_id` | 覆盖内置 Azure client id（可选） |
 | `curseforge_api_key` | CurseForge API key（可选） |
@@ -325,7 +325,7 @@ Modrinth API 与 CDN 走 `mod.mcimirror.top`。Quilt 没有镜像，始终官方
 
 ### 自定义镜像
 
-如果有一个 **BMCLAPI 兼容**的镜像（路径规则和 BMCLAPI 一样），可以自己填 base URL：
+如果有一个在根路径提供 `/version_manifest_v2.json` 的镜像，可以填 base URL（也兼容 BMCLAPI 的 `/mc/game/...` 回退）：
 
 ```bash
 mcl config set download_source custom
