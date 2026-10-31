@@ -211,7 +211,7 @@ function renderVersions(): void {
       <aside class="launch-side">
         <div class="account-line"><span class="online-dot"></span>离线模式</div>
         <div class="account-avatar">${state.config.skin_preview
-          ? `<img src="${state.config.skin_preview}" alt="皮肤" />`
+          ? `<div class="skin-head" style="--skin:url('${state.config.skin_preview}')"></div>`
           : esc((state.config.username || "P").slice(0, 1).toUpperCase())}</div>
         <div class="account-name">${esc(state.config.username || "Player")}</div>
         <div class="launch-field">
@@ -734,7 +734,7 @@ function renderSettings(): void {
       <div class="card-body">
         <div class="skin-row">
           <div class="skin-preview">${cfg.skin_preview
-            ? `<img src="${cfg.skin_preview}" alt="皮肤预览" />`
+            ? `<div class="skin-head" style="--skin:url('${cfg.skin_preview}')"></div>`
             : `<span>${esc((cfg.username || "P").slice(0, 1).toUpperCase())}</span>`}</div>
           <div class="grow">
             <div class="title">自定义皮肤</div>
