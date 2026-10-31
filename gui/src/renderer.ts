@@ -35,6 +35,7 @@ let settingsTab = "account";
 let modsTab = "pack";
 let installTab = "vanilla";
 let installLoader = "";
+let installSelected = "";
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
@@ -459,6 +460,41 @@ function openLoader(id: string): void {
 async function renderInstall(): Promise<void> {
   setHeader("安装原版", "从 Mojang 官方源下载，镜像可选");
   const content = document.getElementById("content") as HTMLElement;
+  const selected = installSelected ? remote.find((item) => item.id === installSelected) : undefined;
+  const loaderTabs = [["", "原版"], ["fabric", "Fabric"], ["quilt", "Quilt"],
+    ["forge", "Forge"], ["neoforge", "NeoForge"]].map(([value, label]) => `
+      <button class="loader-tab ${installLoader === value ? "active" : ""}" data-loader="${value}">${label}</button>`).join("");
+  const vanillaPage = selected ? `
+    <div class="install-page active" data-page="vanilla">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">安装 ${esc(selected.id)}</span>
+          <button class="btn sm" id="install-back">返回版本列表</button>
+        </div>
+        <div class="card-body">
+          <div class="small muted" style="margin-bottom:12px">${esc(typeLabel(selected.type))} · ${esc(selected.release)}</div>
+          <div class="loader-tabs">${loaderTabs}</div>
+          <div class="field"><label class="checkbox"><input type="checkbox" id="with-assets" checked /> 下载资源文件（音效、语言）</label></div>
+          <button class="btn primary" id="install-confirm">安装 ${esc(selected.id)}</button>
+        </div>
+      </div>
+    </div>` : `
+    <div class="install-page ${installTab === "vanilla" ? "active" : ""}" data-page="vanilla">
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">版本清单</span>
+          <div class="inline">
+            <input class="search" id="remote-filter" placeholder="搜索版本，例如 1.20.1" />
+            <button class="btn" id="remote-refresh">刷新</button>
+          </div>
+        </div>
+        <div class="card-body row-between">
+          <span class="small muted">点一个版本进入安装选项</span>
+          <span class="small muted" id="remote-hint">加载中…</span>
+        </div>
+        <div class="list" id="remote-list"></div>
+      </div>
+    </div>`;
   content.innerHTML = `
     <div class="page-layout">
       <aside class="page-nav">
@@ -467,58 +503,40 @@ async function renderInstall(): Promise<void> {
         <button class="page-nav-item ${installTab === "modpack" ? "active" : ""}" data-tab="modpack">整合包</button>
       </aside>
       <div class="page-main">
-    <div class="install-page ${installTab === "vanilla" ? "active" : ""}" data-page="vanilla">
-    <div class="loader-tabs">
-      ${[["", "原版"], ["fabric", "Fabric"], ["quilt", "Quilt"], ["forge", "Forge"], ["neoforge", "NeoForge"]].map(([value, label]) => `
-        <button class="loader-tab ${installLoader === value ? "active" : ""}" data-loader="${value}">${label}</button>`).join("")}
-    </div>
-    <div class="card">
-      <div class="card-head">
-        <span class="card-title">版本清单</span>
-        <div class="inline">
-          <input class="search" id="remote-filter" placeholder="搜索版本，例如 1.20.1" />
-          <button class="btn" id="remote-refresh">刷新</button>
-        </div>
-      </div>
-      <div class="card-body row-between">
-        <label class="checkbox"><input type="checkbox" id="with-assets" checked /> 下载资源文件（音效、语言）</label>
-        <span class="small muted" id="remote-hint">加载中…</span>
-      </div>
-      <div class="list" id="remote-list"></div>
-    </div>
-    </div>
-    <div class="install-page ${installTab === "installed" ? "active" : ""}" data-page="installed">
-      <div class="card">
-        <div class="card-head"><span class="card-title">已安装版本</span></div>
-        ${state.versions.length ? `<div class="list">${state.versions.map((version) => `
-          <div class="list-row">
-            <div class="grow">
-              <div class="title">${esc(version.id)} ${badge(version.loader)}
-                ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
-              <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
-            </div>
-            <button class="btn sm" data-installed-settings="${esc(version.id)}">设置</button>
-            <button class="btn sm" data-installed-loader="${esc(version.id)}">装加载器</button>
-            <button class="btn sm danger" data-installed-delete="${esc(version.id)}">删除</button>
-            <button class="btn primary sm" data-installed-launch="${esc(version.id)}">启动</button>
-          </div>`).join("")}</div>` : `<div class="empty">还没有安装任何版本</div>`}
-      </div>
-    </div>
-    <div class="install-page ${installTab === "modpack" ? "active" : ""}" data-page="modpack">
-      <div class="card">
-        <div class="card-head"><span class="card-title">导入整合包</span></div>
-        <div class="card-body">
-          <div class="inline">
-            <input type="file" id="install-pack-file" accept=".mrpack,.zip" />
-            <input id="install-pack-name" placeholder="实例名（可选）" style="width:200px" />
-            <button class="btn primary" id="install-pack-import">导入</button>
+        ${vanillaPage}
+        <div class="install-page ${installTab === "installed" ? "active" : ""}" data-page="installed">
+          <div class="card">
+            <div class="card-head"><span class="card-title">已安装版本</span></div>
+            ${state.versions.length ? `<div class="list">${state.versions.map((version) => `
+              <div class="list-row">
+                <div class="grow">
+                  <div class="title">${esc(version.id)} ${badge(version.loader)}
+                    ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
+                  <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
+                </div>
+                <button class="btn sm" data-installed-settings="${esc(version.id)}">设置</button>
+                <button class="btn sm" data-installed-loader="${esc(version.id)}">装加载器</button>
+                <button class="btn sm danger" data-installed-delete="${esc(version.id)}">删除</button>
+                <button class="btn primary sm" data-installed-launch="${esc(version.id)}">启动</button>
+              </div>`).join("")}</div>` : `<div class="empty">还没有安装任何版本</div>`}
           </div>
-          <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
         </div>
-      </div>
-    </div>
+        <div class="install-page ${installTab === "modpack" ? "active" : ""}" data-page="modpack">
+          <div class="card">
+            <div class="card-head"><span class="card-title">导入整合包</span></div>
+            <div class="card-body">
+              <div class="inline">
+                <input type="file" id="install-pack-file" accept=".mrpack,.zip" />
+                <input id="install-pack-name" placeholder="实例名（可选）" style="width:200px" />
+                <button class="btn primary" id="install-pack-import">导入</button>
+              </div>
+              <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>`;
+
   content.querySelectorAll<HTMLButtonElement>(".page-nav-item[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
       installTab = button.dataset.tab as string;
@@ -536,6 +554,26 @@ async function renderInstall(): Promise<void> {
       button.classList.add("active");
       toast(installLoader ? `安装时使用 ${installLoader}` : "安装原版", "ok");
     });
+  });
+  content.querySelector("#install-back")?.addEventListener("click", () => {
+    installSelected = "";
+    void renderInstall();
+  });
+  content.querySelector("#install-confirm")?.addEventListener("click", async () => {
+    if (!installSelected) return;
+    const assets = (content.querySelector("#with-assets") as HTMLInputElement).checked;
+    const id = installSelected;
+    try {
+      const task = await api<TaskInfo>("/api/install", {
+        method: "POST", body: JSON.stringify({ id, assets, loader: installLoader }),
+      });
+      installSelected = "";
+      installTab = "vanilla";
+      void renderInstall();
+      watchTask(task, `安装 ${id}`);
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
   });
   content.querySelectorAll<HTMLButtonElement>("[data-installed-launch]").forEach((button) => {
     button.addEventListener("click", () => launch(button.dataset.installedLaunch as string, button));
@@ -571,10 +609,13 @@ async function renderInstall(): Promise<void> {
       toast((error as Error).message, "error");
     }
   });
-  const input = content.querySelector("#remote-filter") as HTMLInputElement;
-  input.addEventListener("input", () => paintRemote());
-  content.querySelector("#remote-refresh")?.addEventListener("click", () => loadRemote(true));
-  if (!remoteLoaded) await loadRemote(false); else paintRemote();
+
+  if (!selected) {
+    const input = content.querySelector("#remote-filter") as HTMLInputElement;
+    input.addEventListener("input", () => paintRemote());
+    content.querySelector("#remote-refresh")?.addEventListener("click", () => loadRemote(true));
+    if (!remoteLoaded) await loadRemote(false); else paintRemote();
+  }
 }
 
 async function loadRemote(force: boolean): Promise<void> {
@@ -603,25 +644,17 @@ function paintRemote(): void {
     return;
   }
   list.innerHTML = items.map((item) => `
-    <div class="list-row">
+    <div class="list-row version-pick" data-version="${esc(item.id)}">
       <div class="grow">
         <div class="title">${esc(item.id)} <span class="badge">${esc(typeLabel(item.type))}</span></div>
         <div class="desc">${esc(item.release)}</div>
       </div>
-      <button class="btn primary sm" data-install="${esc(item.id)}">安装</button>
+      <span class="chevron">›</span>
     </div>`).join("");
-  list.querySelectorAll<HTMLButtonElement>("[data-install]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      const assets = (document.getElementById("with-assets") as HTMLInputElement).checked;
-      try {
-        const task = await api<TaskInfo>("/api/install", {
-          method: "POST",
-          body: JSON.stringify({ id: button.dataset.install, assets, loader: installLoader }),
-        });
-        watchTask(task, `安装 ${button.dataset.install}`);
-      } catch (error) {
-        toast((error as Error).message, "error");
-      }
+  list.querySelectorAll<HTMLElement>("[data-version]").forEach((row) => {
+    row.addEventListener("click", () => {
+      installSelected = row.dataset.version as string;
+      void renderInstall();
     });
   });
 }

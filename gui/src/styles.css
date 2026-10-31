@@ -452,3 +452,7 @@ textarea {
 }
 textarea:focus { border-color: var(--pcl); box-shadow: 0 0 0 2px rgba(19,112,243,.15); outline: none; }
 html[data-theme="dark"] textarea { background: #262c35; color: var(--text); border-color: #3b4553; }
+
+.version-pick { cursor: pointer; }
+.version-pick:hover { background: var(--pcl-soft); }
+.chevron { color: var(--muted); font-size: 22px; line-height: 1; padding: 0 4px; }
