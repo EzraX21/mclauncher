@@ -34,6 +34,7 @@ let resourceVersion = "";
 let settingsTab = "account";
 let modsTab = "pack";
 let installTab = "vanilla";
+let installLoader = "";
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
@@ -374,6 +375,10 @@ async function renderInstall(): Promise<void> {
       </aside>
       <div class="page-main">
     <div class="install-page ${installTab === "vanilla" ? "active" : ""}" data-page="vanilla">
+    <div class="loader-tabs">
+      ${[["", "原版"], ["fabric", "Fabric"], ["quilt", "Quilt"], ["forge", "Forge"], ["neoforge", "NeoForge"]].map(([value, label]) => `
+        <button class="loader-tab ${installLoader === value ? "active" : ""}" data-loader="${value}">${label}</button>`).join("")}
+    </div>
     <div class="card">
       <div class="card-head">
         <span class="card-title">版本清单</span>
@@ -428,6 +433,14 @@ async function renderInstall(): Promise<void> {
       content.querySelectorAll<HTMLElement>(".install-page").forEach((page) => {
         page.classList.toggle("active", page.dataset.page === installTab);
       });
+    });
+  });
+  content.querySelectorAll<HTMLButtonElement>(".loader-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      installLoader = button.dataset.loader as string;
+      content.querySelectorAll(".loader-tab").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      toast(installLoader ? `安装时使用 ${installLoader}` : "安装原版", "ok");
     });
   });
   content.querySelectorAll<HTMLButtonElement>("[data-installed-launch]").forEach((button) => {
@@ -506,7 +519,7 @@ function paintRemote(): void {
       try {
         const task = await api<TaskInfo>("/api/install", {
           method: "POST",
-          body: JSON.stringify({ id: button.dataset.install, assets }),
+          body: JSON.stringify({ id: button.dataset.install, assets, loader: installLoader }),
         });
         watchTask(task, `安装 ${button.dataset.install}`);
       } catch (error) {

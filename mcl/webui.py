@@ -134,7 +134,7 @@ _ACTIVE_CFG = Config.load()
 
 # ---------------------------------------------------------------- 任务
 
-def start_install(version_id: str, with_assets: bool) -> dict:
+def start_install(version_id: str, with_assets: bool, loader: str = "") -> dict:
     cfg = _ACTIVE_CFG
     task = _new_task("install")
 
@@ -149,6 +149,21 @@ def start_install(version_id: str, with_assets: bool) -> dict:
                              on_note=lambda message: _log(task, message))
             if result.errors:
                 raise RuntimeError(result.errors[0])
+            if loader:
+                import_version = version_id
+                _log(task, f"原版完成，开始安装 {loader} …")
+                java = None
+                if loader in ("forge", "neoforge"):
+                    required = (version_json.get("javaVersion") or {}).get("majorVersion")
+                    runtime = ensure_java(cfg, required, note=lambda message: _log(task, message))
+                    java = runtime.path
+                    _log(task, f"使用 {runtime.display}")
+                version_id = loaders.install(
+                    loader, import_version, cfg.root(),
+                    source=cfg.source, java=java,
+                    on_log=lambda message: _log(task, message),
+                )
+                _log(task, f"加载器版本：{version_id}")
             task["result"] = {"version": version_id, "files": plan.total_files}
             task["state"] = "done"
         except Exception as exc:  # noqa: BLE001
@@ -464,7 +479,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"config": _config_dict(_ACTIVE_CFG)})
             body = self._body()
             if parsed.path == "/api/install":
-                return self._json(start_install(body.get("id", ""), bool(body.get("assets", True))))
+                return self._json(start_install(
+                    body.get("id", ""), bool(body.get("assets", True)),
+                    str(body.get("loader", "") or "")))
             if parsed.path == "/api/loader":
                 return self._json(start_loader(body.get("id", ""), body.get("loader", "fabric")))
             if parsed.path == "/api/mods/install":

@@ -431,3 +431,17 @@ html[data-theme="dark"] .page-nav { background: var(--panel); }
 
 .install-page { display: none; }
 .install-page.active { display: block; }
+
+/* ---------------- installer loader tabs ---------------- */
+.loader-tabs {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: #fff; border: 1px solid var(--border); border-radius: 6px;
+  margin-bottom: 10px;
+}
+.loader-tab {
+  border: 0; background: transparent; color: var(--muted);
+  padding: 5px 14px; border-radius: 4px; font-size: 13px;
+}
+.loader-tab:hover { background: var(--pcl-soft); color: var(--pcl); }
+.loader-tab.active { background: var(--pcl); color: #fff; font-weight: 600; }
+html[data-theme="dark"] .loader-tabs { background: var(--panel); }
