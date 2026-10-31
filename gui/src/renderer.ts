@@ -88,16 +88,16 @@ function shell(): string {
           </button>`).join("")}
       </nav>
       <div class="titlebar-tools">
+        <div class="inline" id="top-actions"></div>
         <span class="path-chip" id="side-foot"></span>
       </div>
     </header>
     <main class="main">
-      <header class="pagebar">
+      <header class="pagebar" style="display:none">
         <div>
           <h1 id="page-title">启动</h1>
           <div class="sub" id="page-sub"></div>
         </div>
-        <div class="inline" id="top-actions"></div>
       </header>
       <section class="content" id="content"></section>
     </main>
@@ -180,11 +180,11 @@ function render(): void {
   document.querySelectorAll<HTMLButtonElement>("#nav .nav-item").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === view);
   });
+  const content = document.getElementById("content") as HTMLElement;
+  content.classList.toggle("content-flush", view === "versions");
   const actions = document.getElementById("top-actions") as HTMLElement;
   actions.innerHTML = "";
   if (view === "versions") {
-    actions.innerHTML = `<button class="btn" id="refresh">刷新</button>`;
-    actions.querySelector("#refresh")?.addEventListener("click", () => refreshState());
     renderVersions();
   } else if (view === "install") {
     renderInstall();
@@ -195,9 +195,6 @@ function render(): void {
   } else {
     renderSettings();
   }
-  actions.insertAdjacentHTML("beforeend",
-    `<button class="btn sm" id="account-btn">${state.account ? esc(state.account.name) : "离线"}</button>`);
-  actions.querySelector("#account-btn")?.addEventListener("click", () => setView("settings"));
 }
 
 // ---------------------------------------------------------------- 版本
