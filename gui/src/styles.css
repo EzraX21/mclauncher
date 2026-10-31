@@ -381,3 +381,24 @@ html[data-theme="dark"] .log-tail { background: #101a23; color: #aebfce; border-
 }
 html[data-theme="dark"] .skin-preview { background: #20334a; color: #cfe2fa; }
 
+
+/* ---------------- settings subnav ---------------- */
+.settings-layout { display: grid; grid-template-columns: 156px minmax(0, 1fr); gap: 14px; align-items: start; }
+.settings-nav {
+  background: #fff; border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px; display: flex; flex-direction: column; gap: 3px;
+  position: sticky; top: 12px;
+}
+.settings-nav-item {
+  border: 0; background: transparent; color: var(--text);
+  text-align: left; padding: 8px 11px; border-radius: 4px; font-size: 13px;
+  border-left: 2px solid transparent;
+}
+.settings-nav-item:hover { background: var(--pcl-soft); }
+.settings-nav-item.active { background: var(--pcl-soft); color: var(--pcl); border-left-color: var(--pcl); font-weight: 600; }
+html[data-theme="dark"] .settings-nav { background: var(--panel); }
+html[data-theme="dark"] .settings-nav-item.active { background: var(--pcl-soft); }
+@media (max-width: 760px) {
+  .settings-layout { grid-template-columns: 1fr; }
+  .settings-nav { position: static; flex-direction: row; flex-wrap: wrap; }
+}

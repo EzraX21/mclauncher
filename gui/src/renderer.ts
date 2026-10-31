@@ -62,12 +62,15 @@ darkMedia.addEventListener("change", () => {
   if (document.documentElement.dataset.themePref === "system") applyTheme("system");
 });
 
+// Lucide icons (ISC), path data from PCL CE's icon pack.
+const lucide = (body: string): string =>
+  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const icons: Record<View, string> = {
-  versions: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h5v5H2V2zm7 0h5v5H9V2zM2 9h5v5H2V9zm7 0h5v5H9V9z"/></svg>',
-  install: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a1 1 0 0 1 1 1v6.6l2.3-2.3 1.4 1.4L8 12.4 3.3 7.7l1.4-1.4L7 8.6V2a1 1 0 0 1 1-1zM2 13h12v2H2v-2z"/></svg>',
-  resources: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M13.4 2.6a2 2 0 0 0-2.8 0L4 9.2V12h2.8l6.6-6.6a2 2 0 0 0 0-2.8zM3 13h10v1.5H3z"/></svg>',
-  mods: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 1v2h4V1h2v2h2v2h-2v4h2v2h-2v2H2v-2H1V9h2V5H1V3h2V1h3zm0 2H3v2h2v4H3v2h10v-2h-2V5h2V3h-2v2H6V3z"/></svg>',
-  settings: '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 5.5A2.5 2.5 0 1 0 8 10.5 2.5 2.5 0 0 0 8 5.5zm0-1.5 1.1-1.9 1.7.7.2 2.2 1.9 1.1V8l-1.9 1.1-.2 2.2-1.7.7L8 12l-1.1 1.9-1.7-.7-.2-2.2L3.1 9.9V8L5 6.9l.2-2.2 1.7-.7L8 4z"/></svg>',
+  versions: lucide('<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>'),
+  install: lucide('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>'),
+  resources: lucide('<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>'),
+  mods: lucide('<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/>'),
+  settings: lucide('<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>'),
 };
 
 function shell(): string {
@@ -704,7 +707,16 @@ function renderSettings(): void {
   const content = document.getElementById("content") as HTMLElement;
   const account = state.account;
   content.innerHTML = `
-    <div class="card">
+    <div class="settings-layout">
+      <aside class="settings-nav">
+        <button class="settings-nav-item active" data-target="#settings-account">账号</button>
+        <button class="settings-nav-item" data-target="#settings-skin">皮肤</button>
+        <button class="settings-nav-item" data-target="#settings-general">常规</button>
+        <button class="settings-nav-item" data-target="#settings-download">下载</button>
+        <button class="settings-nav-item" data-target="#settings-appearance">外观</button>
+      </aside>
+      <div class="settings-main">
+    <div class="card" id="settings-account">
       <div class="card-head"><span class="card-title">微软账号</span></div>
       <div class="card-body">
         ${account ? `
@@ -729,7 +741,7 @@ function renderSettings(): void {
           </div>`}`}
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="settings-skin">
       <div class="card-head"><span class="card-title">离线皮肤</span></div>
       <div class="card-body">
         <div class="skin-row">
@@ -755,13 +767,14 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="settings-general">
       <div class="card-head"><span class="card-title">常规</span></div>
       <div class="card-body">
         <div class="field"><label>游戏目录</label><input id="set-dir" type="text" value="${esc(cfg.game_dir)}" /></div>
         <div class="field"><label>Java 路径（留空自动按版本选）</label><input id="set-java" type="text" value="${esc(cfg.java_path)}" /></div>
         <div class="field"><label>内存（MB）</label><input id="set-memory" type="number" value="${cfg.memory_mb}" /></div>
         <div class="field"><label>离线用户名</label><input id="set-username" type="text" value="${esc(cfg.username)}" /></div>
+        <div id="settings-download">
         <div class="field"><label>下载源</label>
           <select id="set-source">
             <option value="official" ${cfg.download_source === "official" ? "selected" : ""}>仅官方</option>
@@ -772,7 +785,8 @@ function renderSettings(): void {
         <div class="field"><label>自定义镜像 URL（BMCLAPI 兼容）</label>
           <input id="set-mirror" type="text" value="${esc(cfg.mirror_url)}" placeholder="https://bmclapi2.bangbang93.com" />
         </div>
-        <div class="field"><label>主题</label>
+        </div>
+        <div class="field" id="settings-appearance"><label>主题</label>
           <select id="set-theme">
             <option value="light" ${cfg.theme === "light" ? "selected" : ""}>浅色</option>
             <option value="dark" ${cfg.theme === "dark" ? "selected" : ""}>深色</option>
@@ -787,7 +801,17 @@ function renderSettings(): void {
           <span class="small muted">${esc(cfg.config_path)}</span>
         </div>
       </div>
+    </div>
+      </div>
     </div>`;
+  content.querySelectorAll<HTMLButtonElement>(".settings-nav-item").forEach((button) => {
+    button.addEventListener("click", () => {
+      content.querySelectorAll(".settings-nav-item").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      const target = content.querySelector(button.dataset.target as string);
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
   const themeSelect = content.querySelector("#set-theme") as HTMLSelectElement;
   themeSelect.addEventListener("change", async () => {
     applyTheme(themeSelect.value);
