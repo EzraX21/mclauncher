@@ -5,6 +5,7 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import os
+import shlex
 import subprocess
 import uuid
 import zipfile
@@ -12,7 +13,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import __version__, sources
+from . import __version__, sources, vsettings
 from .config import Config
 from .java import JavaRuntime
 from .net import DownloadTask, run_tasks
@@ -206,6 +207,16 @@ def build_arguments(entries: list, context: dict, features: dict, warnings: list
     return substituted
 
 
+def _extra_args(text: str, label: str, warnings: list[str]) -> list[str]:
+    if not text:
+        return []
+    try:
+        return shlex.split(text)
+    except ValueError as exc:
+        warnings.append(f"{label}解析失败：{exc}")
+        return []
+
+
 def build_command(
     resolved: Resolved,
     cfg: Config,
@@ -221,7 +232,10 @@ def build_command(
     access_token = account.access_token if account is not None else "0"
     user_type = "msa" if account is not None else "legacy"
     xuid = "0"
-    memory = int(memory_mb or cfg.memory_mb or 2048)
+    options = vsettings.get(resolved.id)
+    memory = int(memory_mb or options.get("memory_mb") or cfg.memory_mb or 2048)
+    width = options.get("width") or cfg.width
+    height = options.get("height") or cfg.height
     root = cfg.root()
 
     command = LaunchCommand(cwd=cfg.game_dir_for(resolved.id), java=java)
@@ -262,8 +276,8 @@ def build_command(
         "classpath_separator": os.pathsep,
         "library_directory": str(root / "libraries"),
         "user_properties": "{}",
-        "resolution_width": str(cfg.width),
-        "resolution_height": str(cfg.height),
+        "resolution_width": str(width),
+        "resolution_height": str(height),
     }
 
     executable = str(java.path) if java else "java"
@@ -279,6 +293,7 @@ def build_command(
         f"-Dminecraft.launcher.version={__version__}",
     ]
 
+    argv += _extra_args(options.get("jvm_args") or "", "JVM 参数", command.warnings)
     arguments = resolved.data.get("arguments") or {}
     jvm_entries = arguments.get("jvm") or []
     if not jvm_entries:
@@ -305,6 +320,8 @@ def build_command(
     else:
         legacy = resolved.data.get("minecraftArguments", "")
         argv += build_arguments(legacy.split() if legacy else [], context, features, command.warnings)
+
+    argv += _extra_args(options.get("game_args") or "", "游戏参数", command.warnings)
 
     if java is not None and resolved.java_major and java.major != resolved.java_major:
         command.warnings.append(

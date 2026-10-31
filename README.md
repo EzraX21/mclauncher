@@ -60,7 +60,7 @@
 
 | 模块 | 能做什么 |
 | --- | --- |
-| 版本 | 列出已装版本（加载器、Java、模组数），启动 / 装加载器 / 打开目录 / 删除 |
+| 版本 | 列出已装版本（加载器、Java、模组数），启动 / 装加载器 / 版本设置 / 删除 |
 | 安装 | Mojang 官方版本清单，边输边筛，可选下载资源文件，进度条 + 日志 + 取消 |
 | 模组 | Modrinth / CurseForge 搜索安装，自动补前置；本地模组启用/禁用/删除 |
 | 整合包 | Modrinth `.mrpack`、CurseForge zip；自动装原版和加载器，复制 overrides，生成独立实例 |
@@ -244,7 +244,7 @@ mcl crash 1.20.1
 
 读最新的 `crash-reports/crash-*.txt`（没有就看 `logs/latest.log`），匹配 Java 版本、
 OOM、缺前置、模组重复、Mixin 冲突、OpenGL、权限等常见原因并给建议。
-GUI 版本列表每行有「崩溃分析」按钮。
+GUI 版本列表每行有「设置」按钮：可单独覆盖内存、窗口大小、额外 JVM / 游戏参数。
 
 ## 命令行
 
@@ -399,7 +399,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript 前端（esbuild）
 ├── docs/                 README 截图
-├── tests/                115 个测试
+├── tests/                119 个测试
 ├── packaging/            deb/rpm/Arch、Windows、macOS、AUR、发版脚本
 └── pyproject.toml
 ```
@@ -410,7 +410,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-115 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+119 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
 删除、TUI（无需终端）和 GUI API；不需要网络。
 
 ## 已知限制

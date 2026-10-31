@@ -102,6 +102,16 @@ class WebuiTests(unittest.TestCase):
         self.assertFalse(data["config"]["custom_skin"])
         self.assertEqual(data["config"]["skin_preview"], "")
 
+    def test_version_options(self):
+        data = post_json(self.url + "api/version/options", {
+            "id": "1.20.1", "memory_mb": 8192, "width": 1280, "height": 720,
+            "jvm_args": "-XX:+UseG1GC", "game_args": "--fullscreen",
+        })
+        self.assertEqual(data["options"]["memory_mb"], 8192)
+        self.assertEqual(data["options"]["jvm_args"], "-XX:+UseG1GC")
+        got = get_json(self.url + "api/version/options?id=1.20.1")
+        self.assertEqual(got["options"]["width"], 1280)
+
     def test_remove_version(self):
         root = Path(self.tmp.name) / "game"
         version_dir = root / "versions" / "1.20.1"

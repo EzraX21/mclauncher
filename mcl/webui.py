@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, auth, crash, loaders, modpacks, modrinth, resources, skin
+from . import __version__, auth, crash, loaders, modpacks, modrinth, resources, skin, vsettings
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -391,6 +391,11 @@ class Handler(BaseHTTPRequestHandler):
                     "default_client_id": auth.DEFAULT_CLIENT_ID,
                     "platform": os_name(),
                 })
+            if parsed.path == "/api/version/options":
+                version_id = (query.get("id", [""])[0] or "").strip()
+                if not version_id:
+                    return self._error("缺少版本号")
+                return self._json({"version": version_id, "options": vsettings.get(version_id)})
             if parsed.path == "/api/remote":
                 manifest = _manifest(_ACTIVE_CFG)
                 needle = (query.get("q", [""])[0] or "").lower()
@@ -494,6 +499,13 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/logout":
                 auth.clear_account()
                 return self._json({"ok": True})
+            if parsed.path == "/api/version/options":
+                version_id = str(body.get("id", "")).strip()
+                try:
+                    options = vsettings.update(version_id, body)
+                except ValueError as exc:
+                    return self._error(str(exc), 400)
+                return self._json({"version": version_id, "options": options})
             if parsed.path == "/api/launch":
                 return self._json(launch_version(body.get("id", "")))
             if parsed.path == "/api/versions/remove":

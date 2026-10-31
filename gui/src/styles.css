@@ -445,3 +445,10 @@ html[data-theme="dark"] .page-nav { background: var(--panel); }
 .loader-tab:hover { background: var(--pcl-soft); color: var(--pcl); }
 .loader-tab.active { background: var(--pcl); color: #fff; font-weight: 600; }
 html[data-theme="dark"] .loader-tabs { background: var(--panel); }
+
+textarea {
+  border: 1px solid var(--border); border-radius: 4px; padding: 6px 9px;
+  background: #fff; color: var(--text); font: inherit; resize: vertical;
+}
+textarea:focus { border-color: var(--pcl); box-shadow: 0 0 0 2px rgba(19,112,243,.15); outline: none; }
+html[data-theme="dark"] textarea { background: #262c35; color: var(--text); border-color: #3b4553; }

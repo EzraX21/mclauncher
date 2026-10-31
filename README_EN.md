@@ -245,7 +245,7 @@ mcl crash 1.20.1
 
 Reads the newest `crash-reports/crash-*.txt` (or `logs/latest.log`) and matches Java
 version errors, OOM, missing dependencies, duplicate mods, Mixin conflicts, OpenGL and
-permission problems, with suggested fixes. The GUI exposes it per version.
+permission problems, with suggested fixes. The GUI exposes it per version. Each version also has a Settings dialog for memory, window size and extra JVM/game arguments.
 
 ## CLI
 
@@ -427,7 +427,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                115 tests
+├── tests/                119 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -438,7 +438,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-115 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+119 tests covering rules, download plans, version merging, launch arguments, Java, mods,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations

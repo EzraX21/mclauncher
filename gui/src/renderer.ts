@@ -244,6 +244,7 @@ function renderVersions(): void {
                     ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
                   <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
                 </div>
+                <button class="btn sm" data-settings="${esc(version.id)}">设置</button>
                 <button class="btn sm" data-crash="${esc(version.id)}">崩溃分析</button>
                 <button class="btn sm" data-loader="${esc(version.id)}">装加载器</button>
                 <button class="btn sm danger" data-delete="${esc(version.id)}">删除</button>
@@ -270,6 +271,9 @@ function renderVersions(): void {
   content.querySelector("#refresh")?.addEventListener("click", () => refreshState());
   content.querySelectorAll<HTMLButtonElement>("[data-loader]").forEach((button) => {
     button.addEventListener("click", () => openLoader(button.dataset.loader as string));
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-settings]").forEach((button) => {
+    button.addEventListener("click", () => void openVersionSettings(button.dataset.settings as string));
   });
   content.querySelectorAll<HTMLButtonElement>("[data-crash]").forEach((button) => {
     button.addEventListener("click", () => openCrash(button.dataset.crash as string));
@@ -307,6 +311,62 @@ function openDelete(id: string): void {
     } catch (error) {
       button.disabled = false;
       toast(`删除失败：${(error as Error).message}`, "error");
+    }
+  });
+}
+
+async function openVersionSettings(id: string): Promise<void> {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `<div class="modal" style="width:520px">
+    <h3>版本设置 · ${esc(id)}</h3>
+    <div class="small muted" style="margin-bottom:12px">留空表示跟随全局设置。</div>
+    <div class="field"><label>内存（MB）</label><input id="vs-memory" type="number" min="512" max="65536" /></div>
+    <div class="inline" style="align-items:flex-start">
+      <div class="field" style="flex:1"><label>窗口宽度</label><input id="vs-width" type="number" min="320" max="10000" /></div>
+      <div class="field" style="flex:1"><label>窗口高度</label><input id="vs-height" type="number" min="240" max="10000" /></div>
+    </div>
+    <div class="field"><label>额外 JVM 参数</label><textarea id="vs-jvm" rows="2" placeholder="-XX:+UseG1GC"></textarea></div>
+    <div class="field"><label>额外游戏参数</label><textarea id="vs-game" rows="2" placeholder="--fullscreen"></textarea></div>
+    <div class="actions">
+      <button class="btn" id="vs-cancel">取消</button>
+      <button class="btn primary" id="vs-save">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector("#vs-cancel")?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  try {
+    const data = await api<{ options: { memory_mb: number | null; width: number | null; height: number | null; jvm_args: string; game_args: string } }>(
+      `/api/version/options?id=${encodeURIComponent(id)}`);
+    const opts = data.options;
+    (overlay.querySelector("#vs-memory") as HTMLInputElement).value = opts.memory_mb?.toString() || "";
+    (overlay.querySelector("#vs-width") as HTMLInputElement).value = opts.width?.toString() || "";
+    (overlay.querySelector("#vs-height") as HTMLInputElement).value = opts.height?.toString() || "";
+    (overlay.querySelector("#vs-jvm") as HTMLTextAreaElement).value = opts.jvm_args || "";
+    (overlay.querySelector("#vs-game") as HTMLTextAreaElement).value = opts.game_args || "";
+  } catch (error) {
+    toast((error as Error).message, "error");
+  }
+  overlay.querySelector("#vs-save")?.addEventListener("click", async () => {
+    const value = (selector: string) => (overlay.querySelector(selector) as HTMLInputElement).value.trim();
+    try {
+      await api("/api/version/options", {
+        method: "POST",
+        body: JSON.stringify({
+          id,
+          memory_mb: value("#vs-memory") || null,
+          width: value("#vs-width") || null,
+          height: value("#vs-height") || null,
+          jvm_args: value("#vs-jvm"),
+          game_args: value("#vs-game"),
+        }),
+      });
+      close();
+      toast(`已保存 ${id} 的版本设置`, "ok");
+    } catch (error) {
+      toast((error as Error).message, "error");
     }
   });
 }
@@ -437,6 +497,7 @@ async function renderInstall(): Promise<void> {
                 ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
               <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
             </div>
+            <button class="btn sm" data-installed-settings="${esc(version.id)}">设置</button>
             <button class="btn sm" data-installed-loader="${esc(version.id)}">装加载器</button>
             <button class="btn sm danger" data-installed-delete="${esc(version.id)}">删除</button>
             <button class="btn primary sm" data-installed-launch="${esc(version.id)}">启动</button>
@@ -478,6 +539,9 @@ async function renderInstall(): Promise<void> {
   });
   content.querySelectorAll<HTMLButtonElement>("[data-installed-launch]").forEach((button) => {
     button.addEventListener("click", () => launch(button.dataset.installedLaunch as string, button));
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-installed-settings]").forEach((button) => {
+    button.addEventListener("click", () => void openVersionSettings(button.dataset.installedSettings as string));
   });
   content.querySelectorAll<HTMLButtonElement>("[data-installed-loader]").forEach((button) => {
     button.addEventListener("click", () => openLoader(button.dataset.installedLoader as string));
