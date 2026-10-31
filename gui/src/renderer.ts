@@ -73,10 +73,10 @@ const icons: Record<View, string> = {
 function shell(): string {
   return `
   <div class="app">
-    <aside class="sidebar">
+    <header class="titlebar">
       <div class="brand">
         <div class="brand-mark">M</div>
-        <div>
+        <div class="brand-text">
           <div class="brand-name">MCL</div>
           <div class="brand-version" id="brand-version">v—</div>
         </div>
@@ -87,12 +87,14 @@ function shell(): string {
             ${icons[name]}<span>${labelOf(name)}</span>
           </button>`).join("")}
       </nav>
-      <div class="sidebar-foot" id="side-foot"></div>
-    </aside>
+      <div class="titlebar-tools">
+        <span class="path-chip" id="side-foot"></span>
+      </div>
+    </header>
     <main class="main">
-      <header class="topbar">
+      <header class="pagebar">
         <div>
-          <h1 id="page-title">版本列表</h1>
+          <h1 id="page-title">启动</h1>
           <div class="sub" id="page-sub"></div>
         </div>
         <div class="inline" id="top-actions"></div>
@@ -111,9 +113,8 @@ function shell(): string {
     <div class="toasts" id="toasts"></div>
   </div>`;
 }
-
 function labelOf(value: View): string {
-  return { versions: "版本列表", install: "安装", resources: "资源", mods: "模组", settings: "设置" }[value];
+  return { versions: "启动", install: "安装", resources: "资源", mods: "模组", settings: "设置" }[value];
 }
 
 function esc(text: unknown): string {
@@ -201,37 +202,66 @@ function render(): void {
 
 // ---------------------------------------------------------------- 版本
 function renderVersions(): void {
-  setHeader("版本列表", `${state.versions.length} 个已安装版本`);
+  setHeader("启动", `${state.versions.length} 个已安装版本`);
   const content = document.getElementById("content") as HTMLElement;
-  if (!state.versions.length) {
-    content.innerHTML = `
-      <div class="card"><div class="empty">
-        还没有安装任何版本。<br><br>
-        <button class="btn primary" id="go-install">去安装一个</button>
-      </div></div>`;
-    content.querySelector("#go-install")?.addEventListener("click", () => setView("install"));
-    return;
-  }
+  const options = state.versions.map((version) =>
+    `<option value="${esc(version.id)}">${esc(version.id)} · ${esc(version.loader)}</option>`).join("");
+  const selected = state.versions.some((item) => item.id === state.config.last_version)
+    ? state.config.last_version
+    : (state.versions[0]?.id || "");
   content.innerHTML = `
-    <div class="card">
-      <div class="list">
-        ${state.versions.map((version) => `
-          <div class="list-row">
-            <div class="grow">
-              <div class="title">${esc(version.id)} ${badge(version.loader)}
-                ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
-              <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
-            </div>
-            <button class="btn" data-crash="${esc(version.id)}">崩溃分析</button>
-            <button class="btn" data-loader="${esc(version.id)}">装加载器</button>
-            <button class="btn primary" data-launch="${esc(version.id)}">启动</button>
-            <button class="btn danger" data-delete="${esc(version.id)}">删除</button>
-          </div>`).join("")}
-      </div>
+    <div class="launch-layout">
+      <aside class="launch-side">
+        <div class="account-line"><span class="online-dot"></span>离线模式</div>
+        <div class="account-avatar">${esc((state.config.username || "P").slice(0, 1).toUpperCase())}</div>
+        <div class="account-name">${esc(state.config.username || "Player")}</div>
+        <div class="launch-field">
+          <label>游戏版本</label>
+          <select id="launch-select">${options || '<option value="">没有已安装版本</option>'}</select>
+        </div>
+        <button class="btn primary launch-big" id="launch-main" ${state.versions.length ? "" : "disabled"}>启动游戏</button>
+        <button class="btn launch-sub" id="go-install">下载游戏 / 安装新版本</button>
+        <div class="launch-note">${state.versions.length ? "启动前会自动检查 Java 和依赖库。" : "还没有安装任何版本。"}</div>
+      </aside>
+      <section class="launch-main">
+        ${state.versions.length ? `
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">已安装版本</span>
+            <button class="btn sm" id="refresh">刷新</button>
+          </div>
+          <div class="list">
+            ${state.versions.map((version) => `
+              <div class="list-row">
+                <div class="grow">
+                  <div class="title">${esc(version.id)} ${badge(version.loader)}
+                    ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
+                  <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
+                </div>
+                <button class="btn sm" data-crash="${esc(version.id)}">崩溃分析</button>
+                <button class="btn sm" data-loader="${esc(version.id)}">装加载器</button>
+                <button class="btn sm danger" data-delete="${esc(version.id)}">删除</button>
+              </div>`).join("")}
+          </div>
+        </div>` : `
+        <div class="card"><div class="empty">
+          还没有安装任何版本。<br><br>
+          <button class="btn primary" id="go-install-empty">去安装一个</button>
+        </div></div>`}
+      </section>
     </div>`;
-  content.querySelectorAll<HTMLButtonElement>("[data-launch]").forEach((button) => {
-    button.addEventListener("click", () => launch(button.dataset.launch as string, button));
-  });
+  const select = content.querySelector("#launch-select") as HTMLSelectElement | null;
+  if (select) select.value = selected;
+  const launchSelected = () => {
+    const id = select?.value || selected;
+    if (!id) return;
+    const button = content.querySelector("#launch-main") as HTMLButtonElement | null;
+    if (button) void launch(id, button);
+  };
+  content.querySelector("#launch-main")?.addEventListener("click", launchSelected);
+  content.querySelector("#go-install")?.addEventListener("click", () => setView("install"));
+  content.querySelector("#go-install-empty")?.addEventListener("click", () => setView("install"));
+  content.querySelector("#refresh")?.addEventListener("click", () => refreshState());
   content.querySelectorAll<HTMLButtonElement>("[data-loader]").forEach((button) => {
     button.addEventListener("click", () => openLoader(button.dataset.loader as string));
   });
@@ -242,40 +272,6 @@ function renderVersions(): void {
     button.addEventListener("click", () => openDelete(button.dataset.delete as string));
   });
 }
-
-function openDelete(id: string): void {
-  const overlay = document.createElement("div");
-  overlay.className = "overlay";
-  const detail = state.config.isolate_versions
-    ? "该版本目录里的存档、模组和配置会一起删除。"
-    : "只删除版本文件，公共存档和模组不会动。";
-  overlay.innerHTML = `<div class="modal">
-    <h3>删除 ${esc(id)}</h3>
-    <div class="small muted" style="margin-bottom:16px">${detail}</div>
-    <div class="actions">
-      <button class="btn" id="delete-cancel">取消</button>
-      <button class="btn danger" id="delete-confirm">删除</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-  const close = () => overlay.remove();
-  overlay.querySelector("#delete-cancel")?.addEventListener("click", close);
-  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
-  overlay.querySelector("#delete-confirm")?.addEventListener("click", async () => {
-    const button = overlay.querySelector("#delete-confirm") as HTMLButtonElement;
-    button.disabled = true;
-    try {
-      await api("/api/versions/remove", { method: "POST", body: JSON.stringify({ id }) });
-      close();
-      toast(`已删除 ${id}`, "ok");
-      await refreshState();
-    } catch (error) {
-      button.disabled = false;
-      toast(`删除失败：${(error as Error).message}`, "error");
-    }
-  });
-}
-
 async function launch(id: string, button: HTMLButtonElement): Promise<void> {
   button.disabled = true;
   button.textContent = "启动中…";
