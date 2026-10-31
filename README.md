@@ -53,7 +53,7 @@
 | ✅ 已完成 | 原版下载、版本管理、Fabric/Quilt/Forge/NeoForge、模组搜索/安装、整合包、光影/材质、崩溃分析、Java 运行时、GUI（默认）、TUI（特色）、多主题、原生窗口、Linux/Windows 打包 |
 | 📴 仅离线 | **微软登录**：Mojang 未通过 MCL 的申请，登录已停用；当前只支持离线模式 |
 | 🚧 待验证 | **CurseForge 整合包**：下载逻辑已实现，需要 API key；手头没有 key，还没跑真实整合包回归 |
-| 🚧 未发布 | **AUR**：`mcl-launcher` 的 PKGBUILD 已就绪，尚未首次提交；CI 的 AUR 步骤在配 secrets 前会失败（已 continue-on-error） |
+| ⏸️ 暂停 | **AUR**：AUR 注册暂停，暂时没法开号/首次提交；PKGBUILD 和 CI 已就绪，恢复后可直接启用 |
 | 📋 计划中 | 服务器列表 / 快速进服、启动器自动更新、Java 管理 GUI、地图/数据包 |
 
 ## 功能
@@ -369,7 +369,7 @@ powershell -File packaging/build_windows.ps1   # setup.exe + portable.zip
 ```
 
 CI（`.github/workflows/release.yml`）在推 `v*` tag 时构建 Linux + Windows 并汇总 Release。
-AUR 配置好 secrets 后会自动更新；首次提交仍需要手动在 AUR 网页创建 `mcl-launcher`。
+AUR 注册恢复后：先在 AUR 网页创建 `mcl-launcher`，再给仓库加 `AUR_ENABLED=true` 和 secrets，CI 才会提交。
 
 ## 项目结构
 
@@ -414,7 +414,7 @@ python -m unittest discover -s tests -v
 - CurseForge 整合包需要 key，且尚未做真实包回归
 - Windows 安装包未签名，SmartScreen 会提示
 - macOS 只有手动构建脚本，Release 不发布 dmg；GUI 在 macOS 上会退回浏览器
-- AUR 还没首次提交
+- AUR 注册暂停，暂时没有账号/包
 - 资源目前只有光影/材质，地图、数据包还没做
 - 服务器列表、自动更新、Java 管理 GUI 还没做
 

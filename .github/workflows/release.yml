@@ -151,8 +151,8 @@ jobs:
 
   aur:
     name: 提交 AUR
-    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-beta.') && !contains(github.ref_name, '-rc.')
-    continue-on-error: true   # 没配 AUR secrets 时不要让整个 release 变红
+    if: startsWith(github.ref, 'refs/tags/') && !contains(github.ref_name, '-beta.') && !contains(github.ref_name, '-rc.') && vars.AUR_ENABLED == 'true'
+    continue-on-error: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

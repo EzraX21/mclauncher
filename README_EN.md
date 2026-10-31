@@ -53,7 +53,7 @@ Current version: **v3.8.1**
 | ✅ Done | Vanilla downloads, version management, Fabric/Quilt/Forge/NeoForge, mod search/install, modpacks, shaders/resource packs, crash analysis, Java runtimes, GUI (default), TUI (feature), themes, native windows, Linux/Windows packaging |
 | 📴 Offline only | **Microsoft login**: Mojang rejected MCL's application; login is disabled and only offline mode is supported |
 | 🚧 Unverified | **CurseForge modpacks**: download path implemented, requires an API key; no real-pack regression yet |
-| 🚧 Not published | **AUR**: PKGBUILD for `mcl-launcher` is ready, first submission pending; the AUR CI step stays red until secrets are configured (`continue-on-error`) |
+| ⏸️ Paused | **AUR**: registration is closed, so no account/first submission yet; PKGBUILD and CI are ready for when it reopens |
 | 📋 Planned | Server list / quick join, launcher auto-update, Java management UI, maps/datapacks |
 
 ## Features
@@ -373,8 +373,8 @@ powershell -File packaging/build_windows.ps1   # setup.exe + portable.zip
 ```
 
 CI (`.github/workflows/release.yml`) builds Linux + Windows on `v*` tags and publishes the
-release. AUR updates automatically once secrets are configured; the first `mcl-launcher`
-submission still has to be created on the AUR website.
+release. Once AUR registration reopens, create `mcl-launcher` on the AUR website, then set
+`AUR_ENABLED=true` and the AUR secrets; only then will CI publish.
 
 ### R2 direct downloads (optional)
 
