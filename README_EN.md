@@ -28,7 +28,7 @@
 - [Running](#running)
 - [GUI](#gui)
 - [TUI](#tui)
-- [Microsoft login](#microsoft-login)
+- [Microsoft login](#microsoft-login-disabled)
 - [Modpacks](#modpacks)
 - [Resources](#resources)
 - [Crash analysis](#crash-analysis)
@@ -51,7 +51,7 @@ Current version: **v3.8.0**
 | Status | Area |
 | --- | --- |
 | ✅ Done | Vanilla downloads, version management, Fabric/Quilt/Forge/NeoForge, mod search/install, modpacks, shaders/resource packs, crash analysis, Java runtimes, GUI (default), TUI (feature), themes, native windows, Linux/Windows packaging |
-| 🚧 External | **Microsoft login**: fully implemented; the built-in Azure app is waiting for Mojang's allowlist. Until approved, Minecraft returns `Invalid app registration` |
+| 📴 Offline only | **Microsoft login**: Mojang rejected MCL's application; login is disabled and only offline mode is supported |
 | 🚧 Unverified | **CurseForge modpacks**: download path implemented, requires an API key; no real-pack regression yet |
 | 🚧 Not published | **AUR**: PKGBUILD for `mcl-launcher` is ready, first submission pending; the AUR CI step stays red until secrets are configured (`continue-on-error`) |
 | 📋 Planned | Server list / quick join, launcher auto-update, Java management UI, maps/datapacks |
@@ -198,32 +198,15 @@ silently; it reports why the window could not open. Four tabs: Versions, Install
 - Logs are collapsed by default and expand when an install or launch starts
 - Mods tab: Modrinth or CurseForge source, local mods enable/disable/delete
 
-## Microsoft login
+## Microsoft login (disabled)
 
-Implemented in both CLI and GUI. **The built-in Azure app is used by default; users do not
-need to register one:**
+Mojang rejected MCL's application, so this build is **offline-only**:
 
-```bash
-mcl login       # prints microsoft.com/link and a device code
-mcl account
-mcl logout
-```
+- The GUI login button is greyed out and explains why when clicked
+- `mcl login` returns the disabled message without starting a device code
+- Even if an old token exists locally, launches run in offline mode
 
-In the GUI: Settings → Microsoft account → sign in; the device code is shown in a dialog.
-
-> Status: since 2026 Mojang requires third-party launcher client IDs to be on an allowlist.
-> The built-in app has been submitted. Until it is approved, `login_with_xbox` returns
-> `Invalid app registration`; MCL shows a clear message and offline mode keeps working.
-
-Using your own Azure app (also subject to Mojang's allowlist):
-
-1. Azure Portal → Microsoft Entra ID → App registrations → New registration
-2. Account type: personal Microsoft accounts only; leave redirect URI empty
-3. Authentication → Allow public client flows → Yes
-4. Copy the Application (client) ID and run `mcl config set ms_client_id <id>`
-
-No client secret or API permissions are required. Tokens are stored in
-`~/.config/mcl/accounts.json` (0600), refreshed automatically, with offline fallback.
+The implementation remains in `mcl/auth.py` for a future approved application.
 
 ## Modpacks
 
@@ -282,7 +265,7 @@ mcl modpack install pack.mrpack --name "My Pack"
 mcl resources search shader complementary --version 1.20.1
 mcl crash 1.20.1                    # analyze a crash
 mcl java install 21                 # download a Java runtime
-mcl login / mcl account / mcl logout
+mcl account                         # show offline state
 mcl desktop                         # install the Linux menu entry
 mcl config                          # show config
 mcl doctor --network                # environment check
@@ -440,7 +423,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                105 tests
+├── tests/                109 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -451,12 +434,12 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-105 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+109 tests covering rules, download plans, version merging, launch arguments, Java, mods,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations
 
-- Microsoft login waits for Mojang's allowlist; until then `Invalid app registration`
+- Microsoft login was rejected by Mojang; only offline mode is supported
 - CurseForge modpacks need a key and have not been regression-tested on a real pack
 - The Windows installer is unsigned, so SmartScreen warns
 - macOS only has a manual build script; releases do not ship a dmg, and the GUI falls back to a browser

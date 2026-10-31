@@ -27,6 +27,9 @@ MC_LOGIN_URL = "https://api.minecraftservices.com/authentication/login_with_xbox
 MC_PROFILE_URL = "https://api.minecraftservices.com/minecraft/profile"
 USER_AGENT = "MCL/1.0"
 DEFAULT_CLIENT_ID = "7808d7d9-1895-4b8c-b915-b5fb1a600dd7"
+MICROSOFT_LOGIN_ENABLED = False
+LOGIN_DISABLED_MESSAGE = ("微软登录暂不可用：Mojang 未通过 MCL 的应用申请，"
+                          "目前只支持离线模式。")
 
 
 def client_id_for(cfg) -> str:
@@ -248,6 +251,8 @@ def _chain(ms_access_token: str, refresh_token: str, client_id: str) -> Account:
 def login(client_id: str, on_code: Optional[Callable[[dict], None]] = None,
           on_status: Optional[Callable[[str], None]] = None,
           cancel=None) -> Account:
+    if not MICROSOFT_LOGIN_ENABLED:
+        raise AuthError(LOGIN_DISABLED_MESSAGE)
     device = start_device_code(client_id)
     if on_code:
         on_code(device)
@@ -278,6 +283,8 @@ def refresh_account(account: Account, client_id: Optional[str] = None) -> Accoun
 
 def ensure_account(cfg) -> Optional[Account]:
     """返回可用的正版账号；过期就刷新，失败返回 None（调用方退回离线）。"""
+    if not MICROSOFT_LOGIN_ENABLED:
+        return None
     account = load_account()
     if account is None:
         return None

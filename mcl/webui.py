@@ -213,6 +213,8 @@ def start_mod_install(version_id: str, slug: str) -> dict:
 
 
 def start_login(client_id: str) -> dict:
+    if not auth.MICROSOFT_LOGIN_ENABLED:
+        raise RuntimeError(auth.LOGIN_DISABLED_MESSAGE)
     cfg = _ACTIVE_CFG
     client_id = (client_id or cfg.ms_client_id or auth.DEFAULT_CLIENT_ID).strip()
     cfg.ms_client_id = client_id
@@ -357,7 +359,7 @@ class Handler(BaseHTTPRequestHandler):
         query = parse_qs(parsed.query)
         try:
             if parsed.path == "/api/state":
-                account = auth.load_account()
+                account = auth.load_account() if auth.MICROSOFT_LOGIN_ENABLED else None
                 return self._json({
                     "version": __version__,
                     "config": _config_dict(_ACTIVE_CFG),
@@ -446,6 +448,8 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/mods/install":
                 return self._json(start_mod_install(body.get("version", ""), body.get("slug", "")))
             if parsed.path == "/api/login/start":
+                if not auth.MICROSOFT_LOGIN_ENABLED:
+                    return self._error(auth.LOGIN_DISABLED_MESSAGE, 403)
                 return self._json(start_login(body.get("client_id", "")))
             if parsed.path == "/api/logout":
                 auth.clear_account()

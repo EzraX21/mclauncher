@@ -6,6 +6,7 @@ import os
 import tempfile
 import time
 import unittest
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -51,6 +52,11 @@ class WebuiTests(unittest.TestCase):
             os.environ.pop("MCL_CONFIG", None)
         else:
             os.environ["MCL_CONFIG"] = self.previous
+
+    def test_login_disabled(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/login/start", {"client_id": "x"})
+        self.assertEqual(ctx.exception.code, 403)
 
     def test_state(self):
         data = get_json(self.url + "api/state")

@@ -1,4 +1,5 @@
 type View = "versions" | "install" | "resources" | "mods" | "settings";
+const MICROSOFT_LOGIN_ENABLED = false;
 
 interface VersionInfo {
   id: string; loader: string; java: number | null; mods: number; has_jar: boolean; type: string;
@@ -719,13 +720,18 @@ function renderSettings(): void {
             </div>
             <button class="btn danger" id="ms-logout">退出登录</button>
           </div>` : `
+          ${MICROSOFT_LOGIN_ENABLED ? `
           <div class="field"><label>Azure 应用 client id（留空用内置 MCL 应用）</label>
             <input id="ms-client-id" type="text" value="${esc(cfg.ms_client_id)}" placeholder="${esc(state.default_client_id)}" />
           </div>
           <div class="inline">
             <button class="btn primary" id="ms-login">登录微软账号</button>
             <span class="small muted">内置应用开箱即用；想用自己的 app 再填</span>
-          </div>`}
+          </div>` : `
+          <div class="inline">
+            <button class="btn" id="ms-login" aria-disabled="true" style="opacity:.55;cursor:not-allowed">微软登录（暂不可用）</button>
+            <span class="small muted">Mojang 未通过 MCL 的申请，目前仅支持离线模式</span>
+          </div>`}`}
       </div>
     </div>
     <div class="card">
@@ -777,6 +783,10 @@ function renderSettings(): void {
     await refreshState();
   });
   content.querySelector("#ms-login")?.addEventListener("click", async () => {
+    if (!MICROSOFT_LOGIN_ENABLED) {
+      toast("微软登录暂不可用：Mojang 未通过申请，目前只支持离线模式", "error");
+      return;
+    }
     const clientId = (content.querySelector("#ms-client-id") as HTMLInputElement).value.trim();
     try {
       if (clientId) {

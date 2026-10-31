@@ -29,6 +29,11 @@ class AuthTests(unittest.TestCase):
         self.assertEqual(account.refresh_token, "refresh-token")
         self.assertGreater(account.expires_at, time.time())
 
+    def test_login_disabled(self):
+        with self.assertRaises(auth.AuthError) as ctx:
+            auth.login("client-id")
+        self.assertIn("只支持离线模式", str(ctx.exception))
+
     def test_login_device_flow(self):
         device = {"device_code": "dev", "user_code": "ABCD-EFGH",
                   "verification_uri": "https://microsoft.com/devicelogin",
@@ -41,7 +46,8 @@ class AuthTests(unittest.TestCase):
                 mock.patch("mcl.auth.time.sleep"), \
                 mock.patch("mcl.auth._chain", return_value=account), \
                 mock.patch("mcl.auth.save_account") as save:
-            result = auth.login("client-id", on_code=codes.append)
+            with mock.patch("mcl.auth.MICROSOFT_LOGIN_ENABLED", True):
+                result = auth.login("client-id", on_code=codes.append)
         self.assertEqual(result.name, "Notch")
         self.assertEqual(codes[0]["user_code"], "ABCD-EFGH")
         save.assert_called_once()

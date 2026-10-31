@@ -28,7 +28,7 @@
 - [运行](#运行)
 - [图形界面](#图形界面)
 - [TUI](#tui)
-- [微软登录](#微软登录)
+- [微软登录](#微软登录暂停)
 - [整合包](#整合包)
 - [资源](#资源)
 - [崩溃分析](#崩溃分析)
@@ -51,7 +51,7 @@
 | 状态 | 功能 |
 | --- | --- |
 | ✅ 已完成 | 原版下载、版本管理、Fabric/Quilt/Forge/NeoForge、模组搜索/安装、整合包、光影/材质、崩溃分析、Java 运行时、GUI（默认）、TUI（特色）、多主题、原生窗口、Linux/Windows 打包 |
-| 🚧 等待外部 | **微软登录**：代码已完整实现，内置 Azure 应用已提交 Mojang 白名单审核；通过前 Minecraft 接口会返回 `Invalid app registration` |
+| 📴 仅离线 | **微软登录**：Mojang 未通过 MCL 的申请，登录已停用；当前只支持离线模式 |
 | 🚧 待验证 | **CurseForge 整合包**：下载逻辑已实现，需要 API key；手头没有 key，还没跑真实整合包回归 |
 | 🚧 未发布 | **AUR**：`mcl-launcher` 的 PKGBUILD 已就绪，尚未首次提交；CI 的 AUR 步骤在配 secrets 前会失败（已 continue-on-error） |
 | 📋 计划中 | 服务器列表 / 快速进服、启动器自动更新、Java 管理 GUI、地图/数据包 |
@@ -197,31 +197,15 @@ TUI 是 MCL 的特色入口，不是默认界面：`mcl tui` 显式进入，适�
 - 日志默认折叠，开始安装 / 启动时自动展开
 - 模组页来源可选 Modrinth / CurseForge，本地模组可启用/禁用/删除
 
-## 微软登录
+## 微软登录（暂停）
 
-代码和 GUI 都已完成，**默认使用内置 Azure 应用，用户不需要自己注册**：
+Mojang 审核未通过，当前版本**只支持离线模式**：
 
-```bash
-mcl login       # 显示 microsoft.com/link + 设备代码
-mcl account
-mcl logout
-```
+- GUI 设置里的「微软登录」按钮已置灰，点击会提示不可用
+- `mcl login` 会直接说明登录已停用，不再发起设备代码
+- 启动时即使本地有旧账号 token，也会按离线模式处理
 
-GUI 在「设置 → 微软账号」点登录，窗口里会显示设备代码。
-
-> 当前状态：Mojang 2026 起要求第三方启动器的 client id 进入 allowlist。
-> 内置应用已经提交申请，审核通过前 `login_with_xbox` 会返回
-> `Invalid app registration`，此时登录会给出提示，离线模式不受影响。
-
-想用自己的 Azure 应用（同样需要 Mojang 白名单）：
-
-1. Azure 门户 → Microsoft Entra ID → 应用注册 → 新注册
-2. 账户类型选「仅个人 Microsoft 账户」，重定向 URI 留空
-3. 身份验证 → 允许公共客户端流 → 是
-4. 复制应用程序(客户端) ID，`mcl config set ms_client_id <id>`
-
-不需要 client secret，也不需要预配 API 权限。登录 token 存在
-`~/.config/mcl/accounts.json`（0600），过期自动刷新，失败退回离线。
+登录代码保留在 `mcl/auth.py`，以后重新申请通过再恢复。
 
 ## 整合包
 
@@ -279,7 +263,7 @@ mcl modpack install pack.mrpack --name "我的整合包"
 mcl resources search shader complementary --version 1.20.1
 mcl crash 1.20.1                    # 分析崩溃
 mcl java install 21                 # 下 Java 运行时
-mcl login / mcl account / mcl logout
+mcl account                         # 查看离线状态
 mcl desktop                         # 安装 Linux 桌面菜单项
 mcl config                          # 查看配置
 mcl doctor --network                # 环境自检
@@ -410,7 +394,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript 前端（esbuild）
 ├── docs/                 README 截图
-├── tests/                105 个测试
+├── tests/                109 个测试
 ├── packaging/            deb/rpm/Arch、Windows、macOS、AUR、发版脚本
 └── pyproject.toml
 ```
@@ -421,12 +405,12 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-105 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
-崩溃分析、微软登录、TUI（无需终端）和 GUI API；不需要网络。
+109 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+删除、TUI（无需终端）和 GUI API；不需要网络。
 
 ## 已知限制
 
-- 微软登录等 Mojang 白名单；通过前会返回 `Invalid app registration`
+- 微软登录被 Mojang 拒绝，当前只支持离线模式
 - CurseForge 整合包需要 key，且尚未做真实包回归
 - Windows 安装包未签名，SmartScreen 会提示
 - macOS 只有手动构建脚本，Release 不发布 dmg；GUI 在 macOS 上会退回浏览器

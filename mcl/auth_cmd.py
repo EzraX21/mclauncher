@@ -8,6 +8,9 @@ from .ui import UI
 
 
 def run_login(args, ui: UI, cfg: Config) -> int:
+    if not auth.MICROSOFT_LOGIN_ENABLED:
+        ui.error(auth.LOGIN_DISABLED_MESSAGE)
+        return 2
     client_id = getattr(args, "client_id", None) or cfg.ms_client_id or auth.DEFAULT_CLIENT_ID
 
     shown = {"done": False}
@@ -51,6 +54,10 @@ def run_logout(args, ui: UI, cfg: Config) -> int:
 
 
 def run_account(args, ui: UI, cfg: Config) -> int:
+    if not auth.MICROSOFT_LOGIN_ENABLED:
+        ui.note("未登录（离线模式）")
+        ui.note(auth.LOGIN_DISABLED_MESSAGE)
+        return 1
     account = auth.load_account()
     if account is None:
         ui.note("未登录（离线模式）")
