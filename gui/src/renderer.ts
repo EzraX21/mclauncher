@@ -31,6 +31,7 @@ let modsVersion = "";
 let modsTimer: number | null = null;
 let resourceKind = "shader";
 let resourceVersion = "";
+let settingsTab = "account";
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
@@ -766,14 +767,14 @@ function renderSettings(): void {
   content.innerHTML = `
     <div class="settings-layout">
       <aside class="settings-nav">
-        <button class="settings-nav-item active" data-target="#settings-account">账号</button>
-        <button class="settings-nav-item" data-target="#settings-skin">皮肤</button>
-        <button class="settings-nav-item" data-target="#settings-general">常规</button>
-        <button class="settings-nav-item" data-target="#settings-download">下载</button>
-        <button class="settings-nav-item" data-target="#settings-appearance">外观</button>
+        <button class="settings-nav-item ${settingsTab === "account" ? "active" : ""}" data-tab="account">账号</button>
+        <button class="settings-nav-item ${settingsTab === "skin" ? "active" : ""}" data-tab="skin">皮肤</button>
+        <button class="settings-nav-item ${settingsTab === "general" ? "active" : ""}" data-tab="general">常规</button>
+        <button class="settings-nav-item ${settingsTab === "download" ? "active" : ""}" data-tab="download">下载</button>
+        <button class="settings-nav-item ${settingsTab === "appearance" ? "active" : ""}" data-tab="appearance">外观</button>
       </aside>
       <div class="settings-main">
-    <div class="card" id="settings-account">
+    <div class="card settings-page ${settingsTab === "account" ? "active" : ""}" data-page="account" id="settings-account">
       <div class="card-head"><span class="card-title">微软账号</span></div>
       <div class="card-body">
         ${account ? `
@@ -798,7 +799,7 @@ function renderSettings(): void {
           </div>`}`}
       </div>
     </div>
-    <div class="card" id="settings-skin">
+    <div class="card settings-page ${settingsTab === "skin" ? "active" : ""}" data-page="skin" id="settings-skin">
       <div class="card-head"><span class="card-title">离线皮肤</span></div>
       <div class="card-body">
         <div class="skin-row">
@@ -824,32 +825,13 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
-    <div class="card" id="settings-general">
+    <div class="card settings-page ${settingsTab === "general" ? "active" : ""}" data-page="general" id="settings-general">
       <div class="card-head"><span class="card-title">常规</span></div>
       <div class="card-body">
         <div class="field"><label>游戏目录</label><input id="set-dir" type="text" value="${esc(cfg.game_dir)}" /></div>
         <div class="field"><label>Java 路径（留空自动按版本选）</label><input id="set-java" type="text" value="${esc(cfg.java_path)}" /></div>
         <div class="field"><label>内存（MB）</label><input id="set-memory" type="number" value="${cfg.memory_mb}" /></div>
         <div class="field"><label>离线用户名</label><input id="set-username" type="text" value="${esc(cfg.username)}" /></div>
-        <div id="settings-download">
-        <div class="field"><label>下载源</label>
-          <select id="set-source">
-            <option value="official" ${cfg.download_source === "official" ? "selected" : ""}>仅官方</option>
-            <option value="auto" ${cfg.download_source === "auto" ? "selected" : ""}>BMCLAPI 优先</option>
-            <option value="custom" ${cfg.download_source === "custom" ? "selected" : ""}>自定义镜像</option>
-          </select>
-        </div>
-        <div class="field"><label>自定义镜像 URL（BMCLAPI 兼容）</label>
-          <input id="set-mirror" type="text" value="${esc(cfg.mirror_url)}" placeholder="https://bmclapi2.bangbang93.com" />
-        </div>
-        </div>
-        <div class="field" id="settings-appearance"><label>主题</label>
-          <select id="set-theme">
-            <option value="light" ${cfg.theme === "light" ? "selected" : ""}>浅色</option>
-            <option value="dark" ${cfg.theme === "dark" ? "selected" : ""}>深色</option>
-            <option value="system" ${cfg.theme === "system" ? "selected" : ""}>跟随系统</option>
-          </select>
-        </div>
         <div class="field"><label>版本隔离</label>
           <label class="checkbox"><input type="checkbox" id="set-isolate" ${cfg.isolate_versions ? "checked" : ""} /> 每个版本独立存档与模组目录</label>
         </div>
@@ -859,14 +841,47 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
+    <div class="card settings-page ${settingsTab === "download" ? "active" : ""}" data-page="download" id="settings-download">
+      <div class="card-head"><span class="card-title">下载</span></div>
+      <div class="card-body">
+        <div class="field"><label>下载源</label>
+          <select id="set-source">
+            <option value="official" ${cfg.download_source === "official" ? "selected" : ""}>仅官方</option>
+            <option value="auto" ${cfg.download_source === "auto" ? "selected" : ""}>BMCLAPI 优先</option>
+            <option value="custom" ${cfg.download_source === "custom" ? "selected" : ""}>自定义镜像</option>
+          </select>
+        </div>
+        <div class="field"><label>自定义镜像 URL（根路径清单）</label>
+          <input id="set-mirror" type="text" value="${esc(cfg.mirror_url)}" placeholder="http://home.free369.one:8000/mc" />
+        </div>
+        <div class="inline">
+          <button class="btn primary" id="set-save-download">保存</button>
+        </div>
+      </div>
+    </div>
+    <div class="card settings-page ${settingsTab === "appearance" ? "active" : ""}" data-page="appearance" id="settings-appearance">
+      <div class="card-head"><span class="card-title">外观</span></div>
+      <div class="card-body">
+        <div class="field"><label>主题</label>
+          <select id="set-theme">
+            <option value="light" ${cfg.theme === "light" ? "selected" : ""}>浅色</option>
+            <option value="dark" ${cfg.theme === "dark" ? "selected" : ""}>深色</option>
+            <option value="system" ${cfg.theme === "system" ? "selected" : ""}>跟随系统</option>
+          </select>
+        </div>
+        <div class="small muted">切换后立即生效并写入配置。</div>
+      </div>
+    </div>
       </div>
     </div>`;
   content.querySelectorAll<HTMLButtonElement>(".settings-nav-item").forEach((button) => {
     button.addEventListener("click", () => {
+      settingsTab = button.dataset.tab as string;
       content.querySelectorAll(".settings-nav-item").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
-      const target = content.querySelector(button.dataset.target as string);
-      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      content.querySelectorAll<HTMLElement>(".settings-page").forEach((page) => {
+        page.classList.toggle("active", page.dataset.page === settingsTab);
+      });
     });
   });
   const themeSelect = content.querySelector("#set-theme") as HTMLSelectElement;
@@ -945,6 +960,9 @@ function renderSettings(): void {
     } catch (error) {
       toast((error as Error).message, "error");
     }
+  });
+  content.querySelector("#set-save-download")?.addEventListener("click", () => {
+    (content.querySelector("#set-save") as HTMLButtonElement)?.click();
   });
   content.querySelector("#set-save")?.addEventListener("click", async () => {
     try {

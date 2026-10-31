@@ -422,3 +422,6 @@ html[data-theme="dark"] .page-nav { background: var(--panel); }
   .page-layout { grid-template-columns: 1fr; }
   .page-nav { position: static; flex-direction: row; flex-wrap: wrap; }
 }
+
+.settings-page { display: none; }
+.settings-page.active { display: block; }
