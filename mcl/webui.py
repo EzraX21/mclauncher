@@ -149,6 +149,7 @@ def start_install(version_id: str, with_assets: bool, loader: str = "") -> dict:
                              on_note=lambda message: _log(task, message))
             if result.errors:
                 raise RuntimeError(result.errors[0])
+            final_version = version_id
             if loader:
                 import_version = version_id
                 _log(task, f"原版完成，开始安装 {loader} …")
@@ -158,13 +159,13 @@ def start_install(version_id: str, with_assets: bool, loader: str = "") -> dict:
                     runtime = ensure_java(cfg, required, note=lambda message: _log(task, message))
                     java = runtime.path
                     _log(task, f"使用 {runtime.display}")
-                version_id = loaders.install(
+                final_version = loaders.install(
                     loader, import_version, cfg.root(),
                     source=cfg.source, java=java,
                     on_log=lambda message: _log(task, message),
                 )
-                _log(task, f"加载器版本：{version_id}")
-            task["result"] = {"version": version_id, "files": plan.total_files}
+                _log(task, f"加载器版本：{final_version}")
+            task["result"] = {"version": final_version, "files": plan.total_files}
             task["state"] = "done"
         except Exception as exc:  # noqa: BLE001
             task["error"] = str(exc)
