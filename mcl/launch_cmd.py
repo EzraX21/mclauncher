@@ -127,7 +127,7 @@ def run_launch(args, ui: UI, cfg: Config) -> int:
         return 130
 
     try:
-        skin.apply(cfg, resolved.chain[0])
+        skin.apply(cfg, resolved.id, resolved.chain[0])
     except skin.SkinError as exc:
         ui.warn(f"自定义皮肤不可用：{exc}")
     cfg.last_version = resolved.id

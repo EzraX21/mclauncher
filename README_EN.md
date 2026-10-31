@@ -427,7 +427,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                114 tests
+├── tests/                115 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -438,7 +438,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-114 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+115 tests covering rules, download plans, version merging, launch arguments, Java, mods,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations

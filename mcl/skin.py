@@ -162,17 +162,19 @@ def _enable_options(path: Path) -> None:
     os.replace(temp, path)
 
 
-def apply(cfg: Config, version_id: str) -> Optional[Path]:
+def apply(cfg: Config, version_id: str, format_id: Optional[str] = None) -> Optional[Path]:
     if not cfg.custom_skin:
         return None
     data = load_skin()
     if data is None:
         raise SkinError("没有找到自定义皮肤文件")
     validate(data)
+    # 游戏实际工作目录是启动的那个版本（可能是 fabric-loader-...），
+    # pack_format 要用它继承的原版版本号，不能拿 loader 版本号。
     game_dir = cfg.game_dir_for(version_id)
     pack_dir = game_dir / "resourcepacks"
     pack_dir.mkdir(parents=True, exist_ok=True)
     target = pack_dir / PACK_NAME
-    target.write_bytes(_resource_pack(version_id, data))
+    target.write_bytes(_resource_pack(format_id or version_id, data))
     _enable_options(game_dir / "options.txt")
     return target

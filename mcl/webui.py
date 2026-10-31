@@ -306,7 +306,7 @@ def launch_version(version_id: str) -> dict:
     if command.missing:
         raise RuntimeError(f"缺少 {len(command.missing)} 个文件")
     try:
-        skin.apply(cfg, resolved.chain[0])
+        skin.apply(cfg, resolved.id, resolved.chain[0])
     except skin.SkinError as exc:
         raise RuntimeError(f"自定义皮肤不可用：{exc}") from exc
     process = spawn(command)

@@ -70,6 +70,18 @@ class SkinTests(unittest.TestCase):
         self.assertIn("MCL-Custom-Skin.zip", options)
         self.assertIn("resourcePacks:", options)
 
+    def test_loader_instance_gets_own_pack(self):
+        skin.save(make_png(64, 64), "classic")
+        target = skin.apply(self.cfg, "fabric-loader-0.20.1-26.3", "26.3")
+        self.assertIsNotNone(target)
+        self.assertIn("fabric-loader-0.20.1-26.3", str(target))
+        self.assertNotIn("versions/26.3/resourcepacks", str(target))
+        with zipfile.ZipFile(target) as archive:
+            meta = archive.read("pack.mcmeta").decode("utf-8")
+        self.assertIn('"pack_format": 46', meta)
+        options = target.parent.parent / "options.txt"
+        self.assertIn("MCL-Custom-Skin.zip", options.read_text(encoding="utf-8"))
+
     def test_disabled_does_not_apply(self):
         self.cfg.custom_skin = False
         self.assertIsNone(skin.apply(self.cfg, "1.20.1"))

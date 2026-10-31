@@ -399,7 +399,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript 前端（esbuild）
 ├── docs/                 README 截图
-├── tests/                114 个测试
+├── tests/                115 个测试
 ├── packaging/            deb/rpm/Arch、Windows、macOS、AUR、发版脚本
 └── pyproject.toml
 ```
@@ -410,7 +410,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-114 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+115 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
 删除、TUI（无需终端）和 GUI API；不需要网络。
 
 ## 已知限制

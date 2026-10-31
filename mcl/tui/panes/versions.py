@@ -200,7 +200,7 @@ class VersionsPane(Vertical):
                 self._log_threadsafe(f"[red]缺少 {len(command.missing)} 个文件，先补全[/]")
                 return
             try:
-                skin.apply(self.cfg, resolved.chain[0])
+                skin.apply(self.cfg, resolved.id, resolved.chain[0])
             except skin.SkinError as exc:
                 self._log_threadsafe(f"[yellow]自定义皮肤不可用：{exc}[/]")
             self._log_threadsafe("启动中…（关闭游戏后这里会显示退出码）")
