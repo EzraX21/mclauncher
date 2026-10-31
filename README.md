@@ -46,7 +46,7 @@
 
 ## 项目状态
 
-当前版本 **v3.7.0**：
+当前版本 **v3.8.0**：
 
 | 状态 | 功能 |
 | --- | --- |
@@ -366,7 +366,7 @@ mcl config set curseforge_api_key 你的key
 | Python 包 / 发行包 | `mcl` / `mcl-launcher` |
 | 配置目录 | `~/.config/mcl` |
 
-- 版本：`v3.7.0`、`v3.7.0-beta.1`、`v3.7.0-rc.1`（代码用 PEP 440：`3.7.0b1`）
+- 版本：`v3.8.0`、`v3.8.0-beta.1`、`v3.8.0-rc.1`（代码用 PEP 440：`3.8.0b1`）
 - 产物：`mcl-<ver>-<platform>-<arch>[-variant].<ext>`，deb/rpm/Arch 文件名也统一；
   wheel 保持 PEP 427
 - 每个 Release 附 `SHA256SUMS.txt`
@@ -374,7 +374,7 @@ mcl config set curseforge_api_key 你的key
 
 ```bash
 python3 packaging/release.py          # 交互问版本号
-python3 packaging/release.py --version 3.7.0 --commit
+python3 packaging/release.py --version 3.8.0 --commit
 ```
 
 ## 打包

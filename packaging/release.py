@@ -40,9 +40,14 @@ def set_version(version: str) -> None:
     path.write_text(re.sub(r'"version": "[^"]+"', f'"version": "{pep}"', path.read_text(),
                            count=1), encoding="utf-8")
     path = ROOT / "README.md"
-    path.write_text(re.sub(r"v\d+\.\d+\.\d+(?:-[a-z]+\.\d+)? · Minecraft 启动器",
-                           f"v{tag_style} · Minecraft 启动器", path.read_text()),
-                    encoding="utf-8")
+    text = re.sub(r"v\d+\.\d+\.\d+(?:-[a-z]+\.\d+)? · Minecraft 启动器",
+                  f"v{tag_style} · Minecraft 启动器", path.read_text())
+    text = re.sub(r"当前版本 \*\*v[^*]+\*\*", f"当前版本 **v{tag_style}**", text)
+    path.write_text(text, encoding="utf-8")
+    path = ROOT / "README_EN.md"
+    text = re.sub(r"Current version: \*\*v[^*]+\*\*",
+                  f"Current version: **v{tag_style}**", path.read_text())
+    path.write_text(text, encoding="utf-8")
 
 
 def main() -> int:

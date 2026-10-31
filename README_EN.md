@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.7.0**
+Current version: **v3.8.0**
 
 | Status | Area |
 | --- | --- |
@@ -371,7 +371,7 @@ Some authors disable third-party downloads; those files cannot be fetched and MC
 | Python package / distribution | `mcl` / `mcl-launcher` |
 | Config directory | `~/.config/mcl` |
 
-- Versions: `v3.7.0`, `v3.7.0-beta.1`, `v3.7.0-rc.1` (PEP 440 in code: `3.7.0b1`)
+- Versions: `v3.8.0`, `v3.8.0-beta.1`, `v3.8.0-rc.1` (PEP 440 in code: `3.8.0b1`)
 - Artifacts: `mcl-<ver>-<platform>-<arch>[-variant].<ext>`; deb/rpm/Arch filenames follow
   the same pattern; wheels keep PEP 427
 - Every release includes `SHA256SUMS.txt`
@@ -379,7 +379,7 @@ Some authors disable third-party downloads; those files cannot be fetched and MC
 
 ```bash
 python3 packaging/release.py          # interactive version prompt
-python3 packaging/release.py --version 3.7.0 --commit
+python3 packaging/release.py --version 3.8.0 --commit
 ```
 
 ## Packaging
