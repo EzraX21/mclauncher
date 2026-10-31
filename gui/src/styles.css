@@ -402,3 +402,23 @@ html[data-theme="dark"] .settings-nav-item.active { background: var(--pcl-soft);
   .settings-layout { grid-template-columns: 1fr; }
   .settings-nav { position: static; flex-direction: row; flex-wrap: wrap; }
 }
+
+/* ---------------- PCL page category nav ---------------- */
+.page-layout { display: grid; grid-template-columns: 156px minmax(0, 1fr); gap: 14px; align-items: start; }
+.page-nav {
+  background: #fff; border: 1px solid var(--border); border-radius: 6px;
+  padding: 8px; display: flex; flex-direction: column; gap: 3px;
+  position: sticky; top: 12px;
+}
+.page-nav-item {
+  border: 0; background: transparent; color: var(--text);
+  text-align: left; padding: 8px 11px; border-radius: 4px; font-size: 13px;
+  border-left: 2px solid transparent;
+}
+.page-nav-item:hover { background: var(--pcl-soft); }
+.page-nav-item.active { background: var(--pcl-soft); color: var(--pcl); border-left-color: var(--pcl); font-weight: 600; }
+html[data-theme="dark"] .page-nav { background: var(--panel); }
+@media (max-width: 760px) {
+  .page-layout { grid-template-columns: 1fr; }
+  .page-nav { position: static; flex-direction: row; flex-wrap: wrap; }
+}

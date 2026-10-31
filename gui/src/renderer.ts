@@ -363,6 +363,13 @@ async function renderInstall(): Promise<void> {
   setHeader("安装原版", "从 Mojang 官方源下载，镜像可选");
   const content = document.getElementById("content") as HTMLElement;
   content.innerHTML = `
+    <div class="page-layout">
+      <aside class="page-nav">
+        <button class="page-nav-item active" data-top="1">原版游戏</button>
+        <button class="page-nav-item" data-go="versions">已安装版本</button>
+        <button class="page-nav-item" data-go="mods">整合包</button>
+      </aside>
+      <div class="page-main">
     <div class="card">
       <div class="card-head">
         <span class="card-title">版本清单</span>
@@ -376,7 +383,15 @@ async function renderInstall(): Promise<void> {
         <span class="small muted" id="remote-hint">加载中…</span>
       </div>
       <div class="list" id="remote-list"></div>
+    </div>
+      </div>
     </div>`;
+  content.querySelectorAll<HTMLButtonElement>(".page-nav-item[data-go]").forEach((button) => {
+    button.addEventListener("click", () => setView(button.dataset.go as View));
+  });
+  content.querySelector<HTMLButtonElement>(".page-nav-item[data-top]")?.addEventListener("click", () => {
+    content.querySelector(".page-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   const input = content.querySelector("#remote-filter") as HTMLInputElement;
   input.addEventListener("input", () => paintRemote());
   content.querySelector("#remote-refresh")?.addEventListener("click", () => loadRemote(true));
@@ -442,7 +457,15 @@ function renderResources(): void {
   const options = state.versions.map((version) =>
     `<option value="${esc(version.id)}" ${version.id === resourceVersion ? "selected" : ""}>${esc(version.id)}</option>`).join("");
   content.innerHTML = `
-    <div class="card">
+    <div class="page-layout">
+      <aside class="page-nav">
+        <button class="page-nav-item ${resourceKind === "shader" ? "active" : ""}" data-kind="shader">光影</button>
+        <button class="page-nav-item ${resourceKind === "resourcepack" ? "active" : ""}" data-kind="resourcepack">材质包</button>
+        <button class="page-nav-item" data-target="#res-local-card">已安装</button>
+        <button class="page-nav-item" data-target="#res-search-card">搜索</button>
+      </aside>
+      <div class="page-main">
+    <div class="card" id="res-local-card">
       <div class="card-head">
         <span class="card-title">已安装</span>
         <div class="inline">
@@ -456,7 +479,7 @@ function renderResources(): void {
       </div>
       <div class="list" id="res-local"><div class="empty">加载中…</div></div>
     </div>
-    <div class="card">
+    <div class="card" id="mods-search">
       <div class="card-head">
         <span class="card-title">搜索 Modrinth</span>
         <div class="inline">
@@ -465,7 +488,25 @@ function renderResources(): void {
         </div>
       </div>
       <div class="list" id="res-results"><div class="empty">输入关键词搜索</div></div>
+    </div>
+      </div>
     </div>`;
+  content.querySelectorAll<HTMLButtonElement>(".page-nav .page-nav-item[data-kind]").forEach((button) => {
+    button.addEventListener("click", () => {
+      resourceKind = button.dataset.kind as string;
+      (content.querySelector("#res-kind") as HTMLSelectElement).value = resourceKind;
+      content.querySelectorAll(".page-nav .page-nav-item[data-kind]").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      void loadResourceLocal();
+    });
+  });
+  content.querySelectorAll<HTMLButtonElement>(".page-nav .page-nav-item[data-target]").forEach((button) => {
+    button.addEventListener("click", () => {
+      content.querySelectorAll(".page-nav .page-nav-item").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      content.querySelector(button.dataset.target as string)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
   (content.querySelector("#res-kind") as HTMLSelectElement).addEventListener("change", (event) => {
     resourceKind = (event.target as HTMLSelectElement).value;
     void loadResourceLocal();
@@ -558,7 +599,14 @@ function renderMods(): void {
   const options = state.versions.map((version) =>
     `<option value="${esc(version.id)}" ${version.id === modsVersion ? "selected" : ""}>${esc(version.id)} (${esc(version.loader)})</option>`).join("");
   content.innerHTML = `
-    <div class="card">
+    <div class="page-layout">
+      <aside class="page-nav">
+        <button class="page-nav-item active" data-target="#mods-pack">整合包</button>
+        <button class="page-nav-item" data-target="#mods-local">本地模组</button>
+        <button class="page-nav-item" data-target="#mods-search">搜索模组</button>
+      </aside>
+      <div class="page-main">
+    <div class="card" id="mods-pack">
       <div class="card-head"><span class="card-title">导入整合包</span></div>
       <div class="card-body">
         <div class="inline">
@@ -569,7 +617,7 @@ function renderMods(): void {
         <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
       </div>
     </div>
-    <div class="card">
+    <div class="card" id="mods-local">
       <div class="card-head">
         <span class="card-title">本地模组</span>
         <div class="inline">
@@ -579,7 +627,7 @@ function renderMods(): void {
       </div>
       <div class="list" id="local-mods"><div class="empty">加载中…</div></div>
     </div>
-    <div class="card">
+    <div class="card" id="res-search-card">
       <div class="card-head">
         <span class="card-title">搜索 Modrinth</span>
         <div class="inline">
@@ -588,8 +636,17 @@ function renderMods(): void {
         </div>
       </div>
       <div class="list" id="mod-results"><div class="empty">输入关键词搜索</div></div>
+    </div>
+      </div>
     </div>`;
   const select = content.querySelector("#mods-version") as HTMLSelectElement;
+  content.querySelectorAll<HTMLButtonElement>(".page-nav-item").forEach((button) => {
+    button.addEventListener("click", () => {
+      content.querySelectorAll(".page-nav-item").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      content.querySelector(button.dataset.target as string)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  });
   select.addEventListener("change", () => {
     modsVersion = select.value;
     void loadLocalMods();
