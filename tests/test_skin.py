@@ -65,6 +65,8 @@ class SkinTests(unittest.TestCase):
             names = set(archive.namelist())
         self.assertIn("assets/minecraft/textures/entity/steve.png", names)
         self.assertIn("assets/minecraft/textures/entity/player/wide/steve.png", names)
+        self.assertIn("assets/minecraft/textures/entity/player/wide/ari.png", names)
+        self.assertIn("assets/minecraft/textures/entity/player/slim/zuri.png", names)
         game_dir = self.game / "versions" / "1.20.1"
         options = (game_dir / "options.txt").read_text(encoding="utf-8")
         self.assertIn("MCL-Custom-Skin.zip", options)
@@ -79,6 +81,8 @@ class SkinTests(unittest.TestCase):
         with zipfile.ZipFile(target) as archive:
             meta = archive.read("pack.mcmeta").decode("utf-8")
         self.assertIn('"pack_format": 46', meta)
+        self.assertIn('"min_format": 1', meta)
+        self.assertIn('"max_format": 999', meta)
         options = target.parent.parent / "options.txt"
         self.assertIn("MCL-Custom-Skin.zip", options.read_text(encoding="utf-8"))
 

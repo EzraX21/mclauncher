@@ -106,17 +106,19 @@ def _resource_pack(version_id: str, data: bytes) -> bytes:
         "pack": {
             "pack_format": pack_format(version_id),
             "supported_formats": {"min_inclusive": 1, "max_inclusive": 999},
+            "min_format": 1,
+            "max_format": 999,
             "description": "MCL 自定义皮肤",
         }
     }
-    textures = (
-        "assets/minecraft/textures/entity/steve.png",
-        "assets/minecraft/textures/entity/alex.png",
-        "assets/minecraft/textures/entity/player/wide/steve.png",
-        "assets/minecraft/textures/entity/player/wide/alex.png",
-        "assets/minecraft/textures/entity/player/slim/steve.png",
-        "assets/minecraft/textures/entity/player/slim/alex.png",
-    )
+    # 1.19.2 及更早只有 Steve/Alex；1.20.2+ 有 9 个默认皮肤，
+    # 离线 UUID 会随机落到其中一个，所以必须全部替换。
+    default_skins = ("steve", "alex", "ari", "efe", "kai", "makena", "noor", "sunny", "zuri")
+    textures = ["assets/minecraft/textures/entity/steve.png",
+                "assets/minecraft/textures/entity/alex.png"]
+    for model in ("wide", "slim"):
+        for name in default_skins:
+            textures.append(f"assets/minecraft/textures/entity/player/{model}/{name}.png")
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("pack.mcmeta", json.dumps(meta, ensure_ascii=False, indent=2))
