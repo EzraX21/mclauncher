@@ -52,6 +52,8 @@ class Config:
     jobs: int = 8
     download_source: str = "official"
     mirror_url: str = ""
+    custom_skin: bool = False
+    skin_model: str = "classic"
     theme: str = "light"
     ms_client_id: str = ""
     curseforge_api_key: str = ""

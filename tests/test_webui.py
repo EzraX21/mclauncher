@@ -13,6 +13,7 @@ from pathlib import Path
 
 from mcl.config import Config
 from mcl.webui import serve
+from tests.test_skin import make_png
 
 
 def get_json(url: str) -> dict:
@@ -89,6 +90,17 @@ class WebuiTests(unittest.TestCase):
         self.assertEqual(Config.load().theme, "dark")
         post_json(self.url + "api/config", {"theme": "system"})
         self.assertEqual(Config.load().theme, "system")
+
+    def test_skin_upload_and_remove(self):
+        data = post_bytes(self.url + "api/skin", make_png(64, 64), {
+            "Content-Type": "image/png", "X-Skin-Model": "slim",
+        })
+        self.assertTrue(data["config"]["custom_skin"])
+        self.assertEqual(data["config"]["skin_model"], "slim")
+        self.assertTrue(data["config"]["skin_preview"].startswith("data:image/png;base64,"))
+        data = post_json(self.url + "api/skin/remove", {})
+        self.assertFalse(data["config"]["custom_skin"])
+        self.assertEqual(data["config"]["skin_preview"], "")
 
     def test_remove_version(self):
         root = Path(self.tmp.name) / "game"

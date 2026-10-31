@@ -18,7 +18,7 @@ from .versions import VersionError
 
 COMMANDS = {"install", "versions", "remove", "uninstall", "launch", "loaders", "mods", "java",
             "config", "tui", "doctor", "gui", "login", "logout", "account", "modpack",
-            "crash", "resources", "desktop"}
+            "crash", "resources", "skin", "desktop"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -137,6 +137,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("query", nargs="?", help="关键词 / 项目 slug / 文件名")
     p.add_argument("--version", help="游戏版本（默认上次启动的）")
 
+    p = sub.add_parser("skin", help="离线自定义皮肤（资源包）")
+    p.add_argument("action", nargs="?", default="show", choices=["show", "set", "off"])
+    p.add_argument("file", nargs="?", help="皮肤 PNG 路径")
+    p.add_argument("--model", choices=["classic", "slim"], help="Steve / Alex 模型")
+
     p = sub.add_parser("desktop", help="安装 / 移除 Linux 桌面启动项")
     p.add_argument("action", nargs="?", default="install", choices=["install", "remove"])
 
@@ -232,6 +237,10 @@ def main(argv=None) -> int:
             return java_cmd.run(args, ui, cfg)
         if args.command == "config":
             return settings_cmd.run(args, ui, cfg)
+        if args.command == "skin":
+            from .skin_cmd import run as skin_run
+
+            return skin_run(args, ui, cfg)
         if args.command == "tui":
             if not sys.stdout.isatty():
                 ui.error("TUI 需要交互式终端")

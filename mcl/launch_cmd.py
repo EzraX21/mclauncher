@@ -8,6 +8,7 @@ from typing import Optional
 
 from . import auth, prompts
 from .config import Config
+from . import skin
 from .java import JavaRuntime, component_for, ensure_java, find_all, pick, pick_exact, probe
 from .launch import build_command, ensure_libraries, prepare_natives, run
 from .progress import ProgressReporter, human_size
@@ -125,6 +126,10 @@ def run_launch(args, ui: UI, cfg: Config) -> int:
     if interactive and not prompts.confirm(ui, "启动游戏？"):
         return 130
 
+    try:
+        skin.apply(cfg, resolved.chain[0])
+    except skin.SkinError as exc:
+        ui.warn(f"自定义皮肤不可用：{exc}")
     cfg.last_version = resolved.id
     cfg.save()
     ui.blank()

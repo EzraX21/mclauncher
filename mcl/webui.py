@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, auth, crash, loaders, modpacks, modrinth, resources
+from . import __version__, auth, crash, loaders, modpacks, modrinth, resources, skin
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -95,6 +95,9 @@ def _config_dict(cfg: Config) -> dict:
         "jobs": cfg.jobs,
         "download_source": cfg.download_source,
         "mirror_url": cfg.mirror_url,
+        "custom_skin": cfg.custom_skin,
+        "skin_model": cfg.skin_model,
+        "skin_preview": skin.preview(cfg),
         "theme": getattr(cfg, "theme", "light"),
         "ms_client_id": cfg.ms_client_id,
         "curseforge_configured": bool(cfg.curseforge_api_key),
@@ -302,6 +305,10 @@ def launch_version(version_id: str) -> dict:
     command = build_command(resolved, cfg, java, account=account)
     if command.missing:
         raise RuntimeError(f"缺少 {len(command.missing)} 个文件")
+    try:
+        skin.apply(cfg, resolved.chain[0])
+    except skin.SkinError as exc:
+        raise RuntimeError(f"自定义皮肤不可用：{exc}") from exc
     process = spawn(command)
     cfg.last_version = resolved.id
     cfg.save()
@@ -440,6 +447,21 @@ class Handler(BaseHTTPRequestHandler):
                 filename = unquote(self.headers.get("X-Filename", "pack.mrpack"))
                 name = unquote(self.headers.get("X-Pack-Name", ""))
                 return self._json(start_modpack(self._raw_body(), filename, name))
+            if parsed.path == "/api/skin":
+                model = unquote(self.headers.get("X-Skin-Model", "classic"))
+                try:
+                    skin.save(self._raw_body(), model)
+                except skin.SkinError as exc:
+                    return self._error(str(exc), 400)
+                _ACTIVE_CFG.custom_skin = True
+                _ACTIVE_CFG.skin_model = model if model in ("classic", "slim") else "classic"
+                _ACTIVE_CFG.save()
+                return self._json({"config": _config_dict(_ACTIVE_CFG)})
+            if parsed.path == "/api/skin/remove":
+                skin.clear()
+                _ACTIVE_CFG.custom_skin = False
+                _ACTIVE_CFG.save()
+                return self._json({"config": _config_dict(_ACTIVE_CFG)})
             body = self._body()
             if parsed.path == "/api/install":
                 return self._json(start_install(body.get("id", ""), bool(body.get("assets", True))))
@@ -501,8 +523,11 @@ class Handler(BaseHTTPRequestHandler):
                     if mirror and not mirror.startswith(("http://", "https://")):
                         return self._error("镜像 URL 要以 https:// 或 http:// 开头")
                     body["mirror_url"] = mirror
+                if body.get("skin_model") not in (None, "classic", "slim"):
+                    return self._error("皮肤模型只能是 classic 或 slim")
                 for key in ("game_dir", "java_path", "memory_mb", "username",
-                            "isolate_versions", "jobs", "download_source", "mirror_url"):
+                            "isolate_versions", "jobs", "download_source", "mirror_url",
+                            "custom_skin", "skin_model"):
                     if key in body:
                         setattr(cfg, key, body[key])
                 if body.get("theme") in ("light", "dark", "system"):

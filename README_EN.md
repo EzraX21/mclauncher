@@ -228,6 +228,8 @@ CurseForge modpacks need an API key (see below).
 
 ```bash
 mcl resources search shader complementary --version 1.20.1
+mcl skin set skin.png --model classic   # offline custom skin
+mcl skin off
 mcl resources install shader complementary-reimagined --version 1.20.1
 mcl resources list shader --version 1.20.1
 mcl resources remove shader ComplementaryReimagined_r5.9.3.zip --version 1.20.1
@@ -293,6 +295,8 @@ Paths:
 | `jobs` | Download concurrency, default 8 |
 | `download_source` | `official` (default) / `auto` (BMCLAPI first) / `custom` |
 | `mirror_url` | Custom mirror base URL (serves version_manifest_v2.json at root; BMCLAPI fallback) |
+| `custom_skin` | Enable the offline custom skin |
+| `skin_model` | `classic` / `slim` |
 | `theme` | GUI theme: `light` / `dark` / `system` |
 | `ms_client_id` | Override the built-in Azure client ID (optional) |
 | `curseforge_api_key` | CurseForge API key (optional) |
@@ -423,7 +427,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                109 tests
+├── tests/                114 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -434,7 +438,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-109 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+114 tests covering rules, download plans, version merging, launch arguments, Java, mods,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations

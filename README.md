@@ -65,8 +65,9 @@
 | 模组 | Modrinth / CurseForge 搜索安装，自动补前置；本地模组启用/禁用/删除 |
 | 整合包 | Modrinth `.mrpack`、CurseForge zip；自动装原版和加载器，复制 overrides，生成独立实例 |
 | 资源 | 光影、材质包搜索安装到 `shaderpacks/` / `resourcepacks/` |
+| 皮肤 | 离线自定义皮肤 PNG，生成资源包替换默认 Steve/Alex 贴图 |
 | 崩溃分析 | 解析 crash-report / latest.log，给出 Java 版本、内存、缺前置、Mixin 冲突等建议 |
-| 账号 | 离线 + 微软正版（设备代码流），token 本地缓存、自动刷新 |
+| 账号 | 仅离线（微软登录被 Mojang 拒绝，已停用） |
 | Java | 按版本要求选主版本，缺了自动从 Mojang 下载，不会拿新 Java 硬启动老版本 |
 | GUI | **默认入口**：原生窗口（Linux WebKitGTK / Windows WebView2），浅色/深色/跟随系统 |
 | TUI | **特色入口**：全屏终端界面，适合习惯终端/键盘操作的用户；启动游戏仍需图形环境 |
@@ -226,6 +227,8 @@ CurseForge 整合包需要在设置里配 API key（见下）。
 
 ```bash
 mcl resources search shader complementary --version 1.20.1
+mcl skin set skin.png --model classic   # 离线自定义皮肤
+mcl skin off
 mcl resources install shader complementary-reimagined --version 1.20.1
 mcl resources list shader --version 1.20.1
 mcl resources remove shader ComplementaryReimagined_r5.9.3.zip --version 1.20.1
@@ -291,6 +294,8 @@ mcl doctor --network                # 环境自检
 | `jobs` | 下载并发，默认 8 |
 | `download_source` | `official`（默认）/ `auto`（BMCLAPI 优先）/ `custom`（自定义镜像） |
 | `mirror_url` | 自定义镜像 base URL（根路径提供 version_manifest_v2.json；兼容 BMCLAPI 回退） |
+| `custom_skin` | 是否启用离线自定义皮肤 |
+| `skin_model` | `classic` / `slim` |
 | `theme` | GUI 主题：`light` / `dark` / `system` |
 | `ms_client_id` | 覆盖内置 Azure client id（可选） |
 | `curseforge_api_key` | CurseForge API key（可选） |
@@ -394,7 +399,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript 前端（esbuild）
 ├── docs/                 README 截图
-├── tests/                109 个测试
+├── tests/                114 个测试
 ├── packaging/            deb/rpm/Arch、Windows、macOS、AUR、发版脚本
 └── pyproject.toml
 ```
@@ -405,7 +410,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-109 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+114 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
 删除、TUI（无需终端）和 GUI API；不需要网络。
 
 ## 已知限制
@@ -415,6 +420,7 @@ python -m unittest discover -s tests -v
 - Windows 安装包未签名，SmartScreen 会提示
 - macOS 只有手动构建脚本，Release 不发布 dmg；GUI 在 macOS 上会退回浏览器
 - AUR 注册暂停，暂时没有账号/包
+- 自定义皮肤用资源包实现，会替换所有默认 Steve/Alex 贴图，多人里其他默认皮肤玩家也会看到
 - 资源目前只有光影/材质，地图、数据包还没做
 - 服务器列表、自动更新、Java 管理 GUI 还没做
 

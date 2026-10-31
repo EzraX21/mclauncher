@@ -14,6 +14,8 @@ EDITABLE = {
     "jobs": "下载并发数",
     "download_source": "下载源（auto/official/custom）",
     "mirror_url": "自定义镜像 URL（BMCLAPI 兼容）",
+    "custom_skin": "离线自定义皮肤（true/false）",
+    "skin_model": "皮肤模型（classic/slim）",
     "curseforge_api_key": "CurseForge API key",
     "ms_client_id": "微软 Azure 应用 client id",
     "theme": "GUI 主题（light/dark/system）",
@@ -49,6 +51,15 @@ def _coerce(key: str, value: str):
     if key == "download_source":
         if value not in ("auto", "official", "custom"):
             raise ValueError("只能是 auto / official / custom")
+        return value
+    if key == "custom_skin":
+        lowered = value.lower()
+        if lowered not in ("true", "false", "1", "0", "on", "off"):
+            raise ValueError("只能是 true 或 false")
+        return lowered in ("true", "1", "on")
+    if key == "skin_model":
+        if value not in ("classic", "slim"):
+            raise ValueError("只能是 classic 或 slim")
         return value
     if key == "mirror_url":
         if not value.startswith(("https://", "http://")):

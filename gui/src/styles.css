@@ -356,3 +356,16 @@ html[data-theme="dark"] .log-tail { background: #101a23; color: #aebfce; border-
   .launch-side { height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
   .launch-main { padding: 12px; }
 }
+
+/* ---------------- offline skin ---------------- */
+.skin-row { display: flex; align-items: flex-start; gap: 16px; }
+.skin-preview {
+  width: 72px; height: 72px; flex: none;
+  border: 1px solid var(--border); border-radius: 6px;
+  background: linear-gradient(145deg, #cfe6fb, #9dc8ee);
+  display: grid; place-items: center; overflow: hidden;
+  color: #17466f; font-size: 28px; font-weight: 700;
+}
+.skin-preview img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+html[data-theme="dark"] .skin-preview { background: #20334a; color: #cfe2fa; }
+.account-avatar img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }

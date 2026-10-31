@@ -8,7 +8,7 @@ from textual.containers import Horizontal, Vertical
 from textual.widgets import Button, DataTable, ProgressBar, RichLog, Static
 
 from ...java import ensure_java
-from ... import auth
+from ... import auth, skin
 from ...launch import build_command, ensure_libraries, prepare_natives, spawn, wait
 from ...loaders import install as install_loader
 from ...mods import list_mods
@@ -199,6 +199,10 @@ class VersionsPane(Vertical):
             if command.missing:
                 self._log_threadsafe(f"[red]缺少 {len(command.missing)} 个文件，先补全[/]")
                 return
+            try:
+                skin.apply(self.cfg, resolved.chain[0])
+            except skin.SkinError as exc:
+                self._log_threadsafe(f"[yellow]自定义皮肤不可用：{exc}[/]")
             self._log_threadsafe("启动中…（关闭游戏后这里会显示退出码）")
             process = spawn(command)
             code = wait(process)

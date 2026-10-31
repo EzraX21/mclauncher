@@ -8,7 +8,7 @@ interface ConfigInfo {
   game_dir: string; java_path: string; memory_mb: number; username: string;
   isolate_versions: boolean; jobs: number; download_source: string; mirror_url: string;
   curseforge_configured: boolean; last_version: string; config_path: string; theme: string;
-  ms_client_id: string;
+  ms_client_id: string; custom_skin: boolean; skin_model: string; skin_preview: string;
 }
 interface AccountInfo { name: string; uuid: string; }
 interface StateInfo { version: string; config: ConfigInfo; versions: VersionInfo[]; platform: string;
@@ -210,7 +210,9 @@ function renderVersions(): void {
     <div class="launch-layout">
       <aside class="launch-side">
         <div class="account-line"><span class="online-dot"></span>离线模式</div>
-        <div class="account-avatar">${esc((state.config.username || "P").slice(0, 1).toUpperCase())}</div>
+        <div class="account-avatar">${state.config.skin_preview
+          ? `<img src="${state.config.skin_preview}" alt="皮肤" />`
+          : esc((state.config.username || "P").slice(0, 1).toUpperCase())}</div>
         <div class="account-name">${esc(state.config.username || "Player")}</div>
         <div class="launch-field">
           <label>游戏版本</label>
@@ -728,6 +730,32 @@ function renderSettings(): void {
       </div>
     </div>
     <div class="card">
+      <div class="card-head"><span class="card-title">离线皮肤</span></div>
+      <div class="card-body">
+        <div class="skin-row">
+          <div class="skin-preview">${cfg.skin_preview
+            ? `<img src="${cfg.skin_preview}" alt="皮肤预览" />`
+            : `<span>${esc((cfg.username || "P").slice(0, 1).toUpperCase())}</span>`}</div>
+          <div class="grow">
+            <div class="title">自定义皮肤</div>
+            <div class="desc">资源包模式：替换默认 Steve/Alex 贴图，离线可用。</div>
+            <div class="inline" style="margin-top:8px">
+              <select id="skin-model">
+                <option value="classic" ${cfg.skin_model === "classic" ? "selected" : ""}>Steve（经典）</option>
+                <option value="slim" ${cfg.skin_model === "slim" ? "selected" : ""}>Alex（纤细）</option>
+              </select>
+              <button class="btn" id="skin-pick">选择 PNG</button>
+              <button class="btn" id="skin-off" ${cfg.custom_skin ? "" : "disabled"}>移除</button>
+              <input id="skin-file" type="file" accept="image/png" hidden />
+            </div>
+          </div>
+        </div>
+        <div class="small muted" style="margin-top:10px">
+          64×32 或 64×64 PNG，≤24 KB。资源包会替换所有默认皮肤，多人里其他默认皮肤玩家也会看到这张图。
+        </div>
+      </div>
+    </div>
+    <div class="card">
       <div class="card-head"><span class="card-title">常规</span></div>
       <div class="card-body">
         <div class="field"><label>游戏目录</label><input id="set-dir" type="text" value="${esc(cfg.game_dir)}" /></div>
@@ -789,6 +817,50 @@ function renderSettings(): void {
         method: "POST", body: JSON.stringify({ client_id: clientId }),
       });
       showLogin(task);
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+  const skinFile = content.querySelector("#skin-file") as HTMLInputElement | null;
+  content.querySelector("#skin-pick")?.addEventListener("click", () => skinFile?.click());
+  skinFile?.addEventListener("change", async () => {
+    const file = skinFile.files?.[0];
+    if (!file) return;
+    const model = (content.querySelector("#skin-model") as HTMLSelectElement).value;
+    try {
+      const response = await fetch("/api/skin", {
+        method: "POST",
+        headers: { "Content-Type": "image/png", "X-Skin-Model": model },
+        body: await file.arrayBuffer(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "上传失败");
+      state.config = data.config;
+      toast("皮肤已保存，启动时自动应用", "ok");
+      renderSettings();
+    } catch (error) {
+      toast(`皮肤不可用：${(error as Error).message}`, "error");
+    } finally {
+      skinFile.value = "";
+    }
+  });
+  content.querySelector("#skin-off")?.addEventListener("click", async () => {
+    try {
+      const data = await api<{ config: ConfigInfo }>("/api/skin/remove", { method: "POST", body: "{}" });
+      state.config = data.config;
+      toast("已移除自定义皮肤", "ok");
+      renderSettings();
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+  content.querySelector("#skin-model")?.addEventListener("change", async (event) => {
+    const model = (event.target as HTMLSelectElement).value;
+    try {
+      const data = await api<{ config: ConfigInfo }>("/api/config", {
+        method: "POST", body: JSON.stringify({ skin_model: model }),
+      });
+      state.config = data.config;
     } catch (error) {
       toast((error as Error).message, "error");
     }
