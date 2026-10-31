@@ -32,6 +32,8 @@ let modsTimer: number | null = null;
 let resourceKind = "shader";
 let resourceVersion = "";
 let settingsTab = "account";
+let modsTab = "pack";
+let installTab = "vanilla";
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
@@ -366,11 +368,12 @@ async function renderInstall(): Promise<void> {
   content.innerHTML = `
     <div class="page-layout">
       <aside class="page-nav">
-        <button class="page-nav-item active" data-top="1">原版游戏</button>
-        <button class="page-nav-item" data-go="versions">已安装版本</button>
-        <button class="page-nav-item" data-go="mods">整合包</button>
+        <button class="page-nav-item ${installTab === "vanilla" ? "active" : ""}" data-tab="vanilla">原版游戏</button>
+        <button class="page-nav-item ${installTab === "installed" ? "active" : ""}" data-tab="installed">已安装版本</button>
+        <button class="page-nav-item ${installTab === "modpack" ? "active" : ""}" data-tab="modpack">整合包</button>
       </aside>
       <div class="page-main">
+    <div class="install-page ${installTab === "vanilla" ? "active" : ""}" data-page="vanilla">
     <div class="card">
       <div class="card-head">
         <span class="card-title">版本清单</span>
@@ -385,13 +388,78 @@ async function renderInstall(): Promise<void> {
       </div>
       <div class="list" id="remote-list"></div>
     </div>
+    </div>
+    <div class="install-page ${installTab === "installed" ? "active" : ""}" data-page="installed">
+      <div class="card">
+        <div class="card-head"><span class="card-title">已安装版本</span></div>
+        ${state.versions.length ? `<div class="list">${state.versions.map((version) => `
+          <div class="list-row">
+            <div class="grow">
+              <div class="title">${esc(version.id)} ${badge(version.loader)}
+                ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
+              <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
+            </div>
+            <button class="btn sm" data-installed-loader="${esc(version.id)}">装加载器</button>
+            <button class="btn sm danger" data-installed-delete="${esc(version.id)}">删除</button>
+            <button class="btn primary sm" data-installed-launch="${esc(version.id)}">启动</button>
+          </div>`).join("")}</div>` : `<div class="empty">还没有安装任何版本</div>`}
+      </div>
+    </div>
+    <div class="install-page ${installTab === "modpack" ? "active" : ""}" data-page="modpack">
+      <div class="card">
+        <div class="card-head"><span class="card-title">导入整合包</span></div>
+        <div class="card-body">
+          <div class="inline">
+            <input type="file" id="install-pack-file" accept=".mrpack,.zip" />
+            <input id="install-pack-name" placeholder="实例名（可选）" style="width:200px" />
+            <button class="btn primary" id="install-pack-import">导入</button>
+          </div>
+          <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
+        </div>
+      </div>
+    </div>
       </div>
     </div>`;
-  content.querySelectorAll<HTMLButtonElement>(".page-nav-item[data-go]").forEach((button) => {
-    button.addEventListener("click", () => setView(button.dataset.go as View));
+  content.querySelectorAll<HTMLButtonElement>(".page-nav-item[data-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      installTab = button.dataset.tab as string;
+      content.querySelectorAll(".page-nav-item").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      content.querySelectorAll<HTMLElement>(".install-page").forEach((page) => {
+        page.classList.toggle("active", page.dataset.page === installTab);
+      });
+    });
   });
-  content.querySelector<HTMLButtonElement>(".page-nav-item[data-top]")?.addEventListener("click", () => {
-    content.querySelector(".page-main")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  content.querySelectorAll<HTMLButtonElement>("[data-installed-launch]").forEach((button) => {
+    button.addEventListener("click", () => launch(button.dataset.installedLaunch as string, button));
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-installed-loader]").forEach((button) => {
+    button.addEventListener("click", () => openLoader(button.dataset.installedLoader as string));
+  });
+  content.querySelectorAll<HTMLButtonElement>("[data-installed-delete]").forEach((button) => {
+    button.addEventListener("click", () => openDelete(button.dataset.installedDelete as string));
+  });
+  content.querySelector("#install-pack-import")?.addEventListener("click", async () => {
+    const fileInput = content.querySelector("#install-pack-file") as HTMLInputElement;
+    const file = fileInput.files?.[0];
+    if (!file) { toast("先选一个 .mrpack / .zip", "error"); return; }
+    const name = (content.querySelector("#install-pack-name") as HTMLInputElement).value.trim();
+    try {
+      const response = await fetch("/api/modpack/install", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "X-Filename": encodeURIComponent(file.name),
+          "X-Pack-Name": encodeURIComponent(name),
+        },
+        body: await file.arrayBuffer(),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || response.statusText);
+      watchTask(data as TaskInfo, `导入 ${file.name}`);
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
   });
   const input = content.querySelector("#remote-filter") as HTMLInputElement;
   input.addEventListener("input", () => paintRemote());
@@ -462,8 +530,6 @@ function renderResources(): void {
       <aside class="page-nav">
         <button class="page-nav-item ${resourceKind === "shader" ? "active" : ""}" data-kind="shader">光影</button>
         <button class="page-nav-item ${resourceKind === "resourcepack" ? "active" : ""}" data-kind="resourcepack">材质包</button>
-        <button class="page-nav-item" data-target="#res-local-card">已安装</button>
-        <button class="page-nav-item" data-target="#res-search-card">搜索</button>
       </aside>
       <div class="page-main">
     <div class="card" id="res-local-card">
@@ -480,7 +546,7 @@ function renderResources(): void {
       </div>
       <div class="list" id="res-local"><div class="empty">加载中…</div></div>
     </div>
-    <div class="card" id="mods-search">
+    <div class="card" id="res-search-card">
       <div class="card-head">
         <span class="card-title">搜索 Modrinth</span>
         <div class="inline">
@@ -496,21 +562,12 @@ function renderResources(): void {
     button.addEventListener("click", () => {
       resourceKind = button.dataset.kind as string;
       (content.querySelector("#res-kind") as HTMLSelectElement).value = resourceKind;
-      content.querySelectorAll(".page-nav .page-nav-item[data-kind]").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      void loadResourceLocal();
-    });
-  });
-  content.querySelectorAll<HTMLButtonElement>(".page-nav .page-nav-item[data-target]").forEach((button) => {
-    button.addEventListener("click", () => {
-      content.querySelectorAll(".page-nav .page-nav-item").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      content.querySelector(button.dataset.target as string)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      renderResources();
     });
   });
   (content.querySelector("#res-kind") as HTMLSelectElement).addEventListener("change", (event) => {
     resourceKind = (event.target as HTMLSelectElement).value;
-    void loadResourceLocal();
+    renderResources();
   });
   (content.querySelector("#res-version") as HTMLSelectElement).addEventListener("change", (event) => {
     resourceVersion = (event.target as HTMLSelectElement).value;
@@ -602,12 +659,12 @@ function renderMods(): void {
   content.innerHTML = `
     <div class="page-layout">
       <aside class="page-nav">
-        <button class="page-nav-item active" data-target="#mods-pack">整合包</button>
-        <button class="page-nav-item" data-target="#mods-local">本地模组</button>
-        <button class="page-nav-item" data-target="#mods-search">搜索模组</button>
+        <button class="page-nav-item ${modsTab === "pack" ? "active" : ""}" data-tab="pack">整合包</button>
+        <button class="page-nav-item ${modsTab === "local" ? "active" : ""}" data-tab="local">本地模组</button>
+        <button class="page-nav-item ${modsTab === "search" ? "active" : ""}" data-tab="search">搜索模组</button>
       </aside>
       <div class="page-main">
-    <div class="card" id="mods-pack">
+    <div class="card mods-page ${modsTab === "pack" ? "active" : ""}" data-page="pack" id="mods-pack">
       <div class="card-head"><span class="card-title">导入整合包</span></div>
       <div class="card-body">
         <div class="inline">
@@ -618,7 +675,7 @@ function renderMods(): void {
         <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
       </div>
     </div>
-    <div class="card" id="mods-local">
+    <div class="card mods-page ${modsTab === "local" ? "active" : ""}" data-page="local" id="mods-local">
       <div class="card-head">
         <span class="card-title">本地模组</span>
         <div class="inline">
@@ -628,7 +685,7 @@ function renderMods(): void {
       </div>
       <div class="list" id="local-mods"><div class="empty">加载中…</div></div>
     </div>
-    <div class="card" id="res-search-card">
+    <div class="card mods-page ${modsTab === "search" ? "active" : ""}" data-page="search" id="mods-search">
       <div class="card-head">
         <span class="card-title">搜索 Modrinth</span>
         <div class="inline">
@@ -641,11 +698,14 @@ function renderMods(): void {
       </div>
     </div>`;
   const select = content.querySelector("#mods-version") as HTMLSelectElement;
-  content.querySelectorAll<HTMLButtonElement>(".page-nav-item").forEach((button) => {
+  content.querySelectorAll<HTMLButtonElement>(".page-nav-item[data-tab]").forEach((button) => {
     button.addEventListener("click", () => {
+      modsTab = button.dataset.tab as string;
       content.querySelectorAll(".page-nav-item").forEach((item) => item.classList.remove("active"));
       button.classList.add("active");
-      content.querySelector(button.dataset.target as string)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      content.querySelectorAll<HTMLElement>(".mods-page").forEach((page) => {
+        page.classList.toggle("active", page.dataset.page === modsTab);
+      });
     });
   });
   select.addEventListener("change", () => {

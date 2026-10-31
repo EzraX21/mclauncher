@@ -425,3 +425,9 @@ html[data-theme="dark"] .page-nav { background: var(--panel); }
 
 .settings-page { display: none; }
 .settings-page.active { display: block; }
+
+.mods-page { display: none; }
+.mods-page.active { display: block; }
+
+.install-page { display: none; }
+.install-page.active { display: block; }
