@@ -107,6 +107,12 @@ const WORLDS = {
   ],
 };
 
+const UPDATE = {
+  current: "9.9.9", latest: "v9.9.10", update_available: true,
+  page: "https://example/releases", published: "", prerelease: false,
+  assets: [{ name: "setup.exe", size: 1, url: "https://example/x" }],
+};
+
 const calls = [];
 function fakeFetch(url) {
   calls.push(String(url));
@@ -114,6 +120,7 @@ function fakeFetch(url) {
   const body = target.includes("/api/servers") ? SERVERS
     : target.includes("/api/version/info") ? VERSION_INFO
     : target.includes("/api/mods/local") ? LOCAL_MODS
+    : target.includes("/api/update") ? UPDATE
     : target.includes("/api/java") ? JAVA
     : target.includes("/api/about") ? ABOUT
     : target.includes("/api/doctor") ? DOCTOR
@@ -261,6 +268,20 @@ for (const label of ["Python", "Textual", "游戏目录", "Java"]) {
 }
 assert.equal(checks.querySelectorAll(".check-mark").length, 4, "诊断标记数量不对");
 assert.ok(checks.querySelector(".check-mark.warn"), "警告状态没有对应样式");
+
+// 检查更新：按钮是异步渲染出来的，点它要真的发请求并显示结果
+const updateButton = doc.querySelector("#tb-update");
+assert.ok(updateButton, "关于卡片没有检查更新按钮");
+updateButton.click();
+await flush();
+await flush();
+const updateResult = doc.querySelector("#tb-update-result");
+assert.ok(updateResult.textContent.includes("v9.9.10"), `检查更新没显示新版本：${updateResult.textContent}`);
+assert.ok(doc.querySelector('#tb-update-result a[href^="https://"]'), "检查更新没给下载链接");
+assert.ok(
+  calls.some((url) => url.includes("/api/update")),
+  "点检查更新没有请求 /api/update",
+);
 
 const dirButtons = [...doc.querySelectorAll("[data-dir]")].map((node) => node.dataset.dir);
 assert.deepEqual(dirButtons, ["config", "game", "logs", "exports"], `快捷目录按钮不对：${dirButtons}`);

@@ -32,6 +32,11 @@ interface JavaListing {
   runtimes: JavaRuntimeInfo[]; configured: string;
   components: { major: number; component: string }[];
 }
+interface UpdateInfo {
+  current: string; latest: string; update_available: boolean;
+  page: string; published: string; prerelease: boolean;
+  assets: { name: string; size: number; url: string }[];
+}
 interface AboutInfo {
   version: string; python: string; platform: string; config_path: string;
   game_dir: string; exports_dir: string; license: string; repo: string; releases: string;
@@ -1593,11 +1598,38 @@ async function loadAbout(): Promise<void> {
         <div class="inline" style="margin-top:14px">
           <a class="btn" href="${esc(info.repo)}" target="_blank" rel="noreferrer">项目主页</a>
           <a class="btn" href="${esc(info.releases)}" target="_blank" rel="noreferrer">下载新版本</a>
+          <button class="btn" id="tb-update">检查更新</button>
+          <span class="small muted" id="tb-update-result"></span>
         </div>
       </div>`;
+    // 这张卡片是异步渲染出来的，监听要挂在这里，不能挂在同步流程里
+    host.querySelector("#tb-update")?.addEventListener("click", (event) => {
+      void checkUpdate(event.target as HTMLButtonElement);
+    });
   } catch (error) {
     host.innerHTML = `<div class="card-head"><span class="card-title">关于</span></div>
       <div class="card-body"><div class="empty">${esc((error as Error).message)}</div></div>`;
+  }
+}
+
+async function checkUpdate(button: HTMLButtonElement): Promise<void> {
+  const result = document.getElementById("tb-update-result");
+  button.disabled = true;
+  if (result) result.textContent = "查询中…";
+  try {
+    const data = await api<UpdateInfo>("/api/update");
+    if (result) {
+      result.innerHTML = data.update_available
+        ? `<span class="badge red">有新版本 ${esc(data.latest)}</span>
+           <a href="${esc(data.page)}" target="_blank" rel="noreferrer">去下载</a>`
+        : `<span class="badge green">已是最新（${esc(data.latest)}）</span>`;
+    }
+    toast(data.update_available ? `有新版本 ${data.latest}` : "已经是最新版", "ok");
+  } catch (error) {
+    if (result) result.textContent = `查不到：${(error as Error).message}`;
+    toast(`检查更新失败：${(error as Error).message}`, "error");
+  } finally {
+    button.disabled = false;
   }
 }
 

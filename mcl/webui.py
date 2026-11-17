@@ -15,7 +15,7 @@ from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
 from . import (__version__, auth, crash, doctor, java, loaders, modpacks, modrinth,
-               resources, servers, skin, vsettings)
+               resources, servers, skin, update, vsettings)
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -462,6 +462,11 @@ class Handler(BaseHTTPRequestHandler):
                     "default_client_id": auth.DEFAULT_CLIENT_ID,
                     "platform": os_name(),
                 })
+            if parsed.path == "/api/update":
+                try:
+                    return self._json(update.check(__version__))
+                except update.UpdateError as exc:
+                    return self._error(str(exc), 502)
             if parsed.path == "/api/worlds":
                 version_id = (query.get("version", [""])[0] or "").strip() or _default_version()
                 if not version_id:
