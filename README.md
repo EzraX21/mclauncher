@@ -46,7 +46,7 @@
 
 ## 项目状态
 
-当前版本 **v3.18.0**：
+当前版本 **v3.19.0**：
 
 | 状态 | 功能 |
 | --- | --- |
@@ -54,7 +54,7 @@
 | 📴 仅离线 | **微软登录**：Mojang 未通过 MCL 的申请，登录已停用；当前只支持离线模式 |
 | 🚧 待验证 | **CurseForge 整合包**：下载逻辑已实现，需要 API key；手头没有 key，还没跑真实整合包回归 |
 | ⏸️ 暂停 | **AUR**：AUR 注册暂停，暂时没法开号/首次提交；PKGBUILD 和 CI 已就绪，恢复后可直接启用 |
-| 📋 计划中 | 启动器自动更新（目前只做检查更新）、地图下载 |
+| 📋 计划中 | 启动器自动更新（目前只做检查更新） |
 
 ## 功能
 
@@ -103,9 +103,9 @@
 
 ```bash
 cd gui
-npm install --include=dev
-npx playwright install chromium   # 第一次要下 Chromium
-npm run shots                     # 造演示目录 → 起服务 → 逐页截图到 docs/
+npm install --include=optional     # playwright 是可选依赖，打包/CI 不会白下浏览器
+npx playwright install chromium    # 第一次要下 Chromium
+npm run shots                      # 造演示目录 → 起服务 → 逐页截图到 docs/
 ```
 
 ## 安装
@@ -450,8 +450,11 @@ python -m unittest discover -s tests -v
 前端另有一个 jsdom 冒烟测试，会真跑一遍构建后的界面：
 
 ```bash
-cd gui && npm test        # 先构建，再在 jsdom 里渲染并断言导航与联机页
+cd gui && npm test        # 先构建，再在 jsdom 里渲染并断言各页面
 ```
+
+CI 会在每个 PR 上跑这些（`.github/workflows/test.yml`）：Python 3.10/3.12 + Windows、
+前端类型检查 + jsdom 冒烟测试 + Playwright 截图，截图作为 artifact 上传。
 
 ## 已知限制
 
