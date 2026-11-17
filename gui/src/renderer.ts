@@ -68,7 +68,7 @@ let modsVersion = "";
 let modsTimer: number | null = null;
 let resourceKind = "shader";
 let resourceVersion = "";
-let settingsTab = "account";
+let settingsTab = "launch";
 let downloadTab = "game";
 let datapackVersion = "";
 let datapackWorld = "";
@@ -1612,8 +1612,8 @@ async function loadAbout(): Promise<void> {
   }
 }
 
-async function checkUpdate(button: HTMLButtonElement): Promise<void> {
-  const result = document.getElementById("tb-update-result");
+async function checkUpdate(button: HTMLButtonElement, resultId = "tb-update-result"): Promise<void> {
+  const result = document.getElementById(resultId);
   button.disabled = true;
   if (result) result.textContent = "查询中…";
   try {
@@ -1665,15 +1665,13 @@ function renderSettings(): void {
   content.innerHTML = `
     <div class="settings-layout">
       <aside class="settings-nav">
-        <button class="settings-nav-item ${settingsTab === "account" ? "active" : ""}" data-tab="account">账号</button>
-        <button class="settings-nav-item ${settingsTab === "skin" ? "active" : ""}" data-tab="skin">皮肤</button>
-        <button class="settings-nav-item ${settingsTab === "general" ? "active" : ""}" data-tab="general">常规</button>
-        <button class="settings-nav-item ${settingsTab === "java" ? "active" : ""}" data-tab="java">Java</button>
-        <button class="settings-nav-item ${settingsTab === "download" ? "active" : ""}" data-tab="download">下载</button>
-        <button class="settings-nav-item ${settingsTab === "appearance" ? "active" : ""}" data-tab="appearance">外观</button>
+        <button class="settings-nav-item ${settingsTab === "launch" ? "active" : ""}" data-tab="launch">启动</button>
+        <button class="settings-nav-item ${settingsTab === "ui" ? "active" : ""}" data-tab="ui">个性化</button>
+        <button class="settings-nav-item ${settingsTab === "system" ? "active" : ""}" data-tab="system">其他</button>
+        <button class="settings-nav-item ${settingsTab === "link" ? "active" : ""}" data-tab="link">联机</button>
       </aside>
       <div class="settings-main">
-    <div class="card settings-page ${settingsTab === "account" ? "active" : ""}" data-page="account" id="settings-account">
+    <div class="card settings-page ${settingsTab === "launch" ? "active" : ""}" data-page="launch" id="settings-account">
       <div class="card-head"><span class="card-title">微软账号</span></div>
       <div class="card-body">
         ${account ? `
@@ -1698,7 +1696,7 @@ function renderSettings(): void {
           </div>`}`}
       </div>
     </div>
-    <div class="card settings-page ${settingsTab === "skin" ? "active" : ""}" data-page="skin" id="settings-skin">
+    <div class="card settings-page ${settingsTab === "ui" ? "active" : ""}" data-page="ui" id="settings-skin">
       <div class="card-head"><span class="card-title">离线皮肤</span></div>
       <div class="card-body">
         <div class="skin-row">
@@ -1724,7 +1722,7 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
-    <div class="card settings-page ${settingsTab === "general" ? "active" : ""}" data-page="general" id="settings-general">
+    <div class="card settings-page ${settingsTab === "launch" ? "active" : ""}" data-page="launch" id="settings-general">
       <div class="card-head"><span class="card-title">常规</span></div>
       <div class="card-body">
         <div class="field"><label>游戏目录</label><input id="set-dir" type="text" value="${esc(cfg.game_dir)}" /></div>
@@ -1740,7 +1738,7 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
-    <div class="card settings-page ${settingsTab === "java" ? "active" : ""}" data-page="java" id="settings-java">
+    <div class="card settings-page ${settingsTab === "launch" ? "active" : ""}" data-page="launch" id="settings-java">
       <div class="card-head">
         <span class="card-title">Java 运行时</span>
         <button class="btn sm" id="java-refresh">重新检测</button>
@@ -1757,7 +1755,7 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
-    <div class="card settings-page ${settingsTab === "download" ? "active" : ""}" data-page="download" id="settings-download">
+    <div class="card settings-page ${settingsTab === "launch" ? "active" : ""}" data-page="launch" id="settings-download">
       <div class="card-head"><span class="card-title">下载</span></div>
       <div class="card-body">
         <div class="field"><label>下载源</label>
@@ -1775,7 +1773,7 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
-    <div class="card settings-page ${settingsTab === "appearance" ? "active" : ""}" data-page="appearance" id="settings-appearance">
+    <div class="card settings-page ${settingsTab === "ui" ? "active" : ""}" data-page="ui" id="settings-appearance">
       <div class="card-head"><span class="card-title">外观</span></div>
       <div class="card-body">
         <div class="field"><label>主题</label>
@@ -1788,9 +1786,36 @@ function renderSettings(): void {
         <div class="small muted">切换后立即生效并写入配置。</div>
       </div>
     </div>
+    <div class="card settings-page ${settingsTab === "system" ? "active" : ""}" data-page="system" id="settings-system">
+      <div class="card-head"><span class="card-title">其他</span></div>
+      <div class="card-body">
+        <div class="kv-grid">
+          <div class="kv-key">配置文件</div><div class="kv-value">${esc(cfg.config_path)}</div>
+          <div class="kv-key">启动器版本</div><div class="kv-value">v${esc(state.version)}</div>
+        </div>
+        <div class="inline" style="margin-top:14px">
+          <button class="btn" id="set-check-update">检查更新</button>
+          <button class="btn" id="set-goto-toolbox">环境诊断</button>
+          <span class="small muted" id="set-update-result"></span>
+        </div>
+      </div>
+    </div>
+    <div class="card settings-page ${settingsTab === "link" ? "active" : ""}" data-page="link" id="settings-link">
+      <div class="card-head"><span class="card-title">联机</span></div>
+      <div class="card-body">
+        <div class="small muted" style="line-height:1.7">
+          服务器列表跟版本走：写在某个版本的 <code>servers.dat</code> 里，
+          开了版本隔离时每个实例有自己的列表。<br>
+          延迟、在线人数和快速进服都在「联机」页里操作。
+        </div>
+        <div class="inline" style="margin-top:14px">
+          <button class="btn primary" id="set-goto-link">打开联机页</button>
+        </div>
+      </div>
+    </div>
       </div>
     </div>`;
-  if (settingsTab === "java") void loadJava();
+  if (settingsTab === "launch") void loadJava();
   content.querySelectorAll<HTMLButtonElement>(".settings-nav-item").forEach((button) => {
     button.addEventListener("click", () => {
       settingsTab = button.dataset.tab as string;
@@ -1799,7 +1824,7 @@ function renderSettings(): void {
       content.querySelectorAll<HTMLElement>(".settings-page").forEach((page) => {
         page.classList.toggle("active", page.dataset.page === settingsTab);
       });
-      if (settingsTab === "java") void loadJava();
+      if (settingsTab === "launch") void loadJava();
     });
   });
   const themeSelect = content.querySelector("#set-theme") as HTMLSelectElement;
@@ -1812,6 +1837,11 @@ function renderSettings(): void {
       toast((error as Error).message, "error");
     }
   });
+  content.querySelector("#set-check-update")?.addEventListener("click", (event) => {
+    void checkUpdate(event.target as HTMLButtonElement, "set-update-result");
+  });
+  content.querySelector("#set-goto-toolbox")?.addEventListener("click", () => setView("toolbox"));
+  content.querySelector("#set-goto-link")?.addEventListener("click", () => setView("link"));
   content.querySelector("#java-refresh")?.addEventListener("click", () => void loadJava());
   content.querySelector("#java-auto")?.addEventListener("click", async () => {
     try {

@@ -39,7 +39,8 @@ const SHOTS = [
     wait: "#res-results .list-row", dark: false },
   { file: "gui-link.png", hash: "#/link", wait: "#link-list .list-row", dark: false },
   { file: "gui-toolbox.png", hash: "#/toolbox", wait: "#tb-checks .check-row", dark: false },
-  { file: "gui-settings.png", hash: "#/settings", click: '[data-tab="general"]', wait: "#set-dir", dark: false },
+  // 设置默认落在「启动」页，账号/常规/Java/下载都在这一页
+  { file: "gui-settings.png", hash: "#/settings", wait: "#set-dir", dark: false },
   { file: "gui-dark.png", hash: "#/instance", wait: "#instance-detail .kv-grid", dark: true },
 ];
 
