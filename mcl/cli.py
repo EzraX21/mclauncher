@@ -8,7 +8,7 @@ from pathlib import Path
 
 from . import (__version__, auth_cmd, crash_cmd, desktop_cmd, doctor, home,
                install_cmd, java_cmd, launch_cmd, loaders_cmd, modpack_cmd, mods_cmd,
-               resources_cmd, settings_cmd)
+               resources_cmd, settings_cmd, update_cmd)
 from .config import Config
 from .installer import PlanError
 from .manifest import ApiError
@@ -18,7 +18,7 @@ from .versions import VersionError
 
 COMMANDS = {"install", "versions", "remove", "uninstall", "launch", "loaders", "mods", "java",
             "config", "tui", "doctor", "gui", "login", "logout", "account", "modpack",
-            "crash", "resources", "skin", "desktop", "servers"}
+            "crash", "resources", "skin", "desktop", "servers", "update"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -172,6 +172,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--no-browser", action="store_true", help="只启动服务，不打开窗口/浏览器")
     p.add_argument("--electron", action="store_true", help="强制用 Electron 窗口")
 
+    sub.add_parser("update", help="检查有没有新版本")
+
     p = sub.add_parser("doctor", help="检查运行环境")
     p.add_argument("--network", action="store_true", help="顺便测一下下载源连通性")
 
@@ -264,6 +266,8 @@ def main(argv=None) -> int:
                 ui.error("没装 textual：pip install textual（或 pipx install mcl）")
                 return 1
             return run_tui(cfg)
+        if args.command == "update":
+            return update_cmd.run(args, ui, cfg)
         if args.command == "doctor":
             return doctor.run(args, ui, cfg)
         if args.command == "modpack":

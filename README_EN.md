@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.14.0**
+Current version: **v3.15.0**
 
 | Status | Area |
 | --- | --- |
@@ -54,7 +54,7 @@ Current version: **v3.14.0**
 | 📴 Offline only | **Microsoft login**: Mojang rejected MCL's application; login is disabled and only offline mode is supported |
 | 🚧 Unverified | **CurseForge modpacks**: download path implemented, requires an API key; no real-pack regression yet |
 | ⏸️ Paused | **AUR**: registration is closed, so no account/first submission yet; PKGBUILD and CI are ready for when it reopens |
-| 📋 Planned | Launcher auto-update, maps/datapacks |
+| 📋 Planned | Launcher auto-update (only the update check exists), map downloads |
 
 ## Features
 
@@ -66,7 +66,7 @@ Current version: **v3.14.0**
 | Modpacks | Import Modrinth `.mrpack` / CurseForge zips (installs vanilla + loader, copies overrides); also **exports** an installed version to `.mrpack` (mods/config/resource packs, saves optional) |
 | Resources | Shaders and resource packs into `shaderpacks/` / `resourcepacks/` |
 | Multiplayer | Server list in the game's own `servers.dat` with latency / players / version / MOTD, one-click join |
-| Toolbox | About (version / platform / paths / license), environment check (Java, deps, writable dirs, download source), shortcuts to the config / game / log / export folders |
+| Toolbox | About (version / platform / paths / license / update check), environment check (Java, deps, writable dirs, download source), shortcuts to the config / game / log / export folders |
 | Crash analysis | Reads crash reports / latest.log and explains Java, memory, missing deps, Mixin conflicts, etc. |
 | Accounts | Offline + Microsoft device-code login, local token cache with refresh |
 | Java | Picks the exact major version; downloads the matching Mojang runtime instead of using a newer Java. Settings → Java lists every detected runtime, lets you pin one, or downloads a Mojang runtime |
@@ -456,7 +456,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                213 tests
+├── tests/                226 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -467,7 +467,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-213 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
+226 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
 modpack import and export, shader/resource-pack version resolution,
 server lists and NBT, Server List Ping against a local fake server,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
@@ -484,6 +484,7 @@ modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network
 - Quick join uses `--quickPlayMultiplayer` from the version JSON (1.20+) and falls back to
   `--server/--port`; the in-game result was not tested on every game version
 - Renaming is refused for a base version that other versions inherit from (it would break them)
+- The update check only tells you a newer release exists and links to it; it never replaces its own binary
 - Exported packs embed mod files in `overrides/` (no Modrinth matching), so they are self-contained but larger;
   the loader version is derived from the version id and a warning is shown when that fails
 - Auto-update and a Java management UI are not implemented

@@ -393,5 +393,31 @@ class WebuiTests(unittest.TestCase):
         self.assertFalse((world / "datapacks" / "x.zip").exists())
 
 
+    # ------------------------------------------------------------ 检查更新
+    def test_update_available(self):
+        from unittest import mock
+
+        payload = {
+            "current": "3.0.0", "latest": "v9.9.9", "update_available": True,
+            "page": "https://example/releases", "published": "", "prerelease": False,
+            "assets": [{"name": "setup.exe", "size": 1, "url": "https://example/x"}],
+        }
+        with mock.patch("mcl.webui.update.check", return_value=payload):
+            data = get_json(self.url + "api/update")
+        self.assertTrue(data["update_available"])
+        self.assertEqual(data["latest"], "v9.9.9")
+
+    def test_update_network_error(self):
+        from unittest import mock
+
+        from mcl import update
+
+        with mock.patch("mcl.webui.update.check", side_effect=update.UpdateError("连不上 GitHub")):
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                get_json(self.url + "api/update")
+        self.assertEqual(ctx.exception.code, 502)
+        self.assertIn("连不上", ctx.exception.read().decode("utf-8"))
+
+
 if __name__ == "__main__":
     unittest.main()
