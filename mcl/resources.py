@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 from typing import Optional
@@ -31,18 +32,33 @@ def directory(kind: str, cfg: Config, version_id: str) -> Path:
     return cfg.game_dir_for(version_id) / folder
 
 
-def search(kind: str, query: str, game_version: str, source: str = "official",
-           limit: int = 20) -> list[dict]:
+def game_version(cfg: Config, version_id: str) -> str:
+    """实例版本号（可能是 fabric-loader-x-y）→ 真正的游戏版本。
+
+    搜索/下载要对 Modrinth 报游戏版本，装文件要落到实例目录，两者不是一回事：
+    以前都拿实例版本号当游戏版本，装在加载器实例上的光影会搜不到也装不上。
+    """
+    from .versions import VersionError, resolve
+
+    try:
+        resolved = resolve(cfg.root(), version_id)
+    except VersionError:
+        return version_id
+    return resolved.chain[0] if resolved.chain else version_id
+
+
+def search(kind: str, query: str, cfg: Config, version_id: str, limit: int = 20) -> list[dict]:
     project_type, _, _ = _kind(kind)
+    game = game_version(cfg, version_id)
     facets = [[f"project_type:{project_type}"]]
-    if game_version:
-        facets.append([f"versions:{game_version}"])
+    if game:
+        facets.append([f"versions:{game}"])
     data = _get("/search", {
         "query": query,
-        "facets": __import__("json").dumps(facets),
+        "facets": json.dumps(facets),
         "limit": limit,
         "index": "relevance",
-    }, source)
+    }, cfg.source)
     hits = []
     for hit in data.get("hits", []):
         hits.append({
@@ -60,14 +76,13 @@ def latest(kind: str, project_id: str, game_version: str,
     return modrinth.latest_version(project_id, None, game_version, source)
 
 
-def install(kind: str, game_version: str, project: str, cfg: Config,
-            source: Optional[str] = None) -> Path:
-    version = latest(kind, project, game_version, source or cfg.source)
+def install(kind: str, cfg: Config, version_id: str, project: str) -> Path:
+    game = game_version(cfg, version_id)
+    version = latest(kind, project, game, cfg.source)
     if version is None:
-        raise ResourceError(f"{project} 没有适配 {game_version} 的文件")
-    target = directory(kind, cfg, game_version)
-    path = modrinth.download_version(version, target, source or cfg.source)
-    return path
+        raise ResourceError(f"{project} 没有适配 {game} 的文件")
+    target = directory(kind, cfg, version_id)
+    return modrinth.download_version(version, target, cfg.source)
 
 
 def local(kind: str, cfg: Config, version_id: str) -> list[dict]:

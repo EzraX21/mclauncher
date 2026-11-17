@@ -115,7 +115,6 @@ function shell(): string {
       </nav>
       <div class="titlebar-tools">
         <div class="inline" id="top-actions"></div>
-        <span class="path-chip" id="side-foot"></span>
       </div>
     </header>
     <main class="main">
@@ -196,7 +195,6 @@ async function refreshState(): Promise<void> {
   state = await api<StateInfo>("/api/state");
   applyTheme(state.config.theme || "light");
   (document.getElementById("brand-version") as HTMLElement).textContent = `v${state.version}`;
-  (document.getElementById("side-foot") as HTMLElement).textContent = state.config.game_dir;
   if (!modsVersion || !state.versions.some((item) => item.id === modsVersion)) {
     modsVersion = state.config.last_version || state.versions[0]?.id || "";
   }
