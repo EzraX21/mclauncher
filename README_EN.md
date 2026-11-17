@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.17.0**
+Current version: **v3.18.0**
 
 | Status | Area |
 | --- | --- |
@@ -60,7 +60,7 @@ Current version: **v3.17.0**
 
 | Module | What it does |
 | --- | --- |
-| Version management | Version list plus a detail pane: overview (loader / Java / size / path), per-version settings, mod management; rename, copy, export modpack, open folder, add loader, crash analysis, delete |
+| Version management | Version list plus six tabs like PCL: overview, settings, modify (rename / copy / open / delete), mods, disabled mods, export modpack |
 | Install | Mojang version manifest, live filter, optional assets, progress + log + cancel |
 | Mods | Modrinth / CurseForge search and install with required dependencies; local mods enable/disable/delete |
 | Modpacks | Import Modrinth `.mrpack` / CurseForge zips (installs vanilla + loader, copies overrides); also **exports** an installed version to `.mrpack` (mods/config/resource packs, saves optional) |

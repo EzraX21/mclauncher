@@ -377,6 +377,35 @@ assert.ok(memory, "设置标签没渲染内存输入框");
 assert.equal(memory.value, "8192", `内存没带出单版本设置：${memory.value}`);
 assert.equal(doc.querySelector("#inst-jvm").value, "-XX:+UseG1GC", "JVM 参数没带出来");
 
+// PCL 的版本管理是六个标签
+const itabs = [...doc.querySelectorAll("[data-itab]")].map((node) => node.dataset.itab);
+assert.deepEqual(itabs, ["overview", "setup", "modify", "mods", "mods-off", "export"],
+                 `版本管理标签不对：${itabs}`);
+
+// 「禁用模组」只看禁用的
+[...doc.querySelectorAll("[data-itab]")].find((node) => node.dataset.itab === "mods-off").click();
+await flush();
+await flush();
+const offText = doc.querySelector("#instance-detail").textContent;
+assert.ok(offText.includes("已禁用的模组"), `禁用模组页标题不对：${offText.slice(0, 60)}`);
+assert.ok(offText.includes("Old"), "禁用模组页没列出禁用的模组");
+assert.ok(!offText.includes("Sodium"), "禁用模组页不该出现启用的模组");
+
+// 「修改」页：改名 / 复制 / 打开 / 删除
+[...doc.querySelectorAll("[data-itab]")].find((node) => node.dataset.itab === "modify").click();
+await flush();
+assert.ok(doc.querySelector("#mod-rename"), "修改页没有重命名");
+assert.ok(doc.querySelector("#mod-copy"), "修改页没有复制");
+assert.ok(doc.querySelector("#mod-open"), "修改页没有打开文件夹");
+assert.ok(doc.querySelector("#mod-delete"), "修改页没有删除");
+assert.ok(doc.querySelector("#mod-new-name").value === "1.20.1", "修改页没带出当前版本名");
+
+// 「导出」页
+[...doc.querySelectorAll("[data-itab]")].find((node) => node.dataset.itab === "export").click();
+await flush();
+assert.ok(doc.querySelector("#exp-go"), "导出页没有导出按钮");
+assert.ok(doc.querySelector("#exp-saves"), "导出页没有连存档开关");
+
 // 切到「模组」标签
 [...doc.querySelectorAll("[data-itab]")].find((node) => node.dataset.itab === "mods").click();
 await flush();
