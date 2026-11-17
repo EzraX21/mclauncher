@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.16.0**
+Current version: **v3.17.0**
 
 | Status | Area |
 | --- | --- |
@@ -70,7 +70,7 @@ Current version: **v3.16.0**
 | Crash analysis | Reads crash reports / latest.log and explains Java, memory, missing deps, Mixin conflicts, etc. |
 | Accounts | Offline + Microsoft device-code login, local token cache with refresh |
 | Java | Picks the exact major version; downloads the matching Mojang runtime instead of using a newer Java. Settings → Java lists every detected runtime, lets you pin one, or downloads a Mojang runtime |
-| GUI | **Default entry point**: native window (WebKitGTK on Linux / WebView2 on Windows), light/dark/system themes |
+| GUI | **Default entry point**: native window (WebKitGTK on Linux / WebView2 on Windows), light/dark/system themes; the launch page shows the newest release and its notes |
 | TUI | **Feature entry point**: full-screen terminal UI for terminal/keyboard workflows; launching still needs a graphical environment |
 
 ## Screenshots
@@ -458,7 +458,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                226 tests
+├── tests/                229 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -469,7 +469,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-226 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
+229 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
 modpack import and export, shader/resource-pack version resolution,
 server lists and NBT, Server List Ping against a local fake server,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.

@@ -55,6 +55,20 @@ def fake_payload(tag="v9.9.9", prerelease=False):
 
 
 class CheckTests(unittest.TestCase):
+    def test_notes_and_name(self):
+        payload = fake_payload("v3.15.0")
+        payload["name"] = "MCL 3.15.0"
+        payload["body"] = "## What's Changed\n* feat: x"
+        data = update.check("3.14.0", fetch=lambda: payload)
+        self.assertEqual(data["name"], "MCL 3.15.0")
+        self.assertIn("What's Changed", data["notes"])
+
+    def test_notes_truncated(self):
+        payload = fake_payload("v3.15.0")
+        payload["body"] = "x" * 9000
+        data = update.check("3.14.0", fetch=lambda: payload)
+        self.assertEqual(len(data["notes"]), 4000)
+
     def test_update_available(self):
         data = update.check("3.14.0", fetch=lambda: fake_payload("v3.15.0"))
         self.assertTrue(data["update_available"])

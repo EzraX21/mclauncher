@@ -28,6 +28,8 @@ from .versions import (VersionError, detect_loader, copy as copy_version, open_f
                        version_size)
 
 TASKS: dict[str, dict] = {}
+UPDATE_CACHE: dict = {"at": 0.0, "data": None}
+UPDATE_TTL = 600.0  # 秒；启动页每次刷新都会问一次，别把 GitHub 打爆
 TASKS_LOCK = threading.Lock()
 MANIFEST_CACHE: dict[str, Manifest] = {}
 
@@ -463,10 +465,22 @@ class Handler(BaseHTTPRequestHandler):
                     "platform": os_name(),
                 })
             if parsed.path == "/api/update":
+                import time as _time
+
+                fresh = UPDATE_CACHE["data"] is not None and \
+                    (_time.time() - UPDATE_CACHE["at"]) < UPDATE_TTL
+                if fresh and query.get("force", [""])[0] in ("", "0", "false"):
+                    return self._json({**UPDATE_CACHE["data"], "cached": True})
                 try:
-                    return self._json(update.check(__version__))
+                    data = update.check(__version__)
                 except update.UpdateError as exc:
+                    # 查不到就退回上次结果（如果有），别让启动页报错
+                    if UPDATE_CACHE["data"] is not None:
+                        return self._json({**UPDATE_CACHE["data"], "cached": True})
                     return self._error(str(exc), 502)
+                UPDATE_CACHE["at"] = _time.time()
+                UPDATE_CACHE["data"] = data
+                return self._json({**data, "cached": False})
             if parsed.path == "/api/worlds":
                 version_id = (query.get("version", [""])[0] or "").strip() or _default_version()
                 if not version_id:

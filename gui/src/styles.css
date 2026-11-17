@@ -502,3 +502,12 @@ html[data-theme="dark"] .check-mark { background: #1c3450; }
 html[data-theme="dark"] .check-mark.ok { background: #1e3a26; }
 html[data-theme="dark"] .check-mark.warn { background: #3a2f1c; color: #e0a94a; }
 html[data-theme="dark"] .check-mark.bad { background: #45231f; }
+
+/* ---------------- 启动页公告 ---------------- */
+.news-body { display: flex; flex-direction: column; gap: 4px; }
+.news-line {
+  font-size: 12.5px; color: var(--text); line-height: 1.6;
+  padding-left: 10px; border-left: 2px solid var(--pcl-soft);
+  overflow: hidden; text-overflow: ellipsis;
+}
+html[data-theme="dark"] .news-line { border-left-color: var(--border); }
