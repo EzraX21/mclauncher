@@ -60,7 +60,7 @@
 
 | 模块 | 能做什么 |
 | --- | --- |
-| 版本 | 列出已装版本（加载器、Java、模组数），启动 / 装加载器 / 版本设置 / 删除 |
+| 版本管理 | 左侧版本列表 + 右侧详情：概览（加载器/Java/占用/路径）、单版本设置、模组管理；支持重命名、复制、打开文件夹、装加载器、崩溃分析、删除 |
 | 安装 | Mojang 官方版本清单，边输边筛，可选下载资源文件，进度条 + 日志 + 取消 |
 | 模组 | Modrinth / CurseForge 搜索安装，自动补前置；本地模组启用/禁用/删除 |
 | 整合包 | Modrinth `.mrpack`、CurseForge zip；自动装原版和加载器，复制 overrides，生成独立实例 |
@@ -151,6 +151,7 @@ mcl --cli      # questionary 文本菜单
 ## 图形界面
 
 GUI 是默认入口：直接运行 `mcl` 就会打开桌面窗口（`mcl gui` 等价）。
+页面：启动 / 版本管理 / 安装 / 资源 / 模组 / 联机 / 设置。
 它是**桌面窗口**，不是浏览器标签：
 
 - Linux：GTK + WebKitGTK，需要 `webkit2gtk-4.1`、`python-gobject`
@@ -417,7 +418,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-167 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+183 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java、模组、整合包、资源、
 服务器列表与 NBT、Server List Ping（用本地假服务器）、删除、TUI（无需终端）和 GUI API；不需要网络。
 
 前端另有一个 jsdom 冒烟测试，会真跑一遍构建后的界面：
@@ -438,6 +439,7 @@ cd gui && npm test        # 先构建，再在 jsdom 里渲染并断言导航与
 - 联机页不做 SRV 解析（`_minecraft._tcp`），只靠 SRV 暴露端口的服务器会显示离线
 - 快速进服用版本 JSON 里的 `--quickPlayMultiplayer`（1.20+），老版本退回 `--server/--port`；
   真机进服行为没在每种游戏版本上跑过
+- 重命名不能改「有子版本继承的父版本」的名字（会让 Fabric/Forge 版本失效），会明确拒绝
 - 服务器列表、自动更新、Java 管理 GUI 还没做
 
 ## 隐私

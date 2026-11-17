@@ -469,3 +469,27 @@ html[data-theme="dark"] textarea { background: #262c35; color: var(--text); bord
 .server-icon img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
 .server-row .inline { justify-content: flex-end; flex-wrap: nowrap; }
 html[data-theme="dark"] .server-icon { background: #1c3450; }
+
+/* ---------------- 版本管理（PCL PageInstance） ---------------- */
+.instance-layout { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 14px; align-items: start; }
+.instance-side { position: sticky; top: 0; }
+.instance-side .list { max-height: calc(100vh - 150px); overflow: auto; }
+.instance-row { cursor: pointer; }
+.instance-row:hover { background: var(--pcl-soft); }
+.instance-row.active { background: var(--pcl-soft); box-shadow: inset 3px 0 0 var(--pcl); }
+.instance-row.active .title { color: var(--pcl); font-weight: 600; }
+.instance-main { min-width: 0; }
+.instance-actions { border-top: 1px solid var(--border); flex-wrap: wrap; }
+
+.kv-grid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 7px 12px; align-items: baseline; }
+.kv-key { color: var(--muted); font-size: 12px; }
+.kv-value { color: var(--text); font-size: 13px; word-break: break-all; }
+
+html[data-theme="dark"] .instance-row.active { background: var(--pcl-soft); }
+html[data-theme="dark"] .instance-actions { border-top-color: var(--border); }
+
+@media (max-width: 900px) {
+  .instance-layout { grid-template-columns: 1fr; }
+  .instance-side { position: static; }
+  .instance-side .list { max-height: 240px; }
+}

@@ -5,8 +5,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from mcl.versions import (VersionError, detect_loader, library_key, maven_path,
-                                   remove, resolve, scan)
+from mcl.versions import (VersionError, copy, detect_loader, library_key, maven_path,
+                                   open_folder, remove, rename, resolve, scan)
 
 
 def write_version(root: Path, version_id: str, payload: dict, jar: bool = False):
@@ -111,6 +111,92 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(versions[FABRIC["id"]].loader, "fabric")
             self.assertEqual(versions[FABRIC["id"]].java_major, 17)  # 从父版本继承
             self.assertTrue(versions["1.20.1"].has_jar)
+
+
+class RenameCopyTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        write_version(self.root, "1.20.1", BASE, jar=True)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_rename_moves_dir_and_rewrites_json(self):
+        rename(self.root, "1.20.1", "我的世界")
+        base = self.root / "versions"
+        self.assertFalse((base / "1.20.1").exists())
+        self.assertTrue((base / "我的世界" / "我的世界.json").exists())
+        data = json.loads((base / "我的世界" / "我的世界.json").read_text(encoding="utf-8"))
+        self.assertEqual(data["id"], "我的世界")
+
+    def test_rename_keeps_other_fields(self):
+        rename(self.root, "1.20.1", "vanilla-1.20.1")
+        data = json.loads((self.root / "versions" / "vanilla-1.20.1" / "vanilla-1.20.1.json")
+                          .read_text(encoding="utf-8"))
+        self.assertEqual(data["mainClass"], "net.minecraft.client.main.Main")
+        self.assertEqual(data["javaVersion"]["majorVersion"], 17)
+
+    def test_rename_refuses_when_child_inherits(self):
+        """改了父版本名，继承它的 Fabric 版本就废了。"""
+        write_version(self.root, "fabric-1.20.1", {
+            "id": "fabric-1.20.1", "inheritsFrom": "1.20.1", "type": "release",
+        })
+        with self.assertRaises(VersionError) as ctx:
+            rename(self.root, "1.20.1", "别的名字")
+        self.assertIn("fabric-1.20.1", str(ctx.exception))
+        self.assertTrue((self.root / "versions" / "1.20.1").is_dir())
+
+    def test_rename_refuses_existing_target(self):
+        write_version(self.root, "1.19.4", {"id": "1.19.4", "type": "release"})
+        with self.assertRaises(VersionError):
+            rename(self.root, "1.20.1", "1.19.4")
+
+    def test_rename_rejects_bad_names(self):
+        for bad in ("", "  ", "..", "a/b", "a\\b", "x" * 65):
+            with self.assertRaises(VersionError, msg=bad):
+                rename(self.root, "1.20.1", bad)
+
+    def test_rename_missing_version(self):
+        with self.assertRaises(VersionError):
+            rename(self.root, "nope", "whatever")
+
+    def test_copy_duplicates_contents(self):
+        mods = self.root / "versions" / "1.20.1" / "mods"
+        mods.mkdir()
+        (mods / "sodium.jar").write_bytes(b"mod")
+        copy(self.root, "1.20.1", "副本")
+        base = self.root / "versions"
+        self.assertTrue((base / "副本" / "副本.jar").exists())
+        self.assertTrue((base / "副本" / "mods" / "sodium.jar").exists())
+        data = json.loads((base / "副本" / "副本.json").read_text(encoding="utf-8"))
+        self.assertEqual(data["id"], "副本")
+        # 原来的版本要原样还在
+        self.assertTrue((base / "1.20.1" / "1.20.1.json").exists())
+        self.assertTrue((base / "1.20.1" / "mods" / "sodium.jar").exists())
+
+    def test_copy_refuses_existing(self):
+        with self.assertRaises(VersionError):
+            copy(self.root, "1.20.1", "1.20.1")
+        write_version(self.root, "1.19.4", {"id": "1.19.4"})
+        with self.assertRaises(VersionError):
+            copy(self.root, "1.20.1", "1.19.4")
+
+    def test_open_folder_uses_platform_opener(self):
+        from unittest import mock
+
+        with mock.patch("mcl.versions.subprocess.Popen") as popen:
+            open_folder(self.root)
+        command = popen.call_args[0][0]
+        expected = "explorer" if __import__("os").name == "nt" else (
+            "open" if __import__("sys").platform == "darwin" else "xdg-open")
+        self.assertEqual(command[0], expected)
+        self.assertEqual(command[1], str(self.root))
+
+    def test_open_folder_missing_dir(self):
+        with self.assertRaises(VersionError):
+            open_folder(self.root / "nope")
+
 
 
 if __name__ == "__main__":

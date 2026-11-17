@@ -22,7 +22,9 @@ from .java import ensure_java
 from .launch import build_command, ensure_libraries, prepare_natives, spawn
 from .manifest import Manifest
 from .rules import os_name
-from .versions import VersionError, detect_loader, remove as remove_version, resolve, scan
+from .versions import (VersionError, detect_loader, copy as copy_version, open_folder,
+                       remove as remove_version, rename as rename_version, resolve, scan,
+                       version_size)
 
 TASKS: dict[str, dict] = {}
 TASKS_LOCK = threading.Lock()
@@ -400,6 +402,30 @@ class Handler(BaseHTTPRequestHandler):
                     "default_client_id": auth.DEFAULT_CLIENT_ID,
                     "platform": os_name(),
                 })
+            if parsed.path == "/api/version/info":
+                version_id = (query.get("id", [""])[0] or "").strip()
+                if not version_id:
+                    return self._error("缺少版本号")
+                try:
+                    resolved = resolve(_ACTIVE_CFG.root(), version_id)
+                except VersionError as exc:
+                    return self._error(str(exc), 404)
+                directory = _ACTIVE_CFG.version_dir(version_id)
+                mods_dir = _ACTIVE_CFG.mods_path(version_id)
+                mods = (len(list(mods_dir.glob("*.jar"))) + len(list(mods_dir.glob("*.jar.disabled")))
+                        if mods_dir.exists() else 0)
+                return self._json({
+                    "id": version_id,
+                    "path": str(directory),
+                    "size": version_size(directory) if directory.exists() else 0,
+                    "loader": detect_loader(version_id, resolved.data),
+                    "java": resolved.java_major,
+                    "mods": mods,
+                    "has_jar": resolved.client_jar.exists(),
+                    "type": resolved.version_type,
+                    "inherits": resolved.chain[1] if len(resolved.chain) > 1 else "",
+                    "options": vsettings.get(version_id),
+                })
             if parsed.path == "/api/version/options":
                 version_id = (query.get("id", [""])[0] or "").strip()
                 if not version_id:
@@ -531,6 +557,28 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json({"version": version_id, "options": options})
             if parsed.path == "/api/launch":
                 return self._json(launch_version(body.get("id", "")))
+            if parsed.path in ("/api/versions/rename", "/api/versions/copy"):
+                version_id = str(body.get("id", "")).strip()
+                new_id = str(body.get("new_id", "")).strip()
+                try:
+                    if parsed.path == "/api/versions/rename":
+                        created = rename_version(_ACTIVE_CFG.root(), version_id, new_id)
+                        if _ACTIVE_CFG.last_version == version_id:
+                            _ACTIVE_CFG.last_version = created
+                            _ACTIVE_CFG.save()
+                    else:
+                        created = copy_version(_ACTIVE_CFG.root(), version_id, new_id)
+                except VersionError as exc:
+                    return self._error(str(exc), 400)
+                return self._json({"ok": True, "id": created, "versions": _versions()})
+            if parsed.path == "/api/versions/open":
+                version_id = str(body.get("id", "")).strip()
+                target = _ACTIVE_CFG.version_dir(version_id)
+                try:
+                    open_folder(target)
+                except VersionError as exc:
+                    return self._error(str(exc), 400)
+                return self._json({"ok": True, "path": str(target)})
             if parsed.path == "/api/versions/remove":
                 version_id = str(body.get("id", "")).strip()
                 try:

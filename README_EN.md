@@ -60,7 +60,7 @@ Current version: **v3.8.1**
 
 | Module | What it does |
 | --- | --- |
-| Versions | Installed versions (loader, Java, mod count), launch / add loader / open folder / delete |
+| Version management | Version list plus a detail pane: overview (loader / Java / size / path), per-version settings, mod management; rename, copy, open folder, add loader, crash analysis, delete |
 | Install | Mojang version manifest, live filter, optional assets, progress + log + cancel |
 | Mods | Modrinth / CurseForge search and install with required dependencies; local mods enable/disable/delete |
 | Modpacks | Modrinth `.mrpack` and CurseForge zips; installs vanilla + loader, copies overrides, creates an isolated instance |
@@ -149,7 +149,8 @@ mcl --cli      # questionary text menu
 
 ## GUI
 
-The GUI is the default: running `mcl` opens a **desktop window** (same as `mcl gui`),
+The GUI is the default: running `mcl` opens a **desktop window** (same as `mcl gui`).
+Pages: Launch / Version management / Install / Resources / Mods / Multiplayer / Settings.
 not a browser tab:
 
 - Linux: GTK + WebKitGTK (`webkit2gtk-4.1`, `python-gobject`)
@@ -434,7 +435,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                167 tests
+├── tests/                183 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -445,7 +446,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-167 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+183 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
 server lists and NBT, Server List Ping against a local fake server,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
@@ -460,6 +461,7 @@ modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network
 - No SRV lookup (`_minecraft._tcp`): servers that only publish their port via SRV show as offline
 - Quick join uses `--quickPlayMultiplayer` from the version JSON (1.20+) and falls back to
   `--server/--port`; the in-game result was not tested on every game version
+- Renaming is refused for a base version that other versions inherit from (it would break them)
 - Auto-update and a Java management UI are not implemented
 
 ## Privacy
