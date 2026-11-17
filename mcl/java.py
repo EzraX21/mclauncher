@@ -107,7 +107,7 @@ def candidates(cfg: Config) -> list[Path]:
     return paths
 
 
-def find_all(cfg: Config) -> list[JavaRuntime]:
+def find_all(cfg: Config, timeout: int = 15) -> list[JavaRuntime]:
     seen: set[str] = set()
     runtimes: list[JavaRuntime] = []
     for path in candidates(cfg):
@@ -118,7 +118,7 @@ def find_all(cfg: Config) -> list[JavaRuntime]:
         if real in seen:
             continue
         seen.add(real)
-        runtime = probe(path)
+        runtime = probe(path, timeout=timeout)
         if runtime:
             runtimes.append(runtime)
     return sorted(runtimes, key=lambda runtime: runtime.major)

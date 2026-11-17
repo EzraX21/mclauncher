@@ -73,7 +73,8 @@ def report(cfg: Config) -> dict:
     checks.append({"label": "已装版本", "status": "ok" if versions else "warn",
                    "value": f"{len(versions)} 个"})
 
-    runtimes = find_all(cfg)
+    # 探测给短超时：report() 在 HTTP 请求线程里跑，逐个探测每个都给 15 秒会堵住界面
+    runtimes = find_all(cfg, timeout=5)
     # 没 Java 只是警告：mcl java install 能补，别把退出码弄成失败
     checks.append({"label": "Java", "status": "ok" if runtimes else "warn",
                    "value": "、".join(runtime.display for runtime in runtimes[:4]) or "没找到"})

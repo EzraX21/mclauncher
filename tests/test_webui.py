@@ -251,7 +251,7 @@ class WebuiTests(unittest.TestCase):
         with mock.patch("mcl.versions.subprocess.Popen") as popen:
             data = post_json(self.url + "api/versions/open", {"id": "1.20.1"})
         self.assertTrue(data["ok"])
-        self.assertTrue(data["path"].endswith("versions/1.20.1"))
+        self.assertTrue(data["path"].replace("\\", "/").endswith("versions/1.20.1"), data["path"])
         self.assertTrue(popen.called)
 
     def test_version_open_missing(self):
@@ -294,7 +294,11 @@ class WebuiTests(unittest.TestCase):
         self.assertIn("version", data)
 
     def test_doctor_report(self):
-        data = get_json(self.url + "api/doctor")
+        from unittest import mock
+
+        # 真去探测 CI 机器上的 Java 会拖慢/超时；这里只验接口形状
+        with mock.patch("mcl.doctor.find_all", return_value=[]):
+            data = get_json(self.url + "api/doctor")
         labels = [check["label"] for check in data["checks"]]
         self.assertIn("游戏目录", labels)
         self.assertIn("Java", labels)
