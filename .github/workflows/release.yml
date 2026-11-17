@@ -26,7 +26,7 @@ jobs:
       - name: 构建 GUI
         working-directory: gui
         run: |
-          npm install --include=dev
+          npm install --include=dev --omit=optional --no-audit --no-fund
           npm run build
       - name: 安装 nfpm
         run: |
@@ -56,7 +56,7 @@ jobs:
         shell: pwsh
         working-directory: gui
         run: |
-          npm install --include=dev
+          npm install --include=dev --omit=optional --no-audit --no-fund
           npm run build
       - name: 构建 exe + 安装包
         shell: pwsh

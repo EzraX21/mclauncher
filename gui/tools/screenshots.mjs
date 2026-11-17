@@ -11,7 +11,17 @@ import { spawn } from "node:child_process";
 import { mkdir, rm, stat } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
+let chromium;
+try {
+  ({ chromium } = await import("playwright"));
+} catch {
+  console.error(
+    "截图需要 playwright（可选依赖）：\n" +
+    "  cd gui && npm install --include=optional && npx playwright install chromium\n" +
+    "然后再跑 npm run shots。",
+  );
+  process.exit(1);
+}
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "../..");
@@ -131,6 +141,11 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error);
+  const text = String(error && error.message ? error.message : error);
+  if (/Executable doesn't exist|browserType\.launch/i.test(text)) {
+    console.error("Chromium 没装好，先跑：cd gui && npx playwright install chromium");
+  } else {
+    console.error(error);
+  }
   process.exit(1);
 });
