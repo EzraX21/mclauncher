@@ -40,6 +40,12 @@ class JavaRuntime:
         return f"Java {self.major} ({self.version})"
 
 
+def available_components() -> list[dict]:
+    """Mojang 能直接下的 Java 主版本（给界面列按钮用）。"""
+    return [{"major": major, "component": component}
+            for major, component in sorted(_COMPONENTS.items())]
+
+
 def parse_version(text: str) -> Optional[tuple[str, int]]:
     match = _VERSION_RE.search(text)
     if not match:

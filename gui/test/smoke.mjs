@@ -90,6 +90,15 @@ const DOCTOR = {
   java: [],
 };
 
+const JAVA = {
+  runtimes: [
+    { display: "Java 17 (17.0.9)", path: "/usr/lib/jvm/java-17/bin/java", major: 17, version: "17.0.9", configured: false },
+    { display: "Java 21 (21.0.2)", path: "/usr/lib/jvm/java-21/bin/java", major: 21, version: "21.0.2", configured: true },
+  ],
+  configured: "/usr/lib/jvm/java-21/bin/java",
+  components: [{ major: 17, component: "java-runtime-beta" }, { major: 21, component: "java-runtime-delta" }],
+};
+
 const calls = [];
 function fakeFetch(url) {
   calls.push(String(url));
@@ -97,6 +106,7 @@ function fakeFetch(url) {
   const body = target.includes("/api/servers") ? SERVERS
     : target.includes("/api/version/info") ? VERSION_INFO
     : target.includes("/api/mods/local") ? LOCAL_MODS
+    : target.includes("/api/java") ? JAVA
     : target.includes("/api/about") ? ABOUT
     : target.includes("/api/doctor") ? DOCTOR
     : target.includes("/api/remote") ? REMOTE
@@ -181,6 +191,28 @@ assert.ok(
 await flush();
 assert.ok(doc.querySelector("#mods-query"), "模组分类没有搜索框");
 assert.ok(doc.querySelector("#mods-version"), "模组分类没有版本选择");
+
+// 设置 → Java 页
+window.location.hash = "#/settings";
+window.dispatchEvent(new window.Event("hashchange"));
+await flush();
+await flush();
+[...doc.querySelectorAll("[data-tab]")].find((node) => node.dataset.tab === "java").click();
+await flush();
+await flush();
+
+const javaList = doc.querySelector("#java-runtimes");
+assert.ok(javaList, "设置里没有 Java 列表");
+assert.ok(!javaList.textContent.includes("检测中"), "Java 列表还停在检测中");
+assert.ok(javaList.textContent.includes("Java 17"), `Java 列表没渲染：${javaList.textContent.slice(0, 80)}`);
+assert.ok(javaList.textContent.includes("Java 21"), "Java 列表少了 Java 21");
+assert.ok(javaList.textContent.includes("当前指定"), "没有标出当前指定的 Java");
+assert.equal(javaList.querySelectorAll("[data-java-set]").length, 2, "设为默认按钮数量不对");
+const disabledSet = [...javaList.querySelectorAll("[data-java-set]")].filter((b) => b.disabled);
+assert.equal(disabledSet.length, 1, "当前指定的那个按钮应该是禁用的");
+const installButtons = [...doc.querySelectorAll("[data-java-install]")].map((b) => b.dataset.javaInstall);
+assert.deepEqual(installButtons, ["17", "21"], `下载按钮不对：${installButtons}`);
+assert.ok(doc.querySelector("#java-auto"), "没有自动选择按钮");
 
 // 百宝箱
 window.location.hash = "#/toolbox";
