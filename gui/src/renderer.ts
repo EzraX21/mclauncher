@@ -473,7 +473,8 @@ function renderInstance(): void {
       </aside>
       <div class="instance-main">
         <div class="loader-tabs" id="instance-tabs">
-          ${[["overview", "概览"], ["setup", "设置"], ["mods", "模组"]].map(([value, label]) => `
+          ${[["overview", "概览"], ["setup", "设置"], ["modify", "修改"],
+             ["mods", "模组"], ["mods-off", "禁用模组"], ["export", "导出"]].map(([value, label]) => `
             <button class="loader-tab ${instanceTab === value ? "active" : ""}" data-itab="${value}">${label}</button>`).join("")}
         </div>
         <div id="instance-detail"><div class="card"><div class="empty">加载中…</div></div></div>
@@ -507,6 +508,20 @@ async function loadInstanceDetail(): Promise<void> {
   }
   if (instanceTab === "mods") {
     await paintInstanceMods(host);
+    return;
+  }
+  if (instanceTab === "mods-off") {
+    await paintInstanceMods(host, true);
+    return;
+  }
+  if (instanceTab === "export") {
+    host.innerHTML = instanceExportHtml();
+    wireInstanceExport(host);
+    return;
+  }
+  if (instanceTab === "modify") {
+    host.innerHTML = instanceModifyHtml();
+    wireInstanceModify(host);
     return;
   }
   host.innerHTML = `<div class="card"><div class="empty">加载中…</div></div>`;
@@ -625,13 +640,16 @@ function wireInstanceSetup(host: HTMLElement, info: InstanceInfo): void {
   });
 }
 
-async function paintInstanceMods(host: HTMLElement): Promise<void> {
+async function paintInstanceMods(host: HTMLElement, disabledOnly = false): Promise<void> {
   host.innerHTML = `<div class="card"><div class="empty">加载中…</div></div>`;
   try {
-    const data = await api<{ mods: LocalMod[] }>(`/api/mods/local?version=${encodeURIComponent(instanceId)}`);
+    const all = await api<{ mods: LocalMod[] }>(`/api/mods/local?version=${encodeURIComponent(instanceId)}`);
+    const data = { mods: disabledOnly ? all.mods.filter((mod) => !mod.enabled) : all.mods };
+    const title = disabledOnly ? "已禁用的模组" : "本地模组";
+    const emptyText = disabledOnly ? "没有禁用的模组" : "这个版本还没有模组";
     host.innerHTML = `<div class="card">
       <div class="card-head">
-        <span class="card-title">本地模组 · ${esc(instanceId)}</span>
+        <span class="card-title">${title} · ${esc(instanceId)}</span>
         <div class="inline">
           <button class="btn sm" id="inst-mods-refresh">刷新</button>
           <button class="btn sm" id="inst-mods-search">去搜索安装</button>
@@ -646,10 +664,10 @@ async function paintInstanceMods(host: HTMLElement): Promise<void> {
             </div>
             <button class="btn sm" data-itoggle="${esc(mod.name)}">${mod.enabled ? "禁用" : "启用"}</button>
             <button class="btn sm danger" data-iremove="${esc(mod.name)}">删除</button>
-          </div>`).join("") : `<div class="empty">这个版本还没有模组</div>`}
+          </div>`).join("") : `<div class="empty">${emptyText}</div>`}
       </div>
     </div>`;
-    host.querySelector("#inst-mods-refresh")?.addEventListener("click", () => void paintInstanceMods(host));
+    host.querySelector("#inst-mods-refresh")?.addEventListener("click", () => void paintInstanceMods(host, disabledOnly));
     host.querySelector("#inst-mods-search")?.addEventListener("click", () => {
       modsVersion = instanceId;
       downloadTab = "mods";
@@ -660,7 +678,7 @@ async function paintInstanceMods(host: HTMLElement): Promise<void> {
         await api("/api/mods/local/toggle", {
           method: "POST", body: JSON.stringify({ version: instanceId, name: button.dataset.itoggle }),
         });
-        void paintInstanceMods(host);
+        void paintInstanceMods(host, disabledOnly);
       });
     });
     host.querySelectorAll<HTMLButtonElement>("[data-iremove]").forEach((button) => {
@@ -669,7 +687,7 @@ async function paintInstanceMods(host: HTMLElement): Promise<void> {
           method: "POST", body: JSON.stringify({ version: instanceId, name: button.dataset.iremove }),
         });
         toast("已删除", "ok");
-        void paintInstanceMods(host);
+        void paintInstanceMods(host, disabledOnly);
       });
     });
   } catch (error) {
@@ -717,6 +735,113 @@ function nameModal(title: string, label: string, value: string, action: string):
 interface ExportResult {
   path: string; name: string; game: string; loader: string;
   loader_version: string; files: number; size: number; warnings: string[];
+}
+
+function instanceModifyHtml(): string {
+  return `<div class="card">
+    <div class="card-head"><span class="card-title">修改实例 · ${esc(instanceId)}</span></div>
+    <div class="card-body">
+      <div class="field"><label>版本名（会改目录名、版本 JSON 里的 id 和 jar 文件名）</label>
+        <div class="inline">
+          <input id="mod-new-name" type="text" value="${esc(instanceId)}" style="max-width:280px" />
+          <button class="btn primary" id="mod-rename">重命名</button>
+        </div>
+      </div>
+      <div class="field"><label>复制成新实例</label>
+        <div class="inline">
+          <input id="mod-copy-name" type="text" value="${esc(instanceId)} 副本" style="max-width:280px" />
+          <button class="btn" id="mod-copy">复制</button>
+        </div>
+      </div>
+      <div class="field"><label>其他</label>
+        <div class="inline">
+          <button class="btn" id="mod-open">打开文件夹</button>
+          <button class="btn danger" id="mod-delete">删除实例</button>
+        </div>
+      </div>
+      <div class="small muted">
+        「有子版本继承的父版本」不能改名，会让 Fabric/Forge 版本失效，后端会明确拒绝。
+      </div>
+    </div>
+  </div>`;
+}
+
+function wireInstanceModify(host: HTMLElement): void {
+  const id = instanceId;
+  const run = async (path: string, payload: Record<string, unknown>, done?: (data: { id: string }) => void) => {
+    try {
+      const data = await api<{ id: string }>(path, { method: "POST", body: JSON.stringify(payload) });
+      toast("完成", "ok");
+      if (done) done(data);
+      await refreshState();
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  };
+  host.querySelector("#mod-rename")?.addEventListener("click", () => {
+    const newId = (host.querySelector("#mod-new-name") as HTMLInputElement).value.trim();
+    if (!newId || newId === id) { toast("新名字和现在一样", "error"); return; }
+    void run("/api/versions/rename", { id, new_id: newId }, (data) => { instanceId = data.id; });
+  });
+  host.querySelector("#mod-copy")?.addEventListener("click", () => {
+    const newId = (host.querySelector("#mod-copy-name") as HTMLInputElement).value.trim();
+    if (!newId) { toast("副本名字不能为空", "error"); return; }
+    void run("/api/versions/copy", { id, new_id: newId }, (data) => { instanceId = data.id; });
+  });
+  host.querySelector("#mod-open")?.addEventListener("click", async () => {
+    try {
+      await api("/api/versions/open", { method: "POST", body: JSON.stringify({ id }) });
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+  host.querySelector("#mod-delete")?.addEventListener("click", () => openDelete(id));
+}
+
+function instanceExportHtml(): string {
+  return `<div class="card">
+    <div class="card-head"><span class="card-title">导出整合包 · ${esc(instanceId)}</span></div>
+    <div class="card-body">
+      <div class="small muted" style="margin-bottom:12px">
+        导出成 Modrinth 格式 .mrpack：模组、配置、资源包、光影、数据包候选都打进 overrides/，
+        加载器和游戏版本写进 dependencies，别的启动器也能导入。
+      </div>
+      <label class="checkbox"><input type="checkbox" id="exp-saves" /> 连存档（saves/）一起导出</label>
+      <div class="inline" style="margin-top:14px">
+        <button class="btn primary" id="exp-go">导出</button>
+        <span class="small muted" id="exp-result"></span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function wireInstanceExport(host: HTMLElement): void {
+  host.querySelector("#exp-go")?.addEventListener("click", async () => {
+    const button = host.querySelector("#exp-go") as HTMLButtonElement;
+    const result = host.querySelector("#exp-result") as HTMLElement;
+    const withSaves = (host.querySelector("#exp-saves") as HTMLInputElement).checked;
+    button.disabled = true; button.textContent = "导出中…";
+    try {
+      const data = await api<ExportResult>("/api/modpack/export", {
+        method: "POST", body: JSON.stringify({ version: instanceId, with_saves: withSaves }),
+      });
+      result.innerHTML = `<a href="#" id="exp-open">${esc(data.path)}</a>（${size(data.size)}，${data.files} 个文件）`;
+      host.querySelector("#exp-open")?.addEventListener("click", async (event) => {
+        event.preventDefault();
+        try {
+          await api("/api/exports/open", { method: "POST", body: JSON.stringify({ path: data.path }) });
+        } catch (error) {
+          toast((error as Error).message, "error");
+        }
+      });
+      toast("整合包已导出", "ok");
+    } catch (error) {
+      result.textContent = (error as Error).message;
+      toast((error as Error).message, "error");
+    } finally {
+      button.disabled = false; button.textContent = "导出";
+    }
+  });
 }
 
 function openExport(id: string): void {
