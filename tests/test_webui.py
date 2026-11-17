@@ -257,6 +257,31 @@ class WebuiTests(unittest.TestCase):
         self.assertEqual(ctx.exception.code, 400)
 
 
+    def test_modpack_export(self):
+        version_dir = self.make_version()
+        (version_dir / "mods").mkdir()
+        (version_dir / "mods" / "sodium.jar").write_bytes(b"m")
+        (version_dir / "options.txt").write_text("fov:0.5", encoding="utf-8")
+        data = post_json(self.url + "api/modpack/export", {"version": "1.20.1"})
+        self.assertTrue(Path(data["path"]).exists())
+        self.assertTrue(data["path"].endswith(".mrpack"))
+        self.assertEqual(data["game"], "1.20.1")
+        self.assertGreaterEqual(data["files"], 2)
+        with zipfile.ZipFile(data["path"]) as archive:
+            names = set(archive.namelist())
+        self.assertIn("modrinth.index.json", names)
+        self.assertIn("overrides/mods/sodium.jar", names)
+
+    def test_modpack_export_unknown_version(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/modpack/export", {"version": "nope"})
+        self.assertEqual(ctx.exception.code, 500)
+
+    def test_exports_open_rejects_outside_path(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/exports/open", {"path": "/etc/passwd"})
+        self.assertEqual(ctx.exception.code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()

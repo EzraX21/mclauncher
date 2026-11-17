@@ -322,6 +322,18 @@ def start_resource_install(kind: str, version_id: str, slug: str) -> dict:
     return task
 
 
+def _export_modpack(body: dict) -> dict:
+    """导出实例成 .mrpack，同步执行（文件都在本地，不下载）。"""
+    version_id = str(body.get("version", "")).strip()
+    if not version_id:
+        raise RuntimeError("缺少版本号")
+    return modpacks.export(
+        _ACTIVE_CFG, version_id,
+        name=str(body.get("name") or "") or None,
+        include_saves=bool(body.get("with_saves", False)),
+    )
+
+
 def launch_version(version_id: str, join: Optional[tuple[str, int]] = None) -> dict:
     cfg = _ACTIVE_CFG
     resolved = resolve(cfg.root(), version_id)
@@ -595,6 +607,18 @@ class Handler(BaseHTTPRequestHandler):
                     if task and task["state"] == "running":
                         task["state"] = "cancelled"
                 return self._json({"ok": True})
+            if parsed.path == "/api/modpack/export":
+                return self._json(_export_modpack(body))
+            if parsed.path == "/api/exports/open":
+                target = Path(str(body.get("path", ""))).expanduser().resolve()
+                exports = (_ACTIVE_CFG.root() / "exports").resolve()
+                if not str(target).startswith(str(exports)):
+                    return self._error("只能打开导出目录里的文件")
+                try:
+                    open_folder(target if target.is_dir() else target.parent)
+                except VersionError as exc:
+                    return self._error(str(exc), 400)
+                return self._json({"ok": True, "path": str(target)})
             if parsed.path in ("/api/servers/add", "/api/servers/update", "/api/servers/remove",
                              "/api/servers/join"):
                 version_id = str(body.get("version", "")).strip() or _default_version()

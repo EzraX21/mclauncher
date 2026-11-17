@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.8.1**
+Current version: **v3.9.0**
 
 | Status | Area |
 | --- | --- |
@@ -60,10 +60,10 @@ Current version: **v3.8.1**
 
 | Module | What it does |
 | --- | --- |
-| Version management | Version list plus a detail pane: overview (loader / Java / size / path), per-version settings, mod management; rename, copy, open folder, add loader, crash analysis, delete |
+| Version management | Version list plus a detail pane: overview (loader / Java / size / path), per-version settings, mod management; rename, copy, export modpack, open folder, add loader, crash analysis, delete |
 | Install | Mojang version manifest, live filter, optional assets, progress + log + cancel |
 | Mods | Modrinth / CurseForge search and install with required dependencies; local mods enable/disable/delete |
-| Modpacks | Modrinth `.mrpack` and CurseForge zips; installs vanilla + loader, copies overrides, creates an isolated instance |
+| Modpacks | Import Modrinth `.mrpack` / CurseForge zips (installs vanilla + loader, copies overrides); also **exports** an installed version to `.mrpack` (mods/config/resource packs, saves optional) |
 | Resources | Shaders and resource packs into `shaderpacks/` / `resourcepacks/` |
 | Multiplayer | Server list in the game's own `servers.dat` with latency / players / version / MOTD, one-click join |
 | Crash analysis | Reads crash reports / latest.log and explains Java, memory, missing deps, Mixin conflicts, etc. |
@@ -212,11 +212,12 @@ The implementation remains in `mcl/auth.py` for a future approved application.
 
 ## Modpacks
 
-Supports Modrinth `.mrpack` and CurseForge zips:
+Supports Modrinth `.mrpack` and CurseForge zips, and can export an installed version back to `.mrpack`:
 
 ```bash
 mcl modpack info Fabulously.Optimized.mrpack
 mcl modpack install Fabulously.Optimized.mrpack --name "FO 1.20.1"
+mcl modpack export "FO 1.20.1" -o FO.mrpack
 mcl launch "FO 1.20.1"
 ```
 
@@ -266,6 +267,8 @@ mcl launch 1.20.1 --offline         # force offline mode
 mcl mods search sodium --version 1.20.1
 mcl mods install sodium --version fabric-loader-0.20.1-1.20.1 -y
 mcl modpack install pack.mrpack --name "My Pack"
+mcl modpack export 1.20.1           # write .mrpack to <game dir>/exports/
+mcl modpack export 1.20.1 --with-saves -o my.mrpack
 mcl resources search shader complementary --version 1.20.1
 mcl servers                         # server list (reads/writes servers.dat)
 mcl servers add Hypixel mc.hypixel.net
@@ -435,7 +438,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                183 tests
+├── tests/                192 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -446,7 +449,8 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-183 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
+192 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
+modpack import and export,
 server lists and NBT, Server List Ping against a local fake server,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
@@ -462,6 +466,8 @@ modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network
 - Quick join uses `--quickPlayMultiplayer` from the version JSON (1.20+) and falls back to
   `--server/--port`; the in-game result was not tested on every game version
 - Renaming is refused for a base version that other versions inherit from (it would break them)
+- Exported packs embed mod files in `overrides/` (no Modrinth matching), so they are self-contained but larger;
+  the loader version is derived from the version id and a warning is shown when that fails
 - Auto-update and a Java management UI are not implemented
 
 ## Privacy

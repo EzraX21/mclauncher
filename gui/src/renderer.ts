@@ -577,6 +577,7 @@ function instanceOverviewHtml(info: InstanceInfo): string {
         <button class="btn" id="inst-crash">崩溃分析</button>
       </div>
       <div class="inline">
+        <button class="btn" id="inst-export">导出整合包</button>
         <button class="btn" id="inst-open">打开文件夹</button>
         <button class="btn" id="inst-rename">重命名</button>
         <button class="btn" id="inst-copy">复制</button>
@@ -602,6 +603,7 @@ function wireInstanceOverview(host: HTMLElement, info: InstanceInfo): void {
       toast((error as Error).message, "error");
     }
   });
+  host.querySelector("#inst-export")?.addEventListener("click", () => openExport(info.id));
   host.querySelector("#inst-rename")?.addEventListener("click", () => openRename(info.id));
   host.querySelector("#inst-copy")?.addEventListener("click", () => openCopy(info.id));
   host.querySelector("#inst-delete")?.addEventListener("click", () => openDelete(info.id));
@@ -738,6 +740,72 @@ function nameModal(title: string, label: string, value: string, action: string):
   };
   overlay.querySelector("#nm-ok")?.addEventListener("click", () => void submit());
   input.addEventListener("keydown", (event) => { if (event.key === "Enter") void submit(); });
+}
+
+interface ExportResult {
+  path: string; name: string; game: string; loader: string;
+  loader_version: string; files: number; size: number; warnings: string[];
+}
+
+function openExport(id: string): void {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `<div class="modal" style="width:520px">
+    <h3>导出整合包 · ${esc(id)}</h3>
+    <div class="small muted" style="margin-bottom:12px">
+      导出成 Modrinth 格式 .mrpack：模组、配置、资源包打进去，加载器和游戏版本写进 dependencies，
+      别的启动器也能导入。
+    </div>
+    <label class="checkbox"><input type="checkbox" id="ex-saves" /> 连存档（saves/）一起导出</label>
+    <div class="actions">
+      <button class="btn" id="ex-cancel">取消</button>
+      <button class="btn primary" id="ex-go">导出</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector("#ex-cancel")?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  overlay.querySelector("#ex-go")?.addEventListener("click", async () => {
+    const button = overlay.querySelector("#ex-go") as HTMLButtonElement;
+    const withSaves = (overlay.querySelector("#ex-saves") as HTMLInputElement).checked;
+    button.disabled = true;
+    button.textContent = "导出中…";
+    try {
+      const result = await api<ExportResult>("/api/modpack/export", {
+        method: "POST", body: JSON.stringify({ version: id, with_saves: withSaves }),
+      });
+      const warnings = result.warnings.map((text) => `<div class="small" style="color:var(--danger)">${esc(text)}</div>`).join("");
+      overlay.innerHTML = `<div class="modal" style="width:520px">
+        <h3>导出完成</h3>
+        <div class="kv-grid">
+          <div class="kv-key">文件</div><div class="kv-value">${esc(result.path)}</div>
+          <div class="kv-key">文件数</div><div class="kv-value">${result.files}</div>
+          <div class="kv-key">大小</div><div class="kv-value">${size(result.size)}</div>
+          <div class="kv-key">Minecraft</div><div class="kv-value">${esc(result.game)}</div>
+          <div class="kv-key">加载器</div><div class="kv-value">${esc(`${result.loader} ${result.loader_version}`.trim())}</div>
+        </div>
+        ${warnings}
+        <div class="actions">
+          <button class="btn" id="ex-open">打开导出目录</button>
+          <button class="btn primary" id="ex-done">关闭</button>
+        </div>
+      </div>`;
+      overlay.querySelector("#ex-done")?.addEventListener("click", close);
+      overlay.querySelector("#ex-open")?.addEventListener("click", async () => {
+        try {
+          await api("/api/exports/open", { method: "POST", body: JSON.stringify({ path: result.path }) });
+        } catch (error) {
+          toast((error as Error).message, "error");
+        }
+      });
+      toast("整合包已导出", "ok");
+    } catch (error) {
+      button.disabled = false;
+      button.textContent = "导出";
+      toast((error as Error).message, "error");
+    }
+  });
 }
 
 function openRename(id: string): void {

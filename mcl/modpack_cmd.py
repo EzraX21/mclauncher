@@ -1,6 +1,8 @@
-"""mcl modpack info / install。"""
+"""mcl modpack info / install / export。"""
 
 from __future__ import annotations
+
+from pathlib import Path
 
 from . import modpacks
 from .config import Config
@@ -12,7 +14,7 @@ def run(args, ui: UI, cfg: Config) -> int:
     if not action:
         ui.error("用法：mcl modpack info <文件> 或 mcl modpack install <文件>")
         return 2
-    path = args.file
+    path = getattr(args, "file", None)
     if action == "info":
         info = modpacks.inspect(path)
         ui.box("整合包信息", [
@@ -26,6 +28,32 @@ def run(args, ui: UI, cfg: Config) -> int:
         ])
         if info.needs_curseforge_key:
             ui.warn("CurseForge 整合包需要 API key")
+        return 0
+    if action == "export":
+        version_id = (getattr(args, "version", None) or "").strip()
+        if not version_id:
+            ui.error("用法：mcl modpack export <版本> [-o 输出.mrpack] [--with-saves]")
+            return 2
+        output = getattr(args, "output", None)
+        try:
+            result = modpacks.export(
+                cfg, version_id, dest=Path(output).expanduser() if output else None,
+                name=getattr(args, "name", None),
+                include_saves=bool(getattr(args, "with_saves", False)),
+            )
+        except modpacks.PackError as exc:
+            ui.error(str(exc))
+            return 1
+        for warning in result["warnings"]:
+            ui.warn(warning)
+        ui.ok(f"已导出 {result['files']} 个文件")
+        ui.box("整合包", [
+            ("文件", result["path"]),
+            ("名称", result["name"]),
+            ("Minecraft", result["game"]),
+            ("加载器", f"{result['loader']} {result['loader_version']}".strip()),
+            ("大小", f"{result['size'] / 1048576:.1f} MB"),
+        ])
         return 0
     if action == "install":
         try:

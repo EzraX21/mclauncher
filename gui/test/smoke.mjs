@@ -146,7 +146,7 @@ assert.ok(detail.textContent.includes("1.20.1"), `概览没显示版本名：${d
 assert.ok(detail.textContent.includes("/tmp/game/versions/1.20.1"), "概览没显示版本路径");
 assert.ok(detail.textContent.includes("Java 17"), "概览没显示 Java");
 assert.ok(detail.textContent.includes("200.0 MB"), "概览没显示占用大小");
-for (const buttonId of ["inst-launch", "inst-rename", "inst-copy", "inst-open", "inst-delete", "inst-loader", "inst-crash"]) {
+for (const buttonId of ["inst-launch", "inst-rename", "inst-copy", "inst-open", "inst-export", "inst-delete", "inst-loader", "inst-crash"]) {
   assert.ok(doc.querySelector(`#${buttonId}`), `概览缺少操作按钮 #${buttonId}`);
 }
 assert.equal(doc.querySelectorAll("[data-pick]").length, 2, "版本列表条数不对");
