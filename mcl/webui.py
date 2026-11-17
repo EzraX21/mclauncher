@@ -305,13 +305,14 @@ def start_modpack(data: bytes, filename: str, name: str = "") -> dict:
     return task
 
 
-def start_resource_install(kind: str, version_id: str, slug: str) -> dict:
+def start_resource_install(kind: str, version_id: str, slug: str,
+                           world: Optional[str] = None) -> dict:
     cfg = _ACTIVE_CFG
     task = _new_task("resource")
 
     def run() -> None:
         try:
-            path = resources.install(kind, cfg, version_id, slug)
+            path = resources.install(kind, cfg, version_id, slug, world)
             _log(task, f"已安装 {path.name}")
             task["result"] = {"file": path.name}
             task["state"] = "done"
@@ -461,6 +462,12 @@ class Handler(BaseHTTPRequestHandler):
                     "default_client_id": auth.DEFAULT_CLIENT_ID,
                     "platform": os_name(),
                 })
+            if parsed.path == "/api/worlds":
+                version_id = (query.get("version", [""])[0] or "").strip() or _default_version()
+                if not version_id:
+                    return self._error("还没有安装任何版本", 404)
+                return self._json({"version": version_id,
+                                   "worlds": resources.worlds(_ACTIVE_CFG, version_id)})
             if parsed.path == "/api/java":
                 return self._json(java_listing())
             if parsed.path == "/api/about":
@@ -527,14 +534,18 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/resources":
                 kind = query.get("kind", ["shader"])[0]
                 version_id = query.get("version", [""])[0]
+                world = (query.get("world", [""])[0] or "").strip() or None
                 text = query.get("q", [""])[0]
                 if not version_id:
                     return self._error("缺少 version")
-                if text:
-                    return self._json({"hits": resources.search(
-                        kind, text, _ACTIVE_CFG, version_id)})
-                return self._json({"files": resources.local(
-                    kind, _ACTIVE_CFG, version_id)})
+                try:
+                    if text:
+                        return self._json({"hits": resources.search(
+                            kind, text, _ACTIVE_CFG, version_id)})
+                    return self._json({"files": resources.local(
+                        kind, _ACTIVE_CFG, version_id, world)})
+                except resources.ResourceError as exc:
+                    return self._error(str(exc), 400)
             if parsed.path == "/api/servers":
                 version_id = (query.get("version", [""])[0] or "").strip() or _default_version()
                 if not version_id:
@@ -742,10 +753,11 @@ class Handler(BaseHTTPRequestHandler):
             if parsed.path == "/api/resources/install":
                 return self._json(start_resource_install(
                     body.get("kind", "shader"), body.get("version", ""),
-                    body.get("slug", "")))
+                    body.get("slug", ""), body.get("world") or None))
             if parsed.path == "/api/resources/delete":
                 ok = resources.remove(body.get("kind", "shader"), _ACTIVE_CFG,
-                                      body.get("version", ""), body.get("name", ""))
+                                      body.get("version", ""), body.get("name", ""),
+                                      body.get("world") or None)
                 return self._json({"ok": ok})
             if parsed.path == "/api/mods/local/toggle":
                 version_id = body.get("version", "")

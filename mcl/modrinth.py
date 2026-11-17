@@ -50,8 +50,9 @@ def _get(path: str, params: Optional[dict] = None, source: str = "official") -> 
 
 
 def search(query: str, loader: Optional[str] = None, game_version: Optional[str] = None,
-           limit: int = 10, source: str = "official") -> list[ModHit]:
-    facets: list[list[str]] = [["project_type:mod"]]
+           limit: int = 10, source: str = "official",
+           project_type: str = "mod") -> list[ModHit]:
+    facets: list[list[str]] = [[f"project_type:{project_type}"]]
     if loader:
         facets.append([f"categories:{loader}"])
     if game_version:

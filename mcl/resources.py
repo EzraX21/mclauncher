@@ -14,6 +14,8 @@ from .modrinth import ModrinthError, _get, primary_file
 KINDS = {
     "shader": ("shader", "shaderpacks", "光影"),
     "resourcepack": ("resourcepack", "resourcepacks", "材质包"),
+    # 数据包不在实例根目录，而在某个存档里，所以要多一个 world 参数
+    "datapack": ("datapack", "datapacks", "数据包"),
 }
 
 
@@ -23,13 +25,47 @@ class ResourceError(RuntimeError):
 
 def _kind(kind: str) -> tuple[str, str, str]:
     if kind not in KINDS:
-        raise ResourceError("类型只能是 shader（光影）或 resourcepack（材质包）")
+        raise ResourceError("类型只能是 shader（光影）、resourcepack（材质包）或 datapack（数据包）")
     return KINDS[kind]
 
 
-def directory(kind: str, cfg: Config, version_id: str) -> Path:
+def _world_name(world: Optional[str]) -> str:
+    name = (world or "").strip()
+    if not name:
+        raise ResourceError("数据包装在存档里，先选一个存档")
+    if name in (".", "..") or "/" in name or "\\" in name:
+        raise ResourceError(f"存档名不合法：{world}")
+    return name
+
+
+def directory(kind: str, cfg: Config, version_id: str, world: Optional[str] = None) -> Path:
     _, folder, _ = _kind(kind)
-    return cfg.game_dir_for(version_id) / folder
+    base = cfg.game_dir_for(version_id)
+    if kind == "datapack":
+        return base / "saves" / _world_name(world) / folder
+    return base / folder
+
+
+def worlds(cfg: Config, version_id: str) -> list[dict]:
+    """实例里已有的存档（数据包要装进其中一个）。"""
+    base = cfg.game_dir_for(version_id) / "saves"
+    if not base.is_dir():
+        return []
+    items = []
+    for path in sorted(base.iterdir()):
+        if not path.is_dir() or path.name.startswith("."):
+            continue
+        packs = path / "datapacks"
+        count = len([p for p in packs.iterdir() if not p.name.startswith(".")]) if packs.is_dir() else 0
+        items.append({
+            "name": path.name,
+            "path": str(path),
+            "has_level": (path / "level.dat").is_file(),
+            "datapacks": count,
+            "modified": path.stat().st_mtime,
+        })
+    items.sort(key=lambda item: item["modified"], reverse=True)
+    return items
 
 
 def game_version(cfg: Config, version_id: str) -> str:
@@ -76,17 +112,18 @@ def latest(kind: str, project_id: str, game_version: str,
     return modrinth.latest_version(project_id, None, game_version, source)
 
 
-def install(kind: str, cfg: Config, version_id: str, project: str) -> Path:
+def install(kind: str, cfg: Config, version_id: str, project: str,
+            world: Optional[str] = None) -> Path:
     game = game_version(cfg, version_id)
+    target = directory(kind, cfg, version_id, world)  # 先校验 world，别下完了才发现没选存档
     version = latest(kind, project, game, cfg.source)
     if version is None:
         raise ResourceError(f"{project} 没有适配 {game} 的文件")
-    target = directory(kind, cfg, version_id)
     return modrinth.download_version(version, target, cfg.source)
 
 
-def local(kind: str, cfg: Config, version_id: str) -> list[dict]:
-    target = directory(kind, cfg, version_id)
+def local(kind: str, cfg: Config, version_id: str, world: Optional[str] = None) -> list[dict]:
+    target = directory(kind, cfg, version_id, world)
     if not target.exists():
         return []
     items = []
@@ -100,8 +137,9 @@ def local(kind: str, cfg: Config, version_id: str) -> list[dict]:
     return items
 
 
-def remove(kind: str, cfg: Config, version_id: str, name: str) -> bool:
-    target = directory(kind, cfg, version_id)
+def remove(kind: str, cfg: Config, version_id: str, name: str,
+           world: Optional[str] = None) -> bool:
+    target = directory(kind, cfg, version_id, world)
     path = target / name
     if path.parent != target or not path.exists():
         return False

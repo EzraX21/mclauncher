@@ -65,6 +65,8 @@ let resourceKind = "shader";
 let resourceVersion = "";
 let settingsTab = "account";
 let downloadTab = "game";
+let datapackVersion = "";
+let datapackWorld = "";
 let installLoader = "";
 let installSelected = "";
 let linkVersion = "";
@@ -772,9 +774,10 @@ function openCopy(id: string): void {
 }
 
 // ---------------------------------------------------------------- 下载（PCL PageDownload）
+// 顺序跟 PCL 的 PageDownloadLeft 一致：游戏本体 / 模组 / 整合包 / 数据包 / 材质包 / 光影
 const DOWNLOAD_TABS: [string, string][] = [
-  ["game", "游戏本体"], ["pack", "整合包"], ["mods", "模组"],
-  ["shader", "光影"], ["resourcepack", "材质包"],
+  ["game", "游戏本体"], ["mods", "模组"], ["pack", "整合包"],
+  ["datapack", "数据包"], ["resourcepack", "材质包"], ["shader", "光影"],
 ];
 
 function renderDownload(): void {
@@ -803,6 +806,7 @@ async function paintDownload(): Promise<void> {
   if (downloadTab === "game") return paintDownloadGame(host);
   if (downloadTab === "pack") return paintDownloadPack(host);
   if (downloadTab === "mods") return paintDownloadMods(host);
+  if (downloadTab === "datapack") return paintDownloadDatapacks(host);
   return paintDownloadResources(host, downloadTab);
 }
 
@@ -941,6 +945,173 @@ function paintDownloadMods(host: HTMLElement): void {
   (host.querySelector("#mods-query") as HTMLInputElement).addEventListener("keydown", (event) => {
     if (event.key === "Enter") void searchMods();
   });
+}
+
+async function paintDownloadDatapacks(host: HTMLElement): Promise<void> {
+  if (!datapackVersion || !state.versions.some((version) => version.id === datapackVersion)) {
+    datapackVersion = state.config.last_version || state.versions[0]?.id || "";
+  }
+  const versionOptions = state.versions.map((version) =>
+    `<option value="${esc(version.id)}" ${version.id === datapackVersion ? "selected" : ""}>${esc(version.id)}</option>`).join("");
+  host.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">数据包</span>
+        <div class="inline">
+          <select id="dp-version">${versionOptions || '<option value="">没有已装版本</option>'}</select>
+          <select id="dp-world"><option value="">加载存档中…</option></select>
+          <button class="btn" id="dp-refresh">刷新</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="small muted">数据包装在存档里，选好存档再装。<span id="dp-hint"></span></div>
+      </div>
+      <div class="list" id="dp-local"><div class="empty">先选存档</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">搜索 Modrinth 数据包</span>
+        <div class="inline">
+          <input class="search" id="dp-query" placeholder="例如 terralith" />
+          <button class="btn primary" id="dp-search">搜索</button>
+        </div>
+      </div>
+      <div class="list" id="dp-results"><div class="empty">输入关键词搜索</div></div>
+    </div>`;
+  const versionSelect = host.querySelector("#dp-version") as HTMLSelectElement;
+  versionSelect.addEventListener("change", () => {
+    datapackVersion = versionSelect.value;
+    datapackWorld = "";
+    void loadWorlds();
+  });
+  host.querySelector("#dp-refresh")?.addEventListener("click", () => void loadWorlds());
+  host.querySelector("#dp-search")?.addEventListener("click", () => void searchDatapacks());
+  (host.querySelector("#dp-query") as HTMLInputElement).addEventListener("keydown", (event) => {
+    if (event.key === "Enter") void searchDatapacks();
+  });
+  await loadWorlds();
+}
+
+async function loadWorlds(): Promise<void> {
+  const select = document.getElementById("dp-world") as HTMLSelectElement | null;
+  if (!select) return;
+  if (!datapackVersion) {
+    select.innerHTML = `<option value="">没有已装版本</option>`;
+    return;
+  }
+  try {
+    const data = await api<{ worlds: { name: string; datapacks: number }[] }>(
+      `/api/worlds?version=${encodeURIComponent(datapackVersion)}`);
+    if (!data.worlds.length) {
+      select.innerHTML = `<option value="">这个版本还没有存档</option>`;
+      datapackWorld = "";
+      const list = document.getElementById("dp-local");
+      if (list) list.innerHTML = `<div class="empty">这个版本还没有存档。先启动游戏进一次世界，存档才会出现。</div>`;
+      return;
+    }
+    if (!datapackWorld || !data.worlds.some((world) => world.name === datapackWorld)) {
+      datapackWorld = data.worlds[0].name;
+    }
+    select.innerHTML = data.worlds.map((world) =>
+      `<option value="${esc(world.name)}" ${world.name === datapackWorld ? "selected" : ""}>${esc(world.name)}（${world.datapacks} 个数据包）</option>`).join("");
+    select.onchange = () => {
+      datapackWorld = select.value;
+      void loadDatapacks();
+    };
+    await loadDatapacks();
+  } catch (error) {
+    select.innerHTML = `<option value="">加载失败</option>`;
+    const list = document.getElementById("dp-local");
+    if (list) list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
+}
+
+async function loadDatapacks(): Promise<void> {
+  const list = document.getElementById("dp-local");
+  const hint = document.getElementById("dp-hint");
+  if (!list) return;
+  if (!datapackWorld) {
+    list.innerHTML = `<div class="empty">先选一个存档</div>`;
+    return;
+  }
+  if (hint) hint.textContent = `当前：${datapackVersion} / ${datapackWorld}`;
+  list.innerHTML = `<div class="empty">加载中…</div>`;
+  try {
+    const data = await api<{ files: { name: string; size: number; dir: boolean }[] }>(
+      `/api/resources?kind=datapack&version=${encodeURIComponent(datapackVersion)}&world=${encodeURIComponent(datapackWorld)}`);
+    if (!data.files.length) {
+      list.innerHTML = `<div class="empty">这个存档还没有数据包</div>`;
+      return;
+    }
+    list.innerHTML = data.files.map((item) => `
+      <div class="list-row">
+        <div class="grow"><div class="title">${esc(item.name)}</div>
+          <div class="desc">${item.size ? `${(item.size / 1048576).toFixed(1)} MB` : "文件夹"}</div></div>
+        <button class="btn sm danger" data-dp-del="${esc(item.name)}">删除</button>
+      </div>`).join("");
+    list.querySelectorAll<HTMLButtonElement>("[data-dp-del]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        try {
+          await api("/api/resources/delete", {
+            method: "POST", body: JSON.stringify({
+              kind: "datapack", version: datapackVersion, world: datapackWorld,
+              name: button.dataset.dpDel,
+            }),
+          });
+          toast("已删除", "ok");
+          await loadDatapacks();
+        } catch (error) {
+          toast((error as Error).message, "error");
+        }
+      });
+    });
+  } catch (error) {
+    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
+}
+
+async function searchDatapacks(): Promise<void> {
+  const input = document.getElementById("dp-query") as HTMLInputElement;
+  const query = input.value.trim();
+  const list = document.getElementById("dp-results");
+  if (!query || !datapackVersion || !list) return;
+  if (!datapackWorld) {
+    toast("先在左边选一个存档", "error");
+    return;
+  }
+  list.innerHTML = `<div class="empty">搜索中…</div>`;
+  try {
+    const data = await api<{ hits: { slug: string; title: string; description: string; downloads: number }[] }>(
+      `/api/resources?kind=datapack&version=${encodeURIComponent(datapackVersion)}&q=${encodeURIComponent(query)}`);
+    if (!data.hits.length) {
+      list.innerHTML = `<div class="empty">没有搜到结果</div>`;
+      return;
+    }
+    list.innerHTML = data.hits.map((hit) => `
+      <div class="list-row">
+        <div class="grow"><div class="title">${esc(hit.title)}</div>
+          <div class="desc">${esc(hit.description)}</div></div>
+        <span class="small muted">${hit.downloads.toLocaleString()} 次</span>
+        <button class="btn primary sm" data-dp-install="${esc(hit.slug)}">安装</button>
+      </div>`).join("");
+    list.querySelectorAll<HTMLButtonElement>("[data-dp-install]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        try {
+          const task = await api<TaskInfo>("/api/resources/install", {
+            method: "POST", body: JSON.stringify({
+              kind: "datapack", version: datapackVersion, world: datapackWorld,
+              slug: button.dataset.dpInstall,
+            }),
+          });
+          watchTask(task, "安装数据包");
+        } catch (error) {
+          toast((error as Error).message, "error");
+        }
+      });
+    });
+  } catch (error) {
+    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
 }
 
 async function paintDownloadResources(host: HTMLElement, kind: string): Promise<void> {

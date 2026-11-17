@@ -46,7 +46,7 @@
 
 ## 项目状态
 
-当前版本 **v3.13.0**：
+当前版本 **v3.14.0**：
 
 | 状态 | 功能 |
 | --- | --- |
@@ -65,6 +65,7 @@
 | 下载 → 模组 | Modrinth / CurseForge 搜索安装，自动补前置；装好后在「版本管理 → 模组」里启停 |
 | 下载 → 整合包 | 导入 Modrinth `.mrpack` / CurseForge zip（自动装原版和加载器、复制 overrides）；也能把已装版本**导出**成 `.mrpack`（含模组/配置/资源包，可连存档） |
 | 下载 → 光影 / 材质包 | 搜索安装到 `shaderpacks/` / `resourcepacks/` |
+| 下载 → 数据包 | 搜索安装到指定存档的 `saves/<世界>/datapacks/`（先选版本和存档） |
 | 联机 | 服务器列表读写游戏自己的 `servers.dat`，显示延迟/在线人数/版本/MOTD，点「进服」直接连 |
 | 百宝箱 | 关于（版本 / 平台 / 路径 / 许可证）、环境诊断（Java、依赖、目录可写、下载源）、快捷打开配置/游戏/日志/导出目录 |
 | 皮肤 | 离线自定义皮肤 PNG，生成资源包替换默认 Steve/Alex 贴图 |
@@ -84,17 +85,19 @@
 | --- | --- |
 | ![下载](docs/gui-install.png) | ![模组](docs/gui-mods.png) |
 
-| 下载 · 光影 | 联机 |
+| 下载 · 光影 | 下载 · 数据包 |
 | --- | --- |
-| ![光影](docs/gui-resources.png) | ![联机](docs/gui-link.png) |
+| ![光影](docs/gui-resources.png) | ![数据包](docs/gui-datapacks.png) |
 
-| 百宝箱 | 设置 |
+| 联机 | 百宝箱 |
 | --- | --- |
-| ![百宝箱](docs/gui-toolbox.png) | ![设置](docs/gui-settings.png) |
+| ![联机](docs/gui-link.png) | ![百宝箱](docs/gui-toolbox.png) |
 
-| 深色主题 | |
+| 设置 | 深色主题 |
 | --- | --- |
-| ![深色主题](docs/gui-dark.png) | |
+| ![设置](docs/gui-settings.png) | ![深色主题](docs/gui-dark.png) |
+
+
 
 截图是脚本生成的，界面改动后重新跑一次就行：
 
@@ -169,7 +172,7 @@ mcl --cli      # questionary 文本菜单
 ## 图形界面
 
 GUI 是默认入口：直接运行 `mcl` 就会打开桌面窗口（`mcl gui` 等价）。
-页面：启动 / 版本管理 / 下载 / 联机 / 百宝箱 / 设置（下载页左侧分：游戏本体 / 整合包 / 模组 / 光影 / 材质包）。
+页面：启动 / 版本管理 / 下载 / 联机 / 百宝箱 / 设置（下载页左侧分：游戏本体 / 模组 / 整合包 / 数据包 / 材质包 / 光影）。
 它是**桌面窗口**，不是浏览器标签：
 
 - Linux：GTK + WebKitGTK，需要 `webkit2gtk-4.1`、`python-gobject`
@@ -438,8 +441,8 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-205 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java 探测与指定、环境诊断、模组、整合包导入导出、
-光影/材质包的游戏版本解析、
+213 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java 探测与指定、环境诊断、模组、整合包导入导出、
+光影/材质包的游戏版本解析、数据包与存档路径、
 服务器列表与 NBT、Server List Ping（用本地假服务器）、删除、TUI（无需终端）和 GUI API；不需要网络。
 
 前端另有一个 jsdom 冒烟测试，会真跑一遍构建后的界面：
@@ -456,7 +459,7 @@ cd gui && npm test        # 先构建，再在 jsdom 里渲染并断言导航与
 - macOS 只有手动构建脚本，Release 不发布 dmg；GUI 在 macOS 上会退回浏览器
 - AUR 注册暂停，暂时没有账号/包
 - 自定义皮肤用资源包实现，会替换所有默认 Steve/Alex 贴图，多人里其他默认皮肤玩家也会看到
-- 资源目前只有光影/材质，地图、数据包还没做
+- 资源目前有光影、材质包、数据包；地图还没做
 - 联机页不做 SRV 解析（`_minecraft._tcp`），只靠 SRV 暴露端口的服务器会显示离线
 - 快速进服用版本 JSON 里的 `--quickPlayMultiplayer`（1.20+），老版本退回 `--server/--port`；
   真机进服行为没在每种游戏版本上跑过

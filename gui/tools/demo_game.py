@@ -69,9 +69,15 @@ def build(target: Path) -> Path:
     (fabric_dir / "shaderpacks" / "ComplementaryReimagined_r5.5.1.zip").write_bytes(b"zip" * 900_000)
     (fabric_dir / "resourcepacks").mkdir(exist_ok=True)
     (fabric_dir / "resourcepacks" / "Faithful_64x.zip").write_bytes(b"zip" * 1_200_000)
+    # 先建空存档，再建有数据包的那个：界面默认选「最近修改」的存档，这样截图里是有内容的
+    second = fabric_dir / "saves" / "创造测试"
+    second.mkdir(parents=True, exist_ok=True)
+    (second / "level.dat").write_bytes(b"level")
     world = fabric_dir / "saves" / "新世界"
-    world.mkdir(parents=True, exist_ok=True)
+    (world / "datapacks").mkdir(parents=True, exist_ok=True)
     (world / "level.dat").write_bytes(b"level")
+    (world / "datapacks" / "terralith-2.5.zip").write_bytes(b"zip" * 600_000)
+    (world / "datapacks" / "incendium-5.1.zip").write_bytes(b"zip" * 220_000)
 
     # 服务器列表（走真实格式，截图时 ping 会显示延迟/人数）
     servers.add(Config(game_dir=str(game), isolate_versions=True), "fabric-loader-0.16.9-1.21.4",

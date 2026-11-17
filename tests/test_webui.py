@@ -7,6 +7,7 @@ import tempfile
 import time
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -352,6 +353,44 @@ class WebuiTests(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as ctx:
             post_json(self.url + "api/java/install", {"major": 7})
         self.assertEqual(ctx.exception.code, 400)
+
+
+    # ------------------------------------------------------------ 数据包
+    def make_world(self, name="新世界") -> Path:
+        saves = Path(self.tmp.name) / "game" / "versions" / "1.20.1" / "saves" / name
+        (saves / "datapacks").mkdir(parents=True)
+        (saves / "level.dat").write_bytes(b"level")
+        return saves
+
+    def test_worlds(self):
+        self.make_version()
+        self.make_world()
+        data = get_json(self.url + "api/worlds?version=1.20.1")
+        self.assertEqual([item["name"] for item in data["worlds"]], ["新世界"])
+
+    def test_datapacks_need_world(self):
+        self.make_version()
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            get_json(self.url + "api/resources?kind=datapack&version=1.20.1")
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_datapacks_local_listing(self):
+        self.make_version()
+        world = self.make_world()
+        (world / "datapacks" / "terralith.zip").write_bytes(b"zip")
+        data = get_json(self.url + "api/resources?kind=datapack&version=1.20.1&world="
+                        + urllib.parse.quote("新世界"))
+        self.assertEqual([item["name"] for item in data["files"]], ["terralith.zip"])
+
+    def test_datapack_remove(self):
+        self.make_version()
+        world = self.make_world()
+        (world / "datapacks" / "x.zip").write_bytes(b"zip")
+        data = post_json(self.url + "api/resources/delete", {
+            "kind": "datapack", "version": "1.20.1", "world": "新世界", "name": "x.zip",
+        })
+        self.assertTrue(data["ok"])
+        self.assertFalse((world / "datapacks" / "x.zip").exists())
 
 
 if __name__ == "__main__":

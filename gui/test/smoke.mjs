@@ -99,6 +99,14 @@ const JAVA = {
   components: [{ major: 17, component: "java-runtime-beta" }, { major: 21, component: "java-runtime-delta" }],
 };
 
+const WORLDS = {
+  version: "1.20.1",
+  worlds: [
+    { name: "新世界", path: "/tmp/game/saves/新世界", has_level: true, datapacks: 1, modified: 1 },
+    { name: "老存档", path: "/tmp/game/saves/老存档", has_level: true, datapacks: 0, modified: 2 },
+  ],
+};
+
 const calls = [];
 function fakeFetch(url) {
   calls.push(String(url));
@@ -109,6 +117,7 @@ function fakeFetch(url) {
     : target.includes("/api/java") ? JAVA
     : target.includes("/api/about") ? ABOUT
     : target.includes("/api/doctor") ? DOCTOR
+    : target.includes("/api/worlds") ? WORLDS
     : target.includes("/api/remote") ? REMOTE
     : target.includes("/api/resources") ? RESOURCES
     : STATE;
@@ -155,7 +164,7 @@ await flush();
 await flush();
 
 const dlTabs = [...doc.querySelectorAll("[data-dtab]")].map((node) => node.dataset.dtab);
-assert.deepEqual(dlTabs, ["game", "pack", "mods", "shader", "resourcepack"], `下载分类不对：${dlTabs}`);
+assert.deepEqual(dlTabs, ["game", "mods", "pack", "datapack", "resourcepack", "shader"], `下载分类不对：${dlTabs}`);
 assert.ok(doc.querySelector("#remote-list"), "下载页没渲染版本清单");
 assert.ok(!doc.querySelector("#remote-list").textContent.includes("加载中"), "版本清单还停在加载中");
 assert.ok(doc.querySelector("#remote-list").textContent.includes("1.21.4"), "版本清单没渲染版本");
@@ -168,6 +177,23 @@ await flush();
 assert.ok(doc.querySelector("#install-confirm"), "选中版本后没出现安装按钮");
 const loaderTabs = [...doc.querySelectorAll(".loader-tab")].map((node) => node.textContent.trim());
 assert.deepEqual(loaderTabs, ["原版", "Fabric", "Quilt", "Forge", "NeoForge"], `加载器标签不对：${loaderTabs}`);
+
+// 数据包分类：要先选存档
+[...doc.querySelectorAll("[data-dtab]")].find((node) => node.dataset.dtab === "datapack").click();
+await flush();
+await flush();
+await flush();
+const worldSelect = doc.querySelector("#dp-world");
+assert.ok(worldSelect, "数据包分类没有存档选择");
+assert.ok(!worldSelect.textContent.includes("加载存档中"), "存档列表还停在加载中");
+assert.ok(worldSelect.textContent.includes("新世界"), `存档没渲染：${worldSelect.textContent}`);
+assert.ok(worldSelect.textContent.includes("1 个数据包"), "存档没显示数据包数量");
+assert.ok(doc.querySelector("#dp-query"), "数据包分类没有搜索框");
+assert.ok(doc.querySelector("#dp-hint").textContent.includes("新世界"), "没显示当前存档");
+assert.ok(
+  calls.some((url) => url.includes("/api/resources") && url.includes("kind=datapack") && url.includes("world=")),
+  "数据包分类没有按 world 查询本地列表",
+);
 
 // 光影分类
 [...doc.querySelectorAll("[data-dtab]")].find((node) => node.dataset.dtab === "shader").click();
