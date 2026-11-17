@@ -7,11 +7,13 @@
   "scripts": {
     "build": "node build.mjs",
     "start": "npm run build && electron .",
-    "electron": "electron ."
+    "electron": "electron .",
+    "test": "npm run build && node test/smoke.mjs"
   },
   "devDependencies": {
     "electron": "^45.0.0",
     "esbuild": "^0.28.2",
+    "jsdom": "^31.0.1",
     "typescript": "^5.9.0"
   }
 }
