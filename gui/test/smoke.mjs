@@ -62,6 +62,16 @@ const LOCAL_MODS = {
   ],
 };
 
+const REMOTE = {
+  latest: { release: "1.21.4", snapshot: "25w01a" },
+  versions: [
+    { id: "1.21.4", type: "release", release: "2024-12-03" },
+    { id: "1.20.1", type: "release", release: "2023-06-12" },
+  ],
+};
+
+const RESOURCES = { files: [{ name: "Complementary.zip", size: 2097152, dir: false }] };
+
 const calls = [];
 function fakeFetch(url) {
   calls.push(String(url));
@@ -69,6 +79,8 @@ function fakeFetch(url) {
   const body = target.includes("/api/servers") ? SERVERS
     : target.includes("/api/version/info") ? VERSION_INFO
     : target.includes("/api/mods/local") ? LOCAL_MODS
+    : target.includes("/api/remote") ? REMOTE
+    : target.includes("/api/resources") ? RESOURCES
     : STATE;
   return Promise.resolve({
     ok: true,
@@ -99,12 +111,56 @@ const doc = window.document;
 const navLabels = [...doc.querySelectorAll("#nav .nav-item span")].map((node) => node.textContent);
 assert.deepEqual(
   navLabels,
-  ["启动", "版本管理", "安装", "资源", "模组", "联机", "设置"],
+  ["启动", "版本管理", "下载", "联机", "设置"],
   `导航项不对：${JSON.stringify(navLabels)}`,
 );
 
 // 默认落地页是启动页
 assert.ok(doc.querySelector("#launch-main"), "启动页没有渲染出启动按钮");
+
+// 切到下载页：分类导航 + 版本清单
+window.location.hash = "#/download";
+window.dispatchEvent(new window.Event("hashchange"));
+await flush();
+await flush();
+
+const dlTabs = [...doc.querySelectorAll("[data-dtab]")].map((node) => node.dataset.dtab);
+assert.deepEqual(dlTabs, ["game", "pack", "mods", "shader", "resourcepack"], `下载分类不对：${dlTabs}`);
+assert.ok(doc.querySelector("#remote-list"), "下载页没渲染版本清单");
+assert.ok(!doc.querySelector("#remote-list").textContent.includes("加载中"), "版本清单还停在加载中");
+assert.ok(doc.querySelector("#remote-list").textContent.includes("1.21.4"), "版本清单没渲染版本");
+assert.ok(doc.querySelector("#remote-hint").textContent.includes("最新正式版"), "没显示最新版本提示");
+
+// 点一个版本 → 进入安装选项，带加载器标签
+doc.querySelector("[data-version]").click();
+await flush();
+await flush();
+assert.ok(doc.querySelector("#install-confirm"), "选中版本后没出现安装按钮");
+const loaderTabs = [...doc.querySelectorAll(".loader-tab")].map((node) => node.textContent.trim());
+assert.deepEqual(loaderTabs, ["原版", "Fabric", "Quilt", "Forge", "NeoForge"], `加载器标签不对：${loaderTabs}`);
+
+// 光影分类
+[...doc.querySelectorAll("[data-dtab]")].find((node) => node.dataset.dtab === "shader").click();
+await flush();
+await flush();
+assert.ok(doc.querySelector("#res-local"), "光影分类没渲染已安装列表");
+assert.ok(doc.querySelector("#res-local").textContent.includes("Complementary.zip"), "已安装光影没渲染出来");
+assert.ok(doc.querySelector("#res-query"), "光影分类没有搜索框");
+
+// 材质包分类切换后 kind 要跟着变
+[...doc.querySelectorAll("[data-dtab]")].find((node) => node.dataset.dtab === "resourcepack").click();
+await flush();
+await flush();
+assert.ok(
+  calls.some((url) => url.includes("/api/resources") && url.includes("kind=resourcepack")),
+  "切到材质包后没有按 resourcepack 查询",
+);
+
+// 模组分类
+[...doc.querySelectorAll("[data-dtab]")].find((node) => node.dataset.dtab === "mods").click();
+await flush();
+assert.ok(doc.querySelector("#mods-query"), "模组分类没有搜索框");
+assert.ok(doc.querySelector("#mods-version"), "模组分类没有版本选择");
 
 // 切到联机页
 window.location.hash = "#/link";
@@ -177,4 +233,8 @@ assert.ok(
   "模组标签没有请求本地模组",
 );
 
+// 断言跑完就收工：jsdom 关掉窗口后进程还会挂十几秒（内部定时器），显式退出。
+// 断言失败会抛异常，走不到这里，所以退出码依然能反映成败。
+window.close();
 console.log("gui smoke ok:", navLabels.join(" / "), "| 服务器行 2 条 | 版本 2 条 | 调用", calls.length, "次");
+process.exit(0);

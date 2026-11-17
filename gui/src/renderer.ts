@@ -1,4 +1,4 @@
-type View = "versions" | "instance" | "install" | "resources" | "mods" | "link" | "settings";
+type View = "versions" | "instance" | "download" | "link" | "settings";
 const MICROSOFT_LOGIN_ENABLED = false;
 
 interface VersionInfo {
@@ -48,8 +48,7 @@ let modsTimer: number | null = null;
 let resourceKind = "shader";
 let resourceVersion = "";
 let settingsTab = "account";
-let modsTab = "pack";
-let installTab = "vanilla";
+let downloadTab = "game";
 let installLoader = "";
 let installSelected = "";
 let linkVersion = "";
@@ -91,10 +90,8 @@ const lucide = (body: string): string =>
   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
 const icons: Record<View, string> = {
   versions: lucide('<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>'),
-  install: lucide('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>'),
-  resources: lucide('<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>'),
-  mods: lucide('<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/>'),
   instance: lucide('<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'),
+  download: lucide('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>'),
   link: lucide('<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>'),
   settings: lucide('<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>'),
 };
@@ -111,7 +108,7 @@ function shell(): string {
         </div>
       </div>
       <nav class="nav" id="nav">
-        ${(["versions", "instance", "install", "resources", "mods", "link", "settings"] as View[]).map((name) => `
+        ${(["versions", "instance", "download", "link", "settings"] as View[]).map((name) => `
           <button class="nav-item" data-view="${name}">
             ${icons[name]}<span>${labelOf(name)}</span>
           </button>`).join("")}
@@ -143,8 +140,8 @@ function shell(): string {
   </div>`;
 }
 function labelOf(value: View): string {
-  return { versions: "启动", instance: "版本管理", install: "安装", resources: "资源",
-    mods: "模组", link: "联机", settings: "设置" }[value];
+  return { versions: "启动", instance: "版本管理", download: "下载",
+    link: "联机", settings: "设置" }[value];
 }
 
 function esc(text: unknown): string {
@@ -218,12 +215,8 @@ function render(): void {
     renderVersions();
   } else if (view === "instance") {
     renderInstance();
-  } else if (view === "install") {
-    renderInstall();
-  } else if (view === "resources") {
-    renderResources();
-  } else if (view === "mods") {
-    renderMods();
+  } else if (view === "download") {
+    renderDownload();
   } else if (view === "link") {
     renderLink();
   } else {
@@ -290,8 +283,8 @@ function renderVersions(): void {
     if (button) void launch(id, button);
   };
   content.querySelector("#launch-main")?.addEventListener("click", launchSelected);
-  content.querySelector("#go-install")?.addEventListener("click", () => setView("install"));
-  content.querySelector("#go-install-empty")?.addEventListener("click", () => setView("install"));
+  content.querySelector("#go-install")?.addEventListener("click", () => setView("download"));
+  content.querySelector("#go-install-empty")?.addEventListener("click", () => setView("download"));
   content.querySelector("#refresh")?.addEventListener("click", () => refreshState());
   content.querySelectorAll<HTMLButtonElement>("[data-manage]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -329,62 +322,6 @@ function openDelete(id: string): void {
     } catch (error) {
       button.disabled = false;
       toast(`删除失败：${(error as Error).message}`, "error");
-    }
-  });
-}
-
-async function openVersionSettings(id: string): Promise<void> {
-  const overlay = document.createElement("div");
-  overlay.className = "overlay";
-  overlay.innerHTML = `<div class="modal" style="width:520px">
-    <h3>版本设置 · ${esc(id)}</h3>
-    <div class="small muted" style="margin-bottom:12px">留空表示跟随全局设置。</div>
-    <div class="field"><label>内存（MB）</label><input id="vs-memory" type="number" min="512" max="65536" /></div>
-    <div class="inline" style="align-items:flex-start">
-      <div class="field" style="flex:1"><label>窗口宽度</label><input id="vs-width" type="number" min="320" max="10000" /></div>
-      <div class="field" style="flex:1"><label>窗口高度</label><input id="vs-height" type="number" min="240" max="10000" /></div>
-    </div>
-    <div class="field"><label>额外 JVM 参数</label><textarea id="vs-jvm" rows="2" placeholder="-XX:+UseG1GC"></textarea></div>
-    <div class="field"><label>额外游戏参数</label><textarea id="vs-game" rows="2" placeholder="--fullscreen"></textarea></div>
-    <div class="actions">
-      <button class="btn" id="vs-cancel">取消</button>
-      <button class="btn primary" id="vs-save">保存</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-  const close = () => overlay.remove();
-  overlay.querySelector("#vs-cancel")?.addEventListener("click", close);
-  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
-  try {
-    const data = await api<{ options: { memory_mb: number | null; width: number | null; height: number | null; jvm_args: string; game_args: string } }>(
-      `/api/version/options?id=${encodeURIComponent(id)}`);
-    const opts = data.options;
-    (overlay.querySelector("#vs-memory") as HTMLInputElement).value = opts.memory_mb?.toString() || "";
-    (overlay.querySelector("#vs-width") as HTMLInputElement).value = opts.width?.toString() || "";
-    (overlay.querySelector("#vs-height") as HTMLInputElement).value = opts.height?.toString() || "";
-    (overlay.querySelector("#vs-jvm") as HTMLTextAreaElement).value = opts.jvm_args || "";
-    (overlay.querySelector("#vs-game") as HTMLTextAreaElement).value = opts.game_args || "";
-  } catch (error) {
-    toast((error as Error).message, "error");
-  }
-  overlay.querySelector("#vs-save")?.addEventListener("click", async () => {
-    const value = (selector: string) => (overlay.querySelector(selector) as HTMLInputElement).value.trim();
-    try {
-      await api("/api/version/options", {
-        method: "POST",
-        body: JSON.stringify({
-          id,
-          memory_mb: value("#vs-memory") || null,
-          width: value("#vs-width") || null,
-          height: value("#vs-height") || null,
-          jvm_args: value("#vs-jvm"),
-          game_args: value("#vs-game"),
-        }),
-      });
-      close();
-      toast(`已保存 ${id} 的版本设置`, "ok");
-    } catch (error) {
-      toast((error as Error).message, "error");
     }
   });
 }
@@ -681,7 +618,8 @@ async function paintInstanceMods(host: HTMLElement): Promise<void> {
     host.querySelector("#inst-mods-refresh")?.addEventListener("click", () => void paintInstanceMods(host));
     host.querySelector("#inst-mods-search")?.addEventListener("click", () => {
       modsVersion = instanceId;
-      setView("mods");
+      downloadTab = "mods";
+      setView("download");
     });
     host.querySelectorAll<HTMLButtonElement>("[data-itoggle]").forEach((button) => {
       button.addEventListener("click", async () => {
@@ -816,16 +754,60 @@ function openCopy(id: string): void {
   nameModal("复制版本", "副本名字", `${id} 副本`, "/api/versions/copy");
 }
 
-// ---------------------------------------------------------------- 安装
-async function renderInstall(): Promise<void> {
-  setHeader("安装原版", "从 Mojang 官方源下载，镜像可选");
+// ---------------------------------------------------------------- 下载（PCL PageDownload）
+const DOWNLOAD_TABS: [string, string][] = [
+  ["game", "游戏本体"], ["pack", "整合包"], ["mods", "模组"],
+  ["shader", "光影"], ["resourcepack", "材质包"],
+];
+
+function renderDownload(): void {
+  setHeader("下载", "游戏本体 / 加载器 / 整合包 / 模组 / 光影 / 材质包");
   const content = document.getElementById("content") as HTMLElement;
+  content.innerHTML = `
+    <div class="page-layout">
+      <aside class="page-nav">
+        ${DOWNLOAD_TABS.map(([value, label]) => `
+          <button class="page-nav-item ${downloadTab === value ? "active" : ""}" data-dtab="${value}">${label}</button>`).join("")}
+      </aside>
+      <div class="page-main" id="dl-main"><div class="card"><div class="empty">加载中…</div></div></div>
+    </div>`;
+  content.querySelectorAll<HTMLButtonElement>("[data-dtab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      downloadTab = button.dataset.dtab as string;
+      renderDownload();
+    });
+  });
+  void paintDownload();
+}
+
+async function paintDownload(): Promise<void> {
+  const host = document.getElementById("dl-main");
+  if (!host) return;
+  if (downloadTab === "game") return paintDownloadGame(host);
+  if (downloadTab === "pack") return paintDownloadPack(host);
+  if (downloadTab === "mods") return paintDownloadMods(host);
+  return paintDownloadResources(host, downloadTab);
+}
+
+function wireLoaderTabs(host: HTMLElement): void {
+  host.querySelectorAll<HTMLButtonElement>(".loader-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      installLoader = button.dataset.loader as string;
+      host.querySelectorAll(".loader-tab").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      toast(installLoader ? `安装时使用 ${installLoader}` : "安装原版", "ok");
+    });
+  });
+}
+
+async function paintDownloadGame(host: HTMLElement): Promise<void> {
   const selected = installSelected ? remote.find((item) => item.id === installSelected) : undefined;
   const loaderTabs = [["", "原版"], ["fabric", "Fabric"], ["quilt", "Quilt"],
     ["forge", "Forge"], ["neoforge", "NeoForge"]].map(([value, label]) => `
       <button class="loader-tab ${installLoader === value ? "active" : ""}" data-loader="${value}">${label}</button>`).join("");
-  const vanillaPage = selected ? `
-    <div class="install-page active" data-page="vanilla">
+
+  if (selected) {
+    host.innerHTML = `
       <div class="card">
         <div class="card-head">
           <span class="card-title">安装 ${esc(selected.id)}</span>
@@ -837,121 +819,68 @@ async function renderInstall(): Promise<void> {
           <div class="field"><label class="checkbox"><input type="checkbox" id="with-assets" checked /> 下载资源文件（音效、语言）</label></div>
           <button class="btn primary" id="install-confirm">安装 ${esc(selected.id)}</button>
         </div>
-      </div>
-    </div>` : `
-    <div class="install-page ${installTab === "vanilla" ? "active" : ""}" data-page="vanilla">
-      <div class="card">
-        <div class="card-head">
-          <span class="card-title">版本清单</span>
-          <div class="inline">
-            <input class="search" id="remote-filter" placeholder="搜索版本，例如 1.20.1" />
-            <button class="btn" id="remote-refresh">刷新</button>
-          </div>
-        </div>
-        <div class="card-body row-between">
-          <span class="small muted">点一个版本进入安装选项</span>
-          <span class="small muted" id="remote-hint">加载中…</span>
-        </div>
-        <div class="list" id="remote-list"></div>
-      </div>
-    </div>`;
-  content.innerHTML = `
-    <div class="page-layout">
-      <aside class="page-nav">
-        <button class="page-nav-item ${installTab === "vanilla" ? "active" : ""}" data-tab="vanilla">原版游戏</button>
-        <button class="page-nav-item ${installTab === "installed" ? "active" : ""}" data-tab="installed">已安装版本</button>
-        <button class="page-nav-item ${installTab === "modpack" ? "active" : ""}" data-tab="modpack">整合包</button>
-      </aside>
-      <div class="page-main">
-        ${vanillaPage}
-        <div class="install-page ${installTab === "installed" ? "active" : ""}" data-page="installed">
-          <div class="card">
-            <div class="card-head"><span class="card-title">已安装版本</span></div>
-            ${state.versions.length ? `<div class="list">${state.versions.map((version) => `
-              <div class="list-row">
-                <div class="grow">
-                  <div class="title">${esc(version.id)} ${badge(version.loader)}
-                    ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
-                  <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
-                </div>
-                <button class="btn sm" data-installed-settings="${esc(version.id)}">设置</button>
-                <button class="btn sm" data-installed-loader="${esc(version.id)}">装加载器</button>
-                <button class="btn sm danger" data-installed-delete="${esc(version.id)}">删除</button>
-                <button class="btn primary sm" data-installed-launch="${esc(version.id)}">启动</button>
-              </div>`).join("")}</div>` : `<div class="empty">还没有安装任何版本</div>`}
-          </div>
-        </div>
-        <div class="install-page ${installTab === "modpack" ? "active" : ""}" data-page="modpack">
-          <div class="card">
-            <div class="card-head"><span class="card-title">导入整合包</span></div>
-            <div class="card-body">
-              <div class="inline">
-                <input type="file" id="install-pack-file" accept=".mrpack,.zip" />
-                <input id="install-pack-name" placeholder="实例名（可选）" style="width:200px" />
-                <button class="btn primary" id="install-pack-import">导入</button>
-              </div>
-              <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-  content.querySelectorAll<HTMLButtonElement>(".page-nav-item[data-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      installTab = button.dataset.tab as string;
-      content.querySelectorAll(".page-nav-item").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      content.querySelectorAll<HTMLElement>(".install-page").forEach((page) => {
-        page.classList.toggle("active", page.dataset.page === installTab);
-      });
-    });
-  });
-  content.querySelectorAll<HTMLButtonElement>(".loader-tab").forEach((button) => {
-    button.addEventListener("click", () => {
-      installLoader = button.dataset.loader as string;
-      content.querySelectorAll(".loader-tab").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      toast(installLoader ? `安装时使用 ${installLoader}` : "安装原版", "ok");
-    });
-  });
-  content.querySelector("#install-back")?.addEventListener("click", () => {
-    installSelected = "";
-    void renderInstall();
-  });
-  content.querySelector("#install-confirm")?.addEventListener("click", async () => {
-    if (!installSelected) return;
-    const assets = (content.querySelector("#with-assets") as HTMLInputElement).checked;
-    const id = installSelected;
-    try {
-      const task = await api<TaskInfo>("/api/install", {
-        method: "POST", body: JSON.stringify({ id, assets, loader: installLoader }),
-      });
+      </div>`;
+    wireLoaderTabs(host);
+    host.querySelector("#install-back")?.addEventListener("click", () => {
       installSelected = "";
-      installTab = "vanilla";
-      void renderInstall();
-      watchTask(task, `安装 ${id}`);
-    } catch (error) {
-      toast((error as Error).message, "error");
-    }
-  });
-  content.querySelectorAll<HTMLButtonElement>("[data-installed-launch]").forEach((button) => {
-    button.addEventListener("click", () => launch(button.dataset.installedLaunch as string, button));
-  });
-  content.querySelectorAll<HTMLButtonElement>("[data-installed-settings]").forEach((button) => {
-    button.addEventListener("click", () => void openVersionSettings(button.dataset.installedSettings as string));
-  });
-  content.querySelectorAll<HTMLButtonElement>("[data-installed-loader]").forEach((button) => {
-    button.addEventListener("click", () => openLoader(button.dataset.installedLoader as string));
-  });
-  content.querySelectorAll<HTMLButtonElement>("[data-installed-delete]").forEach((button) => {
-    button.addEventListener("click", () => openDelete(button.dataset.installedDelete as string));
-  });
-  content.querySelector("#install-pack-import")?.addEventListener("click", async () => {
-    const fileInput = content.querySelector("#install-pack-file") as HTMLInputElement;
-    const file = fileInput.files?.[0];
+      void paintDownload();
+    });
+    host.querySelector("#install-confirm")?.addEventListener("click", async () => {
+      const assets = (host.querySelector("#with-assets") as HTMLInputElement).checked;
+      const id = selected.id;
+      try {
+        const task = await api<TaskInfo>("/api/install", {
+          method: "POST", body: JSON.stringify({ id, assets, loader: installLoader }),
+        });
+        installSelected = "";
+        void paintDownload();
+        watchTask(task, `安装 ${id}`);
+      } catch (error) {
+        toast((error as Error).message, "error");
+      }
+    });
+    return;
+  }
+
+  host.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">版本清单</span>
+        <div class="inline">
+          <input class="search" id="remote-filter" placeholder="搜索版本，例如 1.20.1" />
+          <button class="btn" id="remote-refresh">刷新</button>
+        </div>
+      </div>
+      <div class="card-body row-between">
+        <span class="small muted">点一个版本进入安装选项</span>
+        <span class="small muted" id="remote-hint">加载中…</span>
+      </div>
+      <div class="list" id="remote-list"></div>
+    </div>`;
+  const input = host.querySelector("#remote-filter") as HTMLInputElement;
+  input.addEventListener("input", () => paintRemote());
+  host.querySelector("#remote-refresh")?.addEventListener("click", () => void loadRemote(true));
+  if (!remoteLoaded) await loadRemote(false); else paintRemote();
+}
+
+function paintDownloadPack(host: HTMLElement): void {
+  host.innerHTML = `
+    <div class="card">
+      <div class="card-head"><span class="card-title">导入整合包</span></div>
+      <div class="card-body">
+        <div class="inline">
+          <input type="file" id="pack-file" accept=".mrpack,.zip" />
+          <input id="pack-name" placeholder="实例名（可选）" style="width:200px" />
+          <button class="btn primary" id="pack-import">导入</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
+      </div>
+    </div>`;
+  host.querySelector("#pack-import")?.addEventListener("click", async () => {
+    const input = host.querySelector("#pack-file") as HTMLInputElement;
+    const file = input.files?.[0];
     if (!file) { toast("先选一个 .mrpack / .zip", "error"); return; }
-    const name = (content.querySelector("#install-pack-name") as HTMLInputElement).value.trim();
+    const name = (host.querySelector("#pack-name") as HTMLInputElement).value.trim();
     try {
       const response = await fetch("/api/modpack/install", {
         method: "POST",
@@ -969,13 +898,73 @@ async function renderInstall(): Promise<void> {
       toast((error as Error).message, "error");
     }
   });
+}
 
-  if (!selected) {
-    const input = content.querySelector("#remote-filter") as HTMLInputElement;
-    input.addEventListener("input", () => paintRemote());
-    content.querySelector("#remote-refresh")?.addEventListener("click", () => loadRemote(true));
-    if (!remoteLoaded) await loadRemote(false); else paintRemote();
+function paintDownloadMods(host: HTMLElement): void {
+  if (!modsVersion || !state.versions.some((version) => version.id === modsVersion)) {
+    modsVersion = state.config.last_version || state.versions[0]?.id || "";
   }
+  const options = state.versions.map((version) =>
+    `<option value="${esc(version.id)}" ${version.id === modsVersion ? "selected" : ""}>${esc(version.id)} (${esc(version.loader)})</option>`).join("");
+  host.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">搜索 Modrinth 模组</span>
+        <div class="inline">
+          <select id="mods-version">${options || '<option value="">没有已装版本</option>'}</select>
+          <input class="search" id="mods-query" placeholder="例如 sodium" />
+          <button class="btn primary" id="mods-search">搜索</button>
+        </div>
+      </div>
+      <div class="list" id="mod-results"><div class="empty">输入关键词搜索；装好后在「版本管理 → 模组」里启停</div></div>
+    </div>`;
+  const select = host.querySelector("#mods-version") as HTMLSelectElement;
+  select.addEventListener("change", () => { modsVersion = select.value; });
+  host.querySelector("#mods-search")?.addEventListener("click", () => void searchMods());
+  (host.querySelector("#mods-query") as HTMLInputElement).addEventListener("keydown", (event) => {
+    if (event.key === "Enter") void searchMods();
+  });
+}
+
+async function paintDownloadResources(host: HTMLElement, kind: string): Promise<void> {
+  resourceKind = kind === "resourcepack" ? "resourcepack" : "shader";
+  if (!resourceVersion || !state.versions.some((version) => version.id === resourceVersion)) {
+    resourceVersion = state.config.last_version || state.versions[0]?.id || "";
+  }
+  const label = resourceKind === "shader" ? "光影" : "材质包";
+  const options = state.versions.map((version) =>
+    `<option value="${esc(version.id)}" ${version.id === resourceVersion ? "selected" : ""}>${esc(version.id)}</option>`).join("");
+  host.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">已安装${label}</span>
+        <div class="inline">
+          <select id="res-version">${options || '<option value="">没有已装版本</option>'}</select>
+          <button class="btn" id="res-refresh">刷新</button>
+        </div>
+      </div>
+      <div class="list" id="res-local"><div class="empty">加载中…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">搜索 Modrinth ${label}</span>
+        <div class="inline">
+          <input class="search" id="res-query" placeholder="例如 Complementary" />
+          <button class="btn primary" id="res-search">搜索</button>
+        </div>
+      </div>
+      <div class="list" id="res-results"><div class="empty">输入关键词搜索</div></div>
+    </div>`;
+  (host.querySelector("#res-version") as HTMLSelectElement).addEventListener("change", (event) => {
+    resourceVersion = (event.target as HTMLSelectElement).value;
+    void loadResourceLocal();
+  });
+  host.querySelector("#res-refresh")?.addEventListener("click", () => void loadResourceLocal());
+  host.querySelector("#res-search")?.addEventListener("click", () => void searchResources());
+  (host.querySelector("#res-query") as HTMLInputElement).addEventListener("keydown", (event) => {
+    if (event.key === "Enter") void searchResources();
+  });
+  await loadResourceLocal();
 }
 
 async function loadRemote(force: boolean): Promise<void> {
@@ -1014,74 +1003,9 @@ function paintRemote(): void {
   list.querySelectorAll<HTMLElement>("[data-version]").forEach((row) => {
     row.addEventListener("click", () => {
       installSelected = row.dataset.version as string;
-      void renderInstall();
+      void paintDownload();
     });
   });
-}
-
-// ---------------------------------------------------------------- 资源
-function renderResources(): void {
-  setHeader("资源", "光影 / 材质包，来自 Modrinth");
-  const content = document.getElementById("content") as HTMLElement;
-  if (!resourceVersion || !state.versions.some((item) => item.id === resourceVersion)) {
-    resourceVersion = state.config.last_version || state.versions[0]?.id || "";
-  }
-  const options = state.versions.map((version) =>
-    `<option value="${esc(version.id)}" ${version.id === resourceVersion ? "selected" : ""}>${esc(version.id)}</option>`).join("");
-  content.innerHTML = `
-    <div class="page-layout">
-      <aside class="page-nav">
-        <button class="page-nav-item ${resourceKind === "shader" ? "active" : ""}" data-kind="shader">光影</button>
-        <button class="page-nav-item ${resourceKind === "resourcepack" ? "active" : ""}" data-kind="resourcepack">材质包</button>
-      </aside>
-      <div class="page-main">
-    <div class="card" id="res-local-card">
-      <div class="card-head">
-        <span class="card-title">已安装</span>
-        <div class="inline">
-          <select id="res-kind">
-            <option value="shader" ${resourceKind === "shader" ? "selected" : ""}>光影</option>
-            <option value="resourcepack" ${resourceKind === "resourcepack" ? "selected" : ""}>材质包</option>
-          </select>
-          <select id="res-version">${options || '<option value="">没有已装版本</option>'}</select>
-          <button class="btn" id="res-refresh">刷新</button>
-        </div>
-      </div>
-      <div class="list" id="res-local"><div class="empty">加载中…</div></div>
-    </div>
-    <div class="card" id="res-search-card">
-      <div class="card-head">
-        <span class="card-title">搜索 Modrinth</span>
-        <div class="inline">
-          <input class="search" id="res-query" placeholder="例如 Complementary" />
-          <button class="btn primary" id="res-search">搜索</button>
-        </div>
-      </div>
-      <div class="list" id="res-results"><div class="empty">输入关键词搜索</div></div>
-    </div>
-      </div>
-    </div>`;
-  content.querySelectorAll<HTMLButtonElement>(".page-nav .page-nav-item[data-kind]").forEach((button) => {
-    button.addEventListener("click", () => {
-      resourceKind = button.dataset.kind as string;
-      (content.querySelector("#res-kind") as HTMLSelectElement).value = resourceKind;
-      renderResources();
-    });
-  });
-  (content.querySelector("#res-kind") as HTMLSelectElement).addEventListener("change", (event) => {
-    resourceKind = (event.target as HTMLSelectElement).value;
-    renderResources();
-  });
-  (content.querySelector("#res-version") as HTMLSelectElement).addEventListener("change", (event) => {
-    resourceVersion = (event.target as HTMLSelectElement).value;
-    void loadResourceLocal();
-  });
-  content.querySelector("#res-refresh")?.addEventListener("click", () => void loadResourceLocal());
-  content.querySelector("#res-search")?.addEventListener("click", () => void searchResources());
-  (content.querySelector("#res-query") as HTMLInputElement).addEventListener("keydown", (event) => {
-    if (event.key === "Enter") void searchResources();
-  });
-  void loadResourceLocal();
 }
 
 async function loadResourceLocal(): Promise<void> {
@@ -1146,134 +1070,6 @@ async function searchResources(): Promise<void> {
         } catch (error) {
           toast((error as Error).message, "error");
         }
-      });
-    });
-  } catch (error) {
-    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
-  }
-}
-
-// ---------------------------------------------------------------- 模组
-function renderMods(): void {
-  setHeader("模组", "Modrinth 搜索与本地管理");
-  const content = document.getElementById("content") as HTMLElement;
-  const options = state.versions.map((version) =>
-    `<option value="${esc(version.id)}" ${version.id === modsVersion ? "selected" : ""}>${esc(version.id)} (${esc(version.loader)})</option>`).join("");
-  content.innerHTML = `
-    <div class="page-layout">
-      <aside class="page-nav">
-        <button class="page-nav-item ${modsTab === "pack" ? "active" : ""}" data-tab="pack">整合包</button>
-        <button class="page-nav-item ${modsTab === "local" ? "active" : ""}" data-tab="local">本地模组</button>
-        <button class="page-nav-item ${modsTab === "search" ? "active" : ""}" data-tab="search">搜索模组</button>
-      </aside>
-      <div class="page-main">
-    <div class="card mods-page ${modsTab === "pack" ? "active" : ""}" data-page="pack" id="mods-pack">
-      <div class="card-head"><span class="card-title">导入整合包</span></div>
-      <div class="card-body">
-        <div class="inline">
-          <input type="file" id="pack-file" accept=".mrpack,.zip" />
-          <input id="pack-name" placeholder="实例名（可选）" style="width:200px" />
-          <button class="btn primary" id="pack-import">导入</button>
-        </div>
-        <div class="small muted" style="margin-top:8px">支持 Modrinth .mrpack；CurseForge 需要先配 API key</div>
-      </div>
-    </div>
-    <div class="card mods-page ${modsTab === "local" ? "active" : ""}" data-page="local" id="mods-local">
-      <div class="card-head">
-        <span class="card-title">本地模组</span>
-        <div class="inline">
-          <select id="mods-version">${options || '<option value="">没有已装版本</option>'}</select>
-          <button class="btn" id="mods-refresh">刷新</button>
-        </div>
-      </div>
-      <div class="list" id="local-mods"><div class="empty">加载中…</div></div>
-    </div>
-    <div class="card mods-page ${modsTab === "search" ? "active" : ""}" data-page="search" id="mods-search">
-      <div class="card-head">
-        <span class="card-title">搜索 Modrinth</span>
-        <div class="inline">
-          <input class="search" id="mods-query" placeholder="例如 sodium" />
-          <button class="btn primary" id="mods-search">搜索</button>
-        </div>
-      </div>
-      <div class="list" id="mod-results"><div class="empty">输入关键词搜索</div></div>
-    </div>
-      </div>
-    </div>`;
-  const select = content.querySelector("#mods-version") as HTMLSelectElement;
-  content.querySelectorAll<HTMLButtonElement>(".page-nav-item[data-tab]").forEach((button) => {
-    button.addEventListener("click", () => {
-      modsTab = button.dataset.tab as string;
-      content.querySelectorAll(".page-nav-item").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      content.querySelectorAll<HTMLElement>(".mods-page").forEach((page) => {
-        page.classList.toggle("active", page.dataset.page === modsTab);
-      });
-    });
-  });
-  select.addEventListener("change", () => {
-    modsVersion = select.value;
-    void loadLocalMods();
-  });
-  content.querySelector("#mods-refresh")?.addEventListener("click", () => void loadLocalMods());
-  content.querySelector("#mods-search")?.addEventListener("click", () => void searchMods());
-  content.querySelector("#pack-import")?.addEventListener("click", async () => {
-    const input = content.querySelector("#pack-file") as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) { toast("先选一个 .mrpack / .zip", "error"); return; }
-    const name = (content.querySelector("#pack-name") as HTMLInputElement).value.trim();
-    try {
-      const response = await fetch("/api/modpack/install", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "X-Filename": encodeURIComponent(file.name),
-          "X-Pack-Name": encodeURIComponent(name),
-        },
-        body: await file.arrayBuffer(),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || response.statusText);
-      watchTask(data as TaskInfo, `导入 ${file.name}`);
-    } catch (error) {
-      toast((error as Error).message, "error");
-    }
-  });
-  (content.querySelector("#mods-query") as HTMLInputElement).addEventListener("keydown", (event) => {
-    if (event.key === "Enter") void searchMods();
-  });
-  void loadLocalMods();
-}
-
-async function loadLocalMods(): Promise<void> {
-  const list = document.getElementById("local-mods");
-  if (!list || !modsVersion) return;
-  try {
-    const data = await api<{ mods: LocalMod[] }>(`/api/mods/local?version=${encodeURIComponent(modsVersion)}`);
-    if (!data.mods.length) {
-      list.innerHTML = `<div class="empty">还没有模组</div>`;
-      return;
-    }
-    list.innerHTML = data.mods.map((mod) => `
-      <div class="list-row">
-        <div class="grow">
-          <div class="title">${esc(mod.title)} ${mod.enabled ? '<span class="badge green">启用</span>' : '<span class="badge red">禁用</span>'}</div>
-          <div class="desc">${esc(mod.version || mod.name)} · ${size(mod.size)}</div>
-        </div>
-        <button class="btn sm" data-toggle="${esc(mod.name)}">${mod.enabled ? "禁用" : "启用"}</button>
-        <button class="btn sm danger" data-remove="${esc(mod.name)}">删除</button>
-      </div>`).join("");
-    list.querySelectorAll<HTMLButtonElement>("[data-toggle]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        await api("/api/mods/local/toggle", { method: "POST", body: JSON.stringify({ version: modsVersion, name: button.dataset.toggle }) });
-        void loadLocalMods();
-      });
-    });
-    list.querySelectorAll<HTMLButtonElement>("[data-remove]").forEach((button) => {
-      button.addEventListener("click", async () => {
-        await api("/api/mods/local/remove", { method: "POST", body: JSON.stringify({ version: modsVersion, name: button.dataset.remove }) });
-        toast("已删除", "ok");
-        void loadLocalMods();
       });
     });
   } catch (error) {
@@ -1894,7 +1690,7 @@ function setView(next: View): void {
 
 function viewFromHash(): View {
   const value = location.hash.replace(/^#\/?/, "");
-  return (["versions", "instance", "install", "resources", "mods", "link", "settings"] as View[]).includes(value as View)
+  return (["versions", "instance", "download", "link", "settings"] as View[]).includes(value as View)
     ? (value as View)
     : "versions";
 }
