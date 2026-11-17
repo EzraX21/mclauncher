@@ -205,6 +205,58 @@ class WebuiTests(unittest.TestCase):
             get_json(self.url + "api/servers")
         self.assertEqual(ctx.exception.code, 404)
 
+    # ------------------------------------------------------------ 版本管理
+    def test_version_info(self):
+        version_dir = self.make_version()
+        (version_dir / "1.20.1.jar").write_bytes(b"jar")
+        mods = version_dir / "mods"
+        mods.mkdir()
+        (mods / "sodium.jar").write_bytes(b"mod")
+        data = get_json(self.url + "api/version/info?id=1.20.1")
+        self.assertEqual(data["id"], "1.20.1")
+        self.assertEqual(data["loader"], "vanilla")
+        self.assertTrue(data["has_jar"])
+        self.assertEqual(data["mods"], 1)
+        self.assertGreater(data["size"], 0)
+        self.assertEqual(data["path"], str(version_dir))
+
+    def test_version_rename(self):
+        self.make_version()
+        data = post_json(self.url + "api/versions/rename", {"id": "1.20.1", "new_id": "原版 1.20.1"})
+        self.assertTrue(data["ok"])
+        self.assertEqual([item["id"] for item in data["versions"]], ["原版 1.20.1"])
+        root = Path(self.tmp.name) / "game" / "versions"
+        self.assertTrue((root / "原版 1.20.1" / "原版 1.20.1.json").exists())
+
+    def test_version_rename_rejects_existing(self):
+        self.make_version("1.20.1")
+        self.make_version("1.19.4")
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/versions/rename", {"id": "1.20.1", "new_id": "1.19.4"})
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_version_copy(self):
+        self.make_version()
+        data = post_json(self.url + "api/versions/copy", {"id": "1.20.1", "new_id": "副本"})
+        self.assertTrue(data["ok"])
+        self.assertEqual(sorted(item["id"] for item in data["versions"]), ["1.20.1", "副本"])
+
+    def test_version_open(self):
+        from unittest import mock
+
+        self.make_version()
+        with mock.patch("mcl.versions.subprocess.Popen") as popen:
+            data = post_json(self.url + "api/versions/open", {"id": "1.20.1"})
+        self.assertTrue(data["ok"])
+        self.assertTrue(data["path"].endswith("versions/1.20.1"))
+        self.assertTrue(popen.called)
+
+    def test_version_open_missing(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/versions/open", {"id": "nope"})
+        self.assertEqual(ctx.exception.code, 400)
+
+
 
 if __name__ == "__main__":
     unittest.main()

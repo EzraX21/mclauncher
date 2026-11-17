@@ -22,6 +22,7 @@ const STATE = {
   },
   versions: [
     { id: "1.20.1", loader: "vanilla", java: 17, mods: 2, has_jar: true, type: "release" },
+    { id: "fabric-1.20.1", loader: "fabric", java: 17, mods: 1, has_jar: true, type: "release" },
   ],
 };
 
@@ -48,10 +49,27 @@ const SERVERS = {
   ],
 };
 
+const VERSION_INFO = {
+  id: "1.20.1", path: "/tmp/game/versions/1.20.1", size: 209715200, loader: "vanilla",
+  java: 17, mods: 2, has_jar: true, type: "release", inherits: "",
+  options: { memory_mb: 8192, width: null, height: null, jvm_args: "-XX:+UseG1GC", game_args: "" },
+};
+
+const LOCAL_MODS = {
+  mods: [
+    { name: "sodium.jar", enabled: true, size: 1048576, title: "Sodium", version: "0.5.11" },
+    { name: "old.jar.disabled", enabled: false, size: 2048, title: "Old", version: "" },
+  ],
+};
+
 const calls = [];
 function fakeFetch(url) {
   calls.push(String(url));
-  const body = String(url).includes("/api/servers") ? SERVERS : STATE;
+  const target = String(url);
+  const body = target.includes("/api/servers") ? SERVERS
+    : target.includes("/api/version/info") ? VERSION_INFO
+    : target.includes("/api/mods/local") ? LOCAL_MODS
+    : STATE;
   return Promise.resolve({
     ok: true,
     status: 200,
@@ -81,7 +99,7 @@ const doc = window.document;
 const navLabels = [...doc.querySelectorAll("#nav .nav-item span")].map((node) => node.textContent);
 assert.deepEqual(
   navLabels,
-  ["启动", "安装", "资源", "模组", "联机", "设置"],
+  ["启动", "版本管理", "安装", "资源", "模组", "联机", "设置"],
   `导航项不对：${JSON.stringify(navLabels)}`,
 );
 
@@ -115,4 +133,48 @@ assert.ok(
   "联机页没有请求服务器状态",
 );
 
-console.log("gui smoke ok:", navLabels.join(" / "), "| 服务器行 2 条 | 调用", calls.length, "次");
+// 切到版本管理页
+window.location.hash = "#/instance";
+window.dispatchEvent(new window.Event("hashchange"));
+await flush();
+await flush();
+
+const detail = doc.querySelector("#instance-detail");
+assert.ok(detail, "版本管理页没有详情容器");
+assert.ok(!detail.textContent.includes("加载中"), "版本管理页还停在加载中");
+assert.ok(detail.textContent.includes("1.20.1"), `概览没显示版本名：${detail.textContent.slice(0, 120)}`);
+assert.ok(detail.textContent.includes("/tmp/game/versions/1.20.1"), "概览没显示版本路径");
+assert.ok(detail.textContent.includes("Java 17"), "概览没显示 Java");
+assert.ok(detail.textContent.includes("200.0 MB"), "概览没显示占用大小");
+for (const buttonId of ["inst-launch", "inst-rename", "inst-copy", "inst-open", "inst-delete", "inst-loader", "inst-crash"]) {
+  assert.ok(doc.querySelector(`#${buttonId}`), `概览缺少操作按钮 #${buttonId}`);
+}
+assert.equal(doc.querySelectorAll("[data-pick]").length, 2, "版本列表条数不对");
+
+// 切到「设置」标签，应带出单版本设置
+[...doc.querySelectorAll("[data-itab]")].find((node) => node.dataset.itab === "setup").click();
+await flush();
+await flush();
+const memory = doc.querySelector("#inst-memory");
+assert.ok(memory, "设置标签没渲染内存输入框");
+assert.equal(memory.value, "8192", `内存没带出单版本设置：${memory.value}`);
+assert.equal(doc.querySelector("#inst-jvm").value, "-XX:+UseG1GC", "JVM 参数没带出来");
+
+// 切到「模组」标签
+[...doc.querySelectorAll("[data-itab]")].find((node) => node.dataset.itab === "mods").click();
+await flush();
+await flush();
+const modText = doc.querySelector("#instance-detail").textContent;
+assert.ok(modText.includes("Sodium"), `模组标签没渲染模组：${modText.slice(0, 120)}`);
+assert.ok(modText.includes("禁用") && modText.includes("启用"), "模组启用状态没渲染");
+
+assert.ok(
+  calls.some((url) => url.includes("/api/version/info")),
+  "版本管理页没有请求版本详情",
+);
+assert.ok(
+  calls.some((url) => url.includes("/api/mods/local")),
+  "模组标签没有请求本地模组",
+);
+
+console.log("gui smoke ok:", navLabels.join(" / "), "| 服务器行 2 条 | 版本 2 条 | 调用", calls.length, "次");

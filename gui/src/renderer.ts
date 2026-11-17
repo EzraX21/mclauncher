@@ -1,4 +1,4 @@
-type View = "versions" | "install" | "resources" | "mods" | "link" | "settings";
+type View = "versions" | "instance" | "install" | "resources" | "mods" | "link" | "settings";
 const MICROSOFT_LOGIN_ENABLED = false;
 
 interface VersionInfo {
@@ -17,6 +17,14 @@ interface RemoteVersion { id: string; type: string; release: string; }
 interface RemoteInfo { latest: { release: string; snapshot: string }; versions: RemoteVersion[]; }
 interface ModHit { slug: string; title: string; description: string; downloads: number; author: string; }
 interface LocalMod { name: string; enabled: boolean; size: number; title: string; version: string; }
+interface VersionOptions {
+  memory_mb: number | null; width: number | null; height: number | null;
+  jvm_args: string; game_args: string;
+}
+interface InstanceInfo {
+  id: string; path: string; size: number; loader: string; java: number | null;
+  mods: number; has_jar: boolean; type: string; inherits: string; options: VersionOptions;
+}
 interface ServerStatus {
   online: boolean; error: string; latency_ms: number | null;
   players: { online: number; max: number }; version: string; motd: string;
@@ -45,6 +53,8 @@ let installTab = "vanilla";
 let installLoader = "";
 let installSelected = "";
 let linkVersion = "";
+let instanceId = "";
+let instanceTab = "overview";
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
@@ -84,6 +94,7 @@ const icons: Record<View, string> = {
   install: lucide('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>'),
   resources: lucide('<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>'),
   mods: lucide('<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/>'),
+  instance: lucide('<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'),
   link: lucide('<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>'),
   settings: lucide('<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>'),
 };
@@ -100,7 +111,7 @@ function shell(): string {
         </div>
       </div>
       <nav class="nav" id="nav">
-        ${(["versions", "install", "resources", "mods", "link", "settings"] as View[]).map((name) => `
+        ${(["versions", "instance", "install", "resources", "mods", "link", "settings"] as View[]).map((name) => `
           <button class="nav-item" data-view="${name}">
             ${icons[name]}<span>${labelOf(name)}</span>
           </button>`).join("")}
@@ -132,8 +143,8 @@ function shell(): string {
   </div>`;
 }
 function labelOf(value: View): string {
-  return { versions: "启动", install: "安装", resources: "资源", mods: "模组",
-    link: "联机", settings: "设置" }[value];
+  return { versions: "启动", instance: "版本管理", install: "安装", resources: "资源",
+    mods: "模组", link: "联机", settings: "设置" }[value];
 }
 
 function esc(text: unknown): string {
@@ -205,6 +216,8 @@ function render(): void {
   actions.innerHTML = "";
   if (view === "versions") {
     renderVersions();
+  } else if (view === "instance") {
+    renderInstance();
   } else if (view === "install") {
     renderInstall();
   } else if (view === "resources") {
@@ -258,10 +271,7 @@ function renderVersions(): void {
                     ${version.has_jar ? "" : '<span class="badge red">缺客户端</span>'}</div>
                   <div class="desc">Java ${version.java ?? "?"} · ${version.mods} 个模组</div>
                 </div>
-                <button class="btn sm" data-settings="${esc(version.id)}">设置</button>
-                <button class="btn sm" data-crash="${esc(version.id)}">崩溃分析</button>
-                <button class="btn sm" data-loader="${esc(version.id)}">装加载器</button>
-                <button class="btn sm danger" data-delete="${esc(version.id)}">删除</button>
+                <button class="btn sm" data-manage="${esc(version.id)}">管理</button>
               </div>`).join("")}
           </div>
         </div>` : `
@@ -283,17 +293,11 @@ function renderVersions(): void {
   content.querySelector("#go-install")?.addEventListener("click", () => setView("install"));
   content.querySelector("#go-install-empty")?.addEventListener("click", () => setView("install"));
   content.querySelector("#refresh")?.addEventListener("click", () => refreshState());
-  content.querySelectorAll<HTMLButtonElement>("[data-loader]").forEach((button) => {
-    button.addEventListener("click", () => openLoader(button.dataset.loader as string));
-  });
-  content.querySelectorAll<HTMLButtonElement>("[data-settings]").forEach((button) => {
-    button.addEventListener("click", () => void openVersionSettings(button.dataset.settings as string));
-  });
-  content.querySelectorAll<HTMLButtonElement>("[data-crash]").forEach((button) => {
-    button.addEventListener("click", () => openCrash(button.dataset.crash as string));
-  });
-  content.querySelectorAll<HTMLButtonElement>("[data-delete]").forEach((button) => {
-    button.addEventListener("click", () => openDelete(button.dataset.delete as string));
+  content.querySelectorAll<HTMLButtonElement>("[data-manage]").forEach((button) => {
+    button.addEventListener("click", () => {
+      instanceId = button.dataset.manage as string;
+      setView("instance");
+    });
   });
 }
 function openDelete(id: string): void {
@@ -467,6 +471,281 @@ function openLoader(id: string): void {
       toast((error as Error).message, "error");
     }
   });
+}
+
+// ---------------------------------------------------------------- 版本管理（PCL PageInstance）
+function renderInstance(): void {
+  setHeader("版本管理", "选中一个版本：概览、单版本设置、模组");
+  const content = document.getElementById("content") as HTMLElement;
+  if (!instanceId || !state.versions.some((item) => item.id === instanceId)) {
+    instanceId = state.config.last_version || state.versions[0]?.id || "";
+  }
+  const rows = state.versions.map((version) => `
+    <div class="list-row instance-row ${version.id === instanceId ? "active" : ""}" data-pick="${esc(version.id)}">
+      <div class="grow">
+        <div class="title">${esc(version.id)}</div>
+        <div class="desc">${badge(version.loader)} Java ${version.java ?? "?"} · ${version.mods} 模组</div>
+      </div>
+    </div>`).join("");
+  content.innerHTML = `
+    <div class="instance-layout">
+      <aside class="instance-side">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">已安装版本</span>
+            <button class="btn sm" id="instance-refresh">刷新</button>
+          </div>
+          <div class="list" id="instance-list">
+            ${rows || `<div class="empty">还没有版本，去「安装」页装一个</div>`}
+          </div>
+        </div>
+      </aside>
+      <div class="instance-main">
+        <div class="loader-tabs" id="instance-tabs">
+          ${[["overview", "概览"], ["setup", "设置"], ["mods", "模组"]].map(([value, label]) => `
+            <button class="loader-tab ${instanceTab === value ? "active" : ""}" data-itab="${value}">${label}</button>`).join("")}
+        </div>
+        <div id="instance-detail"><div class="card"><div class="empty">加载中…</div></div></div>
+      </div>
+    </div>`;
+
+  content.querySelectorAll<HTMLElement>("[data-pick]").forEach((row) => {
+    row.addEventListener("click", () => {
+      instanceId = row.dataset.pick as string;
+      renderInstance();
+    });
+  });
+  content.querySelector("#instance-refresh")?.addEventListener("click", () => void refreshState());
+  content.querySelectorAll<HTMLButtonElement>("[data-itab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      instanceTab = button.dataset.itab as string;
+      content.querySelectorAll("[data-itab]").forEach((item) => item.classList.remove("active"));
+      button.classList.add("active");
+      void loadInstanceDetail();
+    });
+  });
+  void loadInstanceDetail();
+}
+
+async function loadInstanceDetail(): Promise<void> {
+  const host = document.getElementById("instance-detail");
+  if (!host) return;
+  if (!instanceId) {
+    host.innerHTML = `<div class="card"><div class="empty">先装一个版本</div></div>`;
+    return;
+  }
+  if (instanceTab === "mods") {
+    await paintInstanceMods(host);
+    return;
+  }
+  host.innerHTML = `<div class="card"><div class="empty">加载中…</div></div>`;
+  try {
+    const info = await api<InstanceInfo>(`/api/version/info?id=${encodeURIComponent(instanceId)}`);
+    host.innerHTML = instanceTab === "setup" ? instanceSetupHtml(info) : instanceOverviewHtml(info);
+    if (instanceTab === "setup") wireInstanceSetup(host, info);
+    else wireInstanceOverview(host, info);
+  } catch (error) {
+    host.innerHTML = `<div class="card"><div class="empty">${esc((error as Error).message)}</div></div>`;
+  }
+}
+
+function instanceOverviewHtml(info: InstanceInfo): string {
+  const rows: [string, string][] = [
+    ["版本名", info.id],
+    ["加载器", info.loader === "vanilla" ? "原版" : info.loader],
+    ["游戏版本", info.inherits || info.id],
+    ["Java", info.java ? `Java ${info.java}` : "未确定"],
+    ["模组", `${info.mods} 个`],
+    ["占用", size(info.size)],
+    ["类型", typeLabel(info.type)],
+    ["路径", info.path],
+  ];
+  return `<div class="card">
+    <div class="card-head">
+      <span class="card-title">${esc(info.id)}</span>
+      ${info.has_jar ? "" : '<span class="badge red">缺客户端</span>'}
+    </div>
+    <div class="card-body">
+      <div class="kv-grid">
+        ${rows.map(([key, value]) => `<div class="kv-key">${esc(key)}</div><div class="kv-value">${esc(value)}</div>`).join("")}
+      </div>
+    </div>
+    <div class="card-body row-between instance-actions">
+      <div class="inline">
+        <button class="btn primary" id="inst-launch">启动</button>
+        <button class="btn" id="inst-loader">装加载器</button>
+        <button class="btn" id="inst-crash">崩溃分析</button>
+      </div>
+      <div class="inline">
+        <button class="btn" id="inst-open">打开文件夹</button>
+        <button class="btn" id="inst-rename">重命名</button>
+        <button class="btn" id="inst-copy">复制</button>
+        <button class="btn danger" id="inst-delete">删除</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function wireInstanceOverview(host: HTMLElement, info: InstanceInfo): void {
+  host.querySelector("#inst-launch")?.addEventListener("click", (event) => {
+    void launch(info.id, event.target as HTMLButtonElement);
+  });
+  host.querySelector("#inst-loader")?.addEventListener("click", () => openLoader(info.id));
+  host.querySelector("#inst-crash")?.addEventListener("click", () => void openCrash(info.id));
+  host.querySelector("#inst-open")?.addEventListener("click", async () => {
+    try {
+      const data = await api<{ path: string }>("/api/versions/open", {
+        method: "POST", body: JSON.stringify({ id: info.id }),
+      });
+      toast(`已打开 ${data.path}`, "ok");
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+  host.querySelector("#inst-rename")?.addEventListener("click", () => openRename(info.id));
+  host.querySelector("#inst-copy")?.addEventListener("click", () => openCopy(info.id));
+  host.querySelector("#inst-delete")?.addEventListener("click", () => openDelete(info.id));
+}
+
+function instanceSetupHtml(info: InstanceInfo): string {
+  const options = info.options;
+  return `<div class="card">
+    <div class="card-head"><span class="card-title">单版本设置 · ${esc(info.id)}</span></div>
+    <div class="card-body">
+      <div class="small muted" style="margin-bottom:12px">留空表示跟随全局设置。</div>
+      <div class="field"><label>内存（MB）</label>
+        <input id="inst-memory" type="number" min="512" max="65536" value="${options.memory_mb ?? ""}" /></div>
+      <div class="inline" style="align-items:flex-start">
+        <div class="field" style="flex:1"><label>窗口宽度</label>
+          <input id="inst-width" type="number" min="320" max="10000" value="${options.width ?? ""}" /></div>
+        <div class="field" style="flex:1"><label>窗口高度</label>
+          <input id="inst-height" type="number" min="240" max="10000" value="${options.height ?? ""}" /></div>
+      </div>
+      <div class="field"><label>额外 JVM 参数</label>
+        <textarea id="inst-jvm" rows="2" placeholder="-XX:+UseG1GC">${esc(options.jvm_args)}</textarea></div>
+      <div class="field"><label>额外游戏参数</label>
+        <textarea id="inst-game" rows="2" placeholder="--fullscreen">${esc(options.game_args)}</textarea></div>
+      <div class="inline"><button class="btn primary" id="inst-save">保存</button></div>
+    </div>
+  </div>`;
+}
+
+function wireInstanceSetup(host: HTMLElement, info: InstanceInfo): void {
+  host.querySelector("#inst-save")?.addEventListener("click", async () => {
+    const value = (selector: string) => (host.querySelector(selector) as HTMLInputElement).value.trim();
+    try {
+      await api("/api/version/options", {
+        method: "POST",
+        body: JSON.stringify({
+          id: info.id,
+          memory_mb: value("#inst-memory") || null,
+          width: value("#inst-width") || null,
+          height: value("#inst-height") || null,
+          jvm_args: value("#inst-jvm"),
+          game_args: value("#inst-game"),
+        }),
+      });
+      toast(`已保存 ${info.id} 的设置`, "ok");
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+}
+
+async function paintInstanceMods(host: HTMLElement): Promise<void> {
+  host.innerHTML = `<div class="card"><div class="empty">加载中…</div></div>`;
+  try {
+    const data = await api<{ mods: LocalMod[] }>(`/api/mods/local?version=${encodeURIComponent(instanceId)}`);
+    host.innerHTML = `<div class="card">
+      <div class="card-head">
+        <span class="card-title">本地模组 · ${esc(instanceId)}</span>
+        <div class="inline">
+          <button class="btn sm" id="inst-mods-refresh">刷新</button>
+          <button class="btn sm" id="inst-mods-search">去搜索安装</button>
+        </div>
+      </div>
+      <div class="list">
+        ${data.mods.length ? data.mods.map((mod) => `
+          <div class="list-row">
+            <div class="grow">
+              <div class="title">${esc(mod.title)} ${mod.enabled ? '<span class="badge green">启用</span>' : '<span class="badge red">禁用</span>'}</div>
+              <div class="desc">${esc(mod.version || mod.name)} · ${size(mod.size)}</div>
+            </div>
+            <button class="btn sm" data-itoggle="${esc(mod.name)}">${mod.enabled ? "禁用" : "启用"}</button>
+            <button class="btn sm danger" data-iremove="${esc(mod.name)}">删除</button>
+          </div>`).join("") : `<div class="empty">这个版本还没有模组</div>`}
+      </div>
+    </div>`;
+    host.querySelector("#inst-mods-refresh")?.addEventListener("click", () => void paintInstanceMods(host));
+    host.querySelector("#inst-mods-search")?.addEventListener("click", () => {
+      modsVersion = instanceId;
+      setView("mods");
+    });
+    host.querySelectorAll<HTMLButtonElement>("[data-itoggle]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        await api("/api/mods/local/toggle", {
+          method: "POST", body: JSON.stringify({ version: instanceId, name: button.dataset.itoggle }),
+        });
+        void paintInstanceMods(host);
+      });
+    });
+    host.querySelectorAll<HTMLButtonElement>("[data-iremove]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        await api("/api/mods/local/remove", {
+          method: "POST", body: JSON.stringify({ version: instanceId, name: button.dataset.iremove }),
+        });
+        toast("已删除", "ok");
+        void paintInstanceMods(host);
+      });
+    });
+  } catch (error) {
+    host.innerHTML = `<div class="card"><div class="empty">${esc((error as Error).message)}</div></div>`;
+  }
+}
+
+function nameModal(title: string, label: string, value: string, action: string): void {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `<div class="modal" style="width:460px">
+    <h3>${esc(title)}</h3>
+    <div class="field"><label>${esc(label)}</label><input id="nm-value" type="text" value="${esc(value)}" /></div>
+    <div class="actions">
+      <button class="btn" id="nm-cancel">取消</button>
+      <button class="btn primary" id="nm-ok">确定</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const input = overlay.querySelector("#nm-value") as HTMLInputElement;
+  input.focus();
+  input.select();
+  const close = () => overlay.remove();
+  overlay.querySelector("#nm-cancel")?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  const submit = async () => {
+    const newId = input.value.trim();
+    if (!newId) { toast("名字不能为空", "error"); return; }
+    try {
+      const data = await api<{ id: string }>(action, {
+        method: "POST", body: JSON.stringify({ id: instanceId, new_id: newId }),
+      });
+      close();
+      instanceId = data.id;
+      toast("完成", "ok");
+      await refreshState();
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  };
+  overlay.querySelector("#nm-ok")?.addEventListener("click", () => void submit());
+  input.addEventListener("keydown", (event) => { if (event.key === "Enter") void submit(); });
+}
+
+function openRename(id: string): void {
+  nameModal("重命名版本", "新名字（会改目录名和版本 JSON）", id, "/api/versions/rename");
+}
+
+function openCopy(id: string): void {
+  nameModal("复制版本", "副本名字", `${id} 副本`, "/api/versions/copy");
 }
 
 // ---------------------------------------------------------------- 安装
@@ -1547,7 +1826,7 @@ function setView(next: View): void {
 
 function viewFromHash(): View {
   const value = location.hash.replace(/^#\/?/, "");
-  return (["versions", "install", "resources", "mods", "link", "settings"] as View[]).includes(value as View)
+  return (["versions", "instance", "install", "resources", "mods", "link", "settings"] as View[]).includes(value as View)
     ? (value as View)
     : "versions";
 }

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import subprocess
+import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -146,6 +149,122 @@ def remove(root: Path, version_id: str) -> None:
         raise VersionError(f"删除失败：{exc}") from exc
 
 
+_BAD_NAME_CHARS = '/\\:*?"<>|'
+
+
+def _clean_name(version_id: str) -> str:
+    """版本名要能当目录名用，Windows 和 Linux 都得过。"""
+    cleaned = (version_id or "").strip()
+    if not cleaned:
+        raise VersionError("版本名不能为空")
+    if cleaned in (".", ".."):
+        raise VersionError(f"版本名不合法：{version_id}")
+    bad = [char for char in cleaned if char in _BAD_NAME_CHARS or ord(char) < 32]
+    if bad:
+        raise VersionError(f"版本名里有不能用的字符：{''.join(sorted(set(bad)))}")
+    if len(cleaned) > 64:
+        raise VersionError("版本名太长（上限 64 字）")
+    return cleaned
+
+
+def _version_dir(root: Path, version_id: str) -> Path:
+    base = (Path(root) / "versions").resolve()
+    target = (base / version_id).resolve()
+    if target.parent != base:
+        raise VersionError(f"非法版本路径：{version_id}")
+    return target
+
+
+def _rewrite_id(directory: Path, old_id: str, new_id: str) -> None:
+    """把版本目录里的 JSON 和 jar 换成新 id。
+
+    两样都得改：JSON 里的 id 字段决定加载器去找哪个 jar，jar 文件名不对就会「缺客户端」。
+    """
+    old_json = directory / f"{old_id}.json"
+    data = _read_json(old_json)
+    data["id"] = new_id
+    new_json = directory / f"{new_id}.json"
+    new_json.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    if old_json != new_json and old_json.exists():
+        old_json.unlink()
+    old_jar = directory / f"{old_id}.jar"
+    if old_jar.exists() and old_id != new_id:
+        old_jar.rename(directory / f"{new_id}.jar")
+
+
+def rename(root: Path, version_id: str, new_id: str) -> str:
+    """重命名版本目录 + JSON 里的 id。有别的版本继承它就不让改。"""
+    old_dir = _version_dir(root, version_id)
+    if not old_dir.is_dir():
+        raise VersionError(f"找不到版本 {version_id}")
+    new = _clean_name(new_id)
+    if new == version_id:
+        return version_id
+    new_dir = _version_dir(root, new)
+    if new_dir.exists():
+        raise VersionError(f"已经有叫 {new} 的版本了")
+    dependents = [item.id for item in scan(root) if item.inherits == version_id]
+    if dependents:
+        raise VersionError(
+            f"{version_id} 是这些版本的父版本，改名会让它们失效：{', '.join(dependents)}")
+    try:
+        old_dir.rename(new_dir)
+    except OSError as exc:
+        raise VersionError(f"重命名失败：{exc}") from exc
+    try:
+        _rewrite_id(new_dir, version_id, new)
+    except (OSError, VersionError) as exc:
+        try:  # 改不回去的话，版本会处于半残状态，尽量回滚
+            new_dir.rename(old_dir)
+        except OSError:
+            pass
+        raise VersionError(f"改名后写 JSON 失败，已尝试回滚：{exc}") from exc
+    return new
+
+
+def copy(root: Path, version_id: str, new_id: str) -> str:
+    """整份复制一个版本目录（隔离开的话，模组和存档也会一起复制）。"""
+    source = _version_dir(root, version_id)
+    if not source.is_dir():
+        raise VersionError(f"找不到版本 {version_id}")
+    new = _clean_name(new_id)
+    if new == version_id:
+        raise VersionError("新版本名和原来的名字一样")
+    target = _version_dir(root, new)
+    if target.exists():
+        raise VersionError(f"已经有叫 {new} 的版本了")
+    try:
+        shutil.copytree(source, target)
+    except OSError as exc:
+        raise VersionError(f"复制失败：{exc}") from exc
+    try:
+        _rewrite_id(target, version_id, new)
+    except (OSError, VersionError) as exc:
+        try:
+            shutil.rmtree(target)
+        except OSError:
+            pass
+        raise VersionError(f"复制后写 JSON 失败，已清理：{exc}") from exc
+    return new
+
+
+def open_folder(path: Path) -> None:
+    """用系统文件管理器打开目录（GUI 的「打开文件夹」）。"""
+    target = Path(path)
+    if not target.exists():
+        raise VersionError(f"目录不存在：{target}")
+    if os.name == "nt":
+        command = ["explorer", str(target)]
+    elif sys.platform == "darwin":
+        command = ["open", str(target)]
+    else:
+        command = ["xdg-open", str(target)]
+    try:
+        subprocess.Popen(command, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError as exc:
+        raise VersionError(f"打不开文件管理器：{exc}") from exc
+
+
 def scan(root: Path) -> list[InstalledVersion]:
     base = root / "versions"
     versions: list[InstalledVersion] = []
@@ -158,19 +277,21 @@ def scan(root: Path) -> list[InstalledVersion]:
         if not json_path.exists():
             continue
         try:
+            raw = _read_json(json_path)
+        except VersionError:
+            continue
+        try:
             resolved = resolve(root, directory.name)
             data = resolved.data
         except VersionError:
-            try:
-                data = _read_json(json_path)
-            except VersionError:
-                continue
+            data = raw
             resolved = None
         versions.append(InstalledVersion(
             id=directory.name,
             directory=directory,
             data=data,
-            inherits=data.get("inheritsFrom"),
+            # 必须取原始 JSON：resolve() 出来的 data 已经合并过，inheritsFrom 被吃掉了
+            inherits=raw.get("inheritsFrom"),
             loader=detect_loader(directory.name, data),
             java_major=resolved.java_major if resolved is not None else _java_major_of(root, data),
             has_jar=(resolved.client_jar.exists() if resolved is not None
