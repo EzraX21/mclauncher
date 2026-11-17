@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.9.0**
+Current version: **v3.10.0**
 
 | Status | Area |
 | --- | --- |
@@ -150,7 +150,7 @@ mcl --cli      # questionary text menu
 ## GUI
 
 The GUI is the default: running `mcl` opens a **desktop window** (same as `mcl gui`).
-Pages: Launch / Version management / Install / Resources / Mods / Multiplayer / Settings.
+Pages: Launch / Version management / Download / Multiplayer / Settings (the download page has categories: game, modpack, mods, shaders, resource packs).
 not a browser tab:
 
 - Linux: GTK + WebKitGTK (`webkit2gtk-4.1`, `python-gobject`)
