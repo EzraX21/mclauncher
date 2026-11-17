@@ -25,6 +25,13 @@ interface InstanceInfo {
   id: string; path: string; size: number; loader: string; java: number | null;
   mods: number; has_jar: boolean; type: string; inherits: string; options: VersionOptions;
 }
+interface JavaRuntimeInfo {
+  display: string; path: string; major: number; version: string; configured: boolean;
+}
+interface JavaListing {
+  runtimes: JavaRuntimeInfo[]; configured: string;
+  components: { major: number; component: string }[];
+}
 interface AboutInfo {
   version: string; python: string; platform: string; config_path: string;
   game_dir: string; exports_dir: string; license: string; repo: string; releases: string;
@@ -1458,6 +1465,7 @@ function renderSettings(): void {
         <button class="settings-nav-item ${settingsTab === "account" ? "active" : ""}" data-tab="account">账号</button>
         <button class="settings-nav-item ${settingsTab === "skin" ? "active" : ""}" data-tab="skin">皮肤</button>
         <button class="settings-nav-item ${settingsTab === "general" ? "active" : ""}" data-tab="general">常规</button>
+        <button class="settings-nav-item ${settingsTab === "java" ? "active" : ""}" data-tab="java">Java</button>
         <button class="settings-nav-item ${settingsTab === "download" ? "active" : ""}" data-tab="download">下载</button>
         <button class="settings-nav-item ${settingsTab === "appearance" ? "active" : ""}" data-tab="appearance">外观</button>
       </aside>
@@ -1529,6 +1537,23 @@ function renderSettings(): void {
         </div>
       </div>
     </div>
+    <div class="card settings-page ${settingsTab === "java" ? "active" : ""}" data-page="java" id="settings-java">
+      <div class="card-head">
+        <span class="card-title">Java 运行时</span>
+        <button class="btn sm" id="java-refresh">重新检测</button>
+      </div>
+      <div class="list" id="java-runtimes"><div class="empty">检测中…</div></div>
+      <div class="card-body" style="border-top:1px solid var(--border)">
+        <div class="small muted" style="margin-bottom:10px">
+          留空时按版本要求自动挑：要求 Java 8 的版本不会拿 Java 21 硬启动。
+        </div>
+        <div class="inline">
+          <button class="btn" id="java-auto">自动选择</button>
+          <span class="small muted">缺哪个版本就从 Mojang 下一份：</span>
+          <span id="java-install"></span>
+        </div>
+      </div>
+    </div>
     <div class="card settings-page ${settingsTab === "download" ? "active" : ""}" data-page="download" id="settings-download">
       <div class="card-head"><span class="card-title">下载</span></div>
       <div class="card-body">
@@ -1562,6 +1587,7 @@ function renderSettings(): void {
     </div>
       </div>
     </div>`;
+  if (settingsTab === "java") void loadJava();
   content.querySelectorAll<HTMLButtonElement>(".settings-nav-item").forEach((button) => {
     button.addEventListener("click", () => {
       settingsTab = button.dataset.tab as string;
@@ -1570,6 +1596,7 @@ function renderSettings(): void {
       content.querySelectorAll<HTMLElement>(".settings-page").forEach((page) => {
         page.classList.toggle("active", page.dataset.page === settingsTab);
       });
+      if (settingsTab === "java") void loadJava();
     });
   });
   const themeSelect = content.querySelector("#set-theme") as HTMLSelectElement;
@@ -1578,6 +1605,16 @@ function renderSettings(): void {
     try {
       await api("/api/config", { method: "POST", body: JSON.stringify({ theme: themeSelect.value }) });
       toast("主题已切换", "ok");
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+  content.querySelector("#java-refresh")?.addEventListener("click", () => void loadJava());
+  content.querySelector("#java-auto")?.addEventListener("click", async () => {
+    try {
+      await api("/api/java/clear", { method: "POST", body: "{}" });
+      toast("已改回自动选择", "ok");
+      await loadJava();
     } catch (error) {
       toast((error as Error).message, "error");
     }
@@ -1674,6 +1711,65 @@ function renderSettings(): void {
       toast((error as Error).message, "error");
     }
   });
+}
+
+async function loadJava(): Promise<void> {
+  const list = document.getElementById("java-runtimes");
+  const installHost = document.getElementById("java-install");
+  if (!list) return;
+  list.innerHTML = `<div class="empty">检测中…</div>`;
+  try {
+    const data = await api<JavaListing>("/api/java");
+    if (!data.runtimes.length) {
+      list.innerHTML = `<div class="empty">没找到 Java。可以下载一个 Mojang 运行时，或在下面手动指定。</div>`;
+    } else {
+      list.innerHTML = data.runtimes.map((runtime) => `
+        <div class="list-row">
+          <div class="grow">
+            <div class="title">${esc(runtime.display)}
+              ${runtime.configured ? '<span class="badge blue">当前指定</span>' : ""}</div>
+            <div class="desc">${esc(runtime.path)}</div>
+          </div>
+          <button class="btn sm" data-java-set="${esc(runtime.path)}"
+            ${runtime.configured ? "disabled" : ""}>设为默认</button>
+        </div>`).join("");
+      list.querySelectorAll<HTMLButtonElement>("[data-java-set]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          try {
+            await api("/api/java/set", {
+              method: "POST", body: JSON.stringify({ path: button.dataset.javaSet }),
+            });
+            toast("已指定 Java", "ok");
+            await loadJava();
+          } catch (error) {
+            toast((error as Error).message, "error");
+          }
+        });
+      });
+    }
+    if (installHost) {
+      installHost.innerHTML = data.components.map((item) =>
+        `<button class="btn sm" data-java-install="${item.major}">Java ${item.major}</button>`).join(" ");
+      installHost.querySelectorAll<HTMLButtonElement>("[data-java-install]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const major = button.dataset.javaInstall;
+          button.disabled = true;
+          try {
+            const task = await api<TaskInfo>("/api/java/install", {
+              method: "POST", body: JSON.stringify({ major: Number(major) }),
+            });
+            watchTask(task, `下载 Java ${major}`);
+            window.setTimeout(() => { button.disabled = false; void loadJava(); }, 1500);
+          } catch (error) {
+            button.disabled = false;
+            toast((error as Error).message, "error");
+          }
+        });
+      });
+    }
+  } catch (error) {
+    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
 }
 
 function showLogin(task: TaskInfo): void {

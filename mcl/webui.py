@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import (__version__, auth, crash, doctor, loaders, modpacks, modrinth, resources,
-               servers, skin, vsettings)
+from . import (__version__, auth, crash, doctor, java, loaders, modpacks, modrinth,
+               resources, servers, skin, vsettings)
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -323,6 +323,52 @@ def start_resource_install(kind: str, version_id: str, slug: str) -> dict:
     return task
 
 
+def java_listing() -> dict:
+    """Java 运行时列表：探测到的 + 用户手动指定的那个。"""
+    cfg = _ACTIVE_CFG
+    configured = str(cfg.java_path or "").strip()
+    runtimes = []
+    for runtime in java.find_all(cfg):
+        runtimes.append({
+            "display": runtime.display,
+            "path": str(runtime.path),
+            "major": runtime.major,
+            "version": runtime.version,
+            "configured": configured != "" and str(runtime.path) == configured,
+        })
+    return {
+        "runtimes": runtimes,
+        "configured": configured,
+        "components": java.available_components(),
+    }
+
+
+def start_java_install(major: int) -> dict:
+    cfg = _ACTIVE_CFG
+    task = _new_task("java")
+
+    def run() -> None:
+        try:
+            component = java.component_for(major)
+            _log(task, f"从 Mojang 下载 {component} …")
+            path = java.install_runtime(
+                component, cfg.root(), jobs=cfg.jobs,
+                on_phase=lambda label, files, size: _progress(task, label, files, size),
+                source=cfg.source,
+            )
+            runtime = java.probe(path)
+            task["result"] = {"path": str(path),
+                              "display": runtime.display if runtime else str(path)}
+            _log(task, f"装好了：{path}")
+            task["state"] = "done"
+        except Exception as exc:  # noqa: BLE001
+            task["error"] = str(exc)
+            task["state"] = "error"
+
+    threading.Thread(target=run, daemon=True).start()
+    return task
+
+
 def _export_modpack(body: dict) -> dict:
     """导出实例成 .mrpack，同步执行（文件都在本地，不下载）。"""
     version_id = str(body.get("version", "")).strip()
@@ -415,6 +461,8 @@ class Handler(BaseHTTPRequestHandler):
                     "default_client_id": auth.DEFAULT_CLIENT_ID,
                     "platform": os_name(),
                 })
+            if parsed.path == "/api/java":
+                return self._json(java_listing())
             if parsed.path == "/api/about":
                 return self._json(doctor.about(_ACTIVE_CFG))
             if parsed.path == "/api/doctor":
@@ -612,6 +660,31 @@ class Handler(BaseHTTPRequestHandler):
                     if task and task["state"] == "running":
                         task["state"] = "cancelled"
                 return self._json({"ok": True})
+            if parsed.path == "/api/java/set":
+                path_text = str(body.get("path", "")).strip()
+                if not path_text:
+                    return self._error("缺少 Java 路径")
+                runtime = java.probe(Path(path_text).expanduser())
+                if runtime is None:
+                    return self._error("这个路径下没有能跑的 java", 400)
+                _ACTIVE_CFG.java_path = str(runtime.path)
+                _ACTIVE_CFG.save()
+                return self._json({"ok": True, "config": _config_dict(_ACTIVE_CFG),
+                                   "java": java_listing()})
+            if parsed.path == "/api/java/clear":
+                _ACTIVE_CFG.java_path = ""
+                _ACTIVE_CFG.save()
+                return self._json({"ok": True, "config": _config_dict(_ACTIVE_CFG),
+                                   "java": java_listing()})
+            if parsed.path == "/api/java/install":
+                try:
+                    major = int(body.get("major") or 0)
+                except (TypeError, ValueError):
+                    return self._error("major 必须是整数", 400)
+                known = [item["major"] for item in java.available_components()]
+                if major not in known:
+                    return self._error(f"只支持这些主版本：{known}", 400)
+                return self._json(start_java_install(major))
             if parsed.path == "/api/open-dir":
                 which = str(body.get("which", "")).strip()
                 targets = {

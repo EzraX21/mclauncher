@@ -46,7 +46,7 @@
 
 ## Status
 
-Current version: **v3.12.0**
+Current version: **v3.13.0**
 
 | Status | Area |
 | --- | --- |
@@ -54,7 +54,7 @@ Current version: **v3.12.0**
 | 📴 Offline only | **Microsoft login**: Mojang rejected MCL's application; login is disabled and only offline mode is supported |
 | 🚧 Unverified | **CurseForge modpacks**: download path implemented, requires an API key; no real-pack regression yet |
 | ⏸️ Paused | **AUR**: registration is closed, so no account/first submission yet; PKGBUILD and CI are ready for when it reopens |
-| 📋 Planned | Launcher auto-update, Java management UI, maps/datapacks |
+| 📋 Planned | Launcher auto-update, maps/datapacks |
 
 ## Features
 
@@ -69,7 +69,7 @@ Current version: **v3.12.0**
 | Toolbox | About (version / platform / paths / license), environment check (Java, deps, writable dirs, download source), shortcuts to the config / game / log / export folders |
 | Crash analysis | Reads crash reports / latest.log and explains Java, memory, missing deps, Mixin conflicts, etc. |
 | Accounts | Offline + Microsoft device-code login, local token cache with refresh |
-| Java | Picks the exact major version; downloads the matching Mojang runtime instead of using a newer Java |
+| Java | Picks the exact major version; downloads the matching Mojang runtime instead of using a newer Java. Settings → Java lists every detected runtime, lets you pin one, or downloads a Mojang runtime |
 | GUI | **Default entry point**: native window (WebKitGTK on Linux / WebView2 on Windows), light/dark/system themes |
 | TUI | **Feature entry point**: full-screen terminal UI for terminal/keyboard workflows; launching still needs a graphical environment |
 
@@ -456,7 +456,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                201 tests
+├── tests/                205 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -467,7 +467,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-201 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
+205 tests covering rules, download plans, version merging, version rename/copy, launch arguments, Java, mods,
 modpack import and export, shader/resource-pack version resolution,
 server lists and NBT, Server List Ping against a local fake server,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.

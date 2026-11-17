@@ -313,6 +313,46 @@ class WebuiTests(unittest.TestCase):
         self.assertTrue(data["path"].endswith("/config.json") or Path(data["path"]).name != "")
 
 
+    # ------------------------------------------------------------ Java
+    def fake_java(self, major: int = 17) -> Path:
+        path = Path(self.tmp.name) / f"java{major}"
+        path.write_text(f'#!/bin/sh\necho \'openjdk version "{major}.0.9" 2023-10-17\' >&2\n',
+                        encoding="utf-8")
+        path.chmod(0o755)
+        return path
+
+    def test_java_listing(self):
+        data = get_json(self.url + "api/java")
+        self.assertIn("runtimes", data)
+        self.assertIn("components", data)
+        self.assertIn(17, [item["major"] for item in data["components"]])
+        self.assertEqual(data["configured"], "")
+
+    def test_java_set_and_clear(self):
+        path = self.fake_java(17)
+        data = post_json(self.url + "api/java/set", {"path": str(path)})
+        self.assertTrue(data["ok"])
+        self.assertEqual(Config.load().java_path, str(path))
+        self.assertEqual(data["config"]["java_path"], str(path))
+        listed = [item for item in data["java"]["runtimes"] if item["configured"]]
+        self.assertEqual(len(listed), 1)
+        self.assertEqual(listed[0]["major"], 17)
+        data = post_json(self.url + "api/java/clear", {})
+        self.assertEqual(Config.load().java_path, "")
+
+    def test_java_set_rejects_garbage(self):
+        bogus = Path(self.tmp.name) / "not-java"
+        bogus.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+        bogus.chmod(0o755)
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/java/set", {"path": str(bogus)})
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_java_install_rejects_unknown_major(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/java/install", {"major": 7})
+        self.assertEqual(ctx.exception.code, 400)
+
 
 if __name__ == "__main__":
     unittest.main()
