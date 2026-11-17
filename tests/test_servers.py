@@ -114,13 +114,13 @@ class PathTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             cfg = Config(game_dir=directory, isolate_versions=True)
             path = servers.servers_path(cfg, "1.20.1")
-            self.assertEqual(path, Path(directory) / "versions" / "1.20.1" / "servers.dat")
+            self.assertEqual(path, (Path(directory) / "versions" / "1.20.1" / "servers.dat").resolve())
 
     def test_shared_list_in_game_root(self):
         with tempfile.TemporaryDirectory() as directory:
             cfg = Config(game_dir=directory, isolate_versions=False)
             self.assertEqual(servers.servers_path(cfg, "1.20.1"),
-                             Path(directory) / "servers.dat")
+                             (Path(directory) / "servers.dat").resolve())
 
 
 class ListTests(unittest.TestCase):
