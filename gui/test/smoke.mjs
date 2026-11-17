@@ -72,6 +72,24 @@ const REMOTE = {
 
 const RESOURCES = { files: [{ name: "Complementary.zip", size: 2097152, dir: false }] };
 
+const ABOUT = {
+  version: "9.9.9", python: "3.12.4", platform: "Linux test (x86_64)",
+  config_path: "/tmp/config.json", game_dir: "/tmp/game", exports_dir: "/tmp/game/exports",
+  license: "GPL-3.0-or-later", repo: "https://github.com/EzraX21/mclauncher",
+  releases: "https://github.com/EzraX21/mclauncher/releases",
+};
+
+const DOCTOR = {
+  version: "9.9.9", problems: 1,
+  checks: [
+    { label: "Python", value: "3.12.4", status: "info" },
+    { label: "Textual", value: "8.2.8", status: "ok" },
+    { label: "游戏目录", value: "/tmp/game", status: "ok" },
+    { label: "Java", value: "没找到", status: "warn" },
+  ],
+  java: [],
+};
+
 const calls = [];
 function fakeFetch(url) {
   calls.push(String(url));
@@ -79,6 +97,8 @@ function fakeFetch(url) {
   const body = target.includes("/api/servers") ? SERVERS
     : target.includes("/api/version/info") ? VERSION_INFO
     : target.includes("/api/mods/local") ? LOCAL_MODS
+    : target.includes("/api/about") ? ABOUT
+    : target.includes("/api/doctor") ? DOCTOR
     : target.includes("/api/remote") ? REMOTE
     : target.includes("/api/resources") ? RESOURCES
     : STATE;
@@ -111,7 +131,7 @@ const doc = window.document;
 const navLabels = [...doc.querySelectorAll("#nav .nav-item span")].map((node) => node.textContent);
 assert.deepEqual(
   navLabels,
-  ["启动", "版本管理", "下载", "联机", "设置"],
+  ["启动", "版本管理", "下载", "联机", "百宝箱", "设置"],
   `导航项不对：${JSON.stringify(navLabels)}`,
 );
 
@@ -161,6 +181,31 @@ assert.ok(
 await flush();
 assert.ok(doc.querySelector("#mods-query"), "模组分类没有搜索框");
 assert.ok(doc.querySelector("#mods-version"), "模组分类没有版本选择");
+
+// 百宝箱
+window.location.hash = "#/toolbox";
+window.dispatchEvent(new window.Event("hashchange"));
+await flush();
+await flush();
+
+const about = doc.querySelector("#tb-about");
+assert.ok(about, "百宝箱没有关于卡片");
+assert.ok(about.textContent.includes("v9.9.9"), `关于没显示版本：${about.textContent.slice(0, 80)}`);
+assert.ok(about.textContent.includes("GPL-3.0-or-later"), "关于没显示许可证");
+assert.ok(about.querySelector('a[href^="https://github.com/"]'), "关于没有项目链接");
+
+const checks = doc.querySelector("#tb-checks");
+assert.ok(checks, "百宝箱没有诊断列表");
+assert.ok(!checks.textContent.includes("检测中"), "诊断还停在检测中");
+assert.ok(checks.textContent.includes("1 个问题"), "诊断没显示问题数");
+for (const label of ["Python", "Textual", "游戏目录", "Java"]) {
+  assert.ok(checks.textContent.includes(label), `诊断缺少 ${label}`);
+}
+assert.equal(checks.querySelectorAll(".check-mark").length, 4, "诊断标记数量不对");
+assert.ok(checks.querySelector(".check-mark.warn"), "警告状态没有对应样式");
+
+const dirButtons = [...doc.querySelectorAll("[data-dir]")].map((node) => node.dataset.dir);
+assert.deepEqual(dirButtons, ["config", "game", "logs", "exports"], `快捷目录按钮不对：${dirButtons}`);
 
 // 切到联机页
 window.location.hash = "#/link";

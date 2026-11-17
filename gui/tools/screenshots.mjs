@@ -36,6 +36,7 @@ const SHOTS = [
     type: { selector: "#res-query", text: "complementary" }, press: "#res-search",
     wait: "#res-results .list-row", dark: false },
   { file: "gui-link.png", hash: "#/link", wait: "#link-list .list-row", dark: false },
+  { file: "gui-toolbox.png", hash: "#/toolbox", wait: "#tb-checks .check-row", dark: false },
   { file: "gui-settings.png", hash: "#/settings", click: '[data-tab="general"]', wait: "#set-dir", dark: false },
   { file: "gui-dark.png", hash: "#/instance", wait: "#instance-detail .kv-grid", dark: true },
 ];
