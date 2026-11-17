@@ -32,6 +32,8 @@ const SHOTS = [
   { file: "gui-mods.png", hash: "#/download", tab: "mods",
     type: { selector: "#mods-query", text: "sodium" }, press: "#mods-search",
     wait: "#mod-results .list-row", dark: false },
+  { file: "gui-datapacks.png", hash: "#/download", tab: "datapack",
+    select: { selector: "#dp-world", value: "新世界" }, wait: "#dp-local .list-row", dark: false },
   { file: "gui-resources.png", hash: "#/download", tab: "shader",
     type: { selector: "#res-query", text: "complementary" }, press: "#res-search",
     wait: "#res-results .list-row", dark: false },
@@ -93,6 +95,13 @@ async function main() {
         // 分类是点出来的，先切分类再等目标元素
         await page.waitForSelector(`[data-dtab="${shot.tab}"]`, { timeout: 15000 });
         await page.click(`[data-dtab="${shot.tab}"]`);
+      }
+      if (shot.select) {
+        // 存档按修改时间排序，测试环境里 mtime 可能撞车，截图时显式选一个有内容的
+        // option 元素在 Playwright 里不算「可见」，必须用 attached
+        await page.waitForSelector(`${shot.select.selector} option[value="${shot.select.value}"]`,
+                                   { timeout: 15000, state: "attached" });
+        await page.selectOption(shot.select.selector, shot.select.value);
       }
       if (shot.type) {
         await page.fill(shot.type.selector, shot.type.text);

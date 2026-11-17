@@ -80,3 +80,42 @@ class ResourceTests(unittest.TestCase):
     def test_bad_kind(self):
         with self.assertRaises(resources.ResourceError):
             resources.local("mod", Config(game_dir="/tmp"), "1.20.1")
+
+    def test_datapack_requires_world(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = Config(game_dir=str(Path(tmp) / "game"), isolate_versions=True)
+            with self.assertRaises(resources.ResourceError):
+                resources.directory("datapack", cfg, "1.21.4")
+            with self.assertRaises(resources.ResourceError):
+                resources.directory("datapack", cfg, "1.21.4", "../evil")
+
+    def test_datapack_directory_inside_world(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "game"
+            cfg = Config(game_dir=str(root), isolate_versions=True)
+            path = resources.directory("datapack", cfg, "1.21.4", "新世界")
+            self.assertEqual(path, root / "versions" / "1.21.4" / "saves" / "新世界" / "datapacks")
+
+    def test_worlds_listing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "game"
+            saves = root / "versions" / "1.21.4" / "saves"
+            for name in ("世界一", "世界二"):
+                (saves / name / "datapacks").mkdir(parents=True)
+                (saves / name / "level.dat").write_bytes(b"l")
+            (saves / "世界一" / "datapacks" / "pack.zip").write_bytes(b"z")
+            cfg = Config(game_dir=str(root), isolate_versions=True)
+            worlds = resources.worlds(cfg, "1.21.4")
+            self.assertEqual(sorted(item["name"] for item in worlds), ["世界一", "世界二"])
+            first = next(item for item in worlds if item["name"] == "世界一")
+            self.assertTrue(first["has_level"])
+            self.assertEqual(first["datapacks"], 1)
+
+    def test_datapack_search_facet(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = Config(game_dir=str(Path(tmp) / "game"))
+            with mock.patch("mcl.resources._get", return_value={"hits": []}) as get:
+                resources.search("datapack", "terralith", cfg, "1.21.4")
+            facets = json.loads(get.call_args.args[1]["facets"])
+            self.assertIn(["project_type:datapack"], facets)
+            self.assertIn(["versions:1.21.4"], facets)

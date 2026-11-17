@@ -15,3 +15,6 @@ mcl/webui_dist/
 
 # 截图工具的临时演示目录
 .screenshots/
+
+# 调试脚本
+.dbg.mjs
