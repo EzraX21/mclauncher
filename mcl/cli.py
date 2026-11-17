@@ -130,6 +130,11 @@ def build_parser() -> argparse.ArgumentParser:
     install_parser = action_sub.add_parser("install", help="安装整合包")
     install_parser.add_argument("file")
     install_parser.add_argument("--name", help="实例名（默认用整合包名）")
+    export_parser = action_sub.add_parser("export", help="把已装版本导出成 .mrpack")
+    export_parser.add_argument("version", help="要导出的版本")
+    export_parser.add_argument("-o", "--output", help="输出文件（默认 <游戏目录>/exports/）")
+    export_parser.add_argument("--name", help="整合包显示名")
+    export_parser.add_argument("--with-saves", action="store_true", help="连存档一起导出")
 
     p = sub.add_parser("resources", help="光影 / 材质包")
     p.add_argument("action", choices=["search", "install", "list", "remove"])

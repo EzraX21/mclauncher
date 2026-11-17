@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import re
 import shutil
+import time
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -276,3 +277,128 @@ def install(path: Path, cfg: Config, name: Optional[str] = None,
 
     note(f"整合包已安装：{instance}")
     return instance
+
+
+# ---------------------------------------------------------------- 导出
+
+# 只导出这些目录/文件：版本 JSON、jar、natives 这些是加载器装的，导出会重复且没必要
+EXPORT_DIRS = ("mods", "config", "defaultconfigs", "kubejs", "resourcepacks", "shaderpacks")
+EXPORT_FILES = ("options.txt", "optionsof.txt")
+SKIP_SUFFIXES = (".log", ".part", ".tmp")
+
+_LOADER_ID_PATTERNS = {
+    "fabric": re.compile(r"^fabric-loader-(.+?)-(\d+\.\d+(?:\.\d+)?)$"),
+    "quilt": re.compile(r"^quilt-loader-(.+?)-(\d+\.\d+(?:\.\d+)?)$"),
+    "forge": re.compile(r"^(.+?)-forge-(.+)$"),
+    "neoforge": re.compile(r"^(?:.+?-)?neoforge-(.+)$"),
+}
+
+
+def loader_version_of(loader: str, version_ids: list[str]) -> str:
+    """从版本 id 里反推加载器版本（mcl 装加载器时就是用这些名字命名的）。"""
+    pattern = _LOADER_ID_PATTERNS.get(loader)
+    if pattern is None:
+        return ""
+    for version_id in version_ids:
+        match = pattern.match(version_id)
+        if match:
+            groups = match.groups()
+            # fabric-loader-<加载器版本>-<游戏版本>：加载器版本在前；forge 反过来
+            return groups[0] if loader in ("fabric", "quilt") else groups[-1]
+    return ""
+
+
+def _export_slug(text: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9._-]+", "-", text).strip("-._")
+    return cleaned or "modpack"
+
+
+def export(cfg: Config, version_id: str, dest: Optional[Path] = None,
+           name: Optional[str] = None, include_saves: bool = False) -> dict:
+    """把一个已装版本导出成 Modrinth 格式的 .mrpack。
+
+    模组文件直接放进 overrides/（不联网去匹配 Modrinth 上的版本），所以导出包是自包含的：
+    谁拿到都能装，代价是体积大一些。加载器和游戏版本写进 dependencies。
+    """
+    from .versions import VersionError, detect_loader, resolve
+
+    root = cfg.root()
+    try:
+        resolved = resolve(root, version_id)
+    except VersionError as exc:
+        raise PackError(str(exc)) from exc
+
+    chain = list(resolved.chain)
+    game = chain[0] if chain else version_id
+    loader = detect_loader(version_id, resolved.data)
+    loader_version = loader_version_of(loader, [version_id] + list(reversed(chain)))
+    warnings: list[str] = []
+    if loader != "vanilla" and not loader_version:
+        warnings.append(f"认不出 {loader} 的加载器版本，导入这个包时可能要手动选加载器")
+
+    base = cfg.version_dir(version_id) if cfg.isolate_versions else root
+    if not base.is_dir():
+        raise PackError(f"找不到版本目录：{base}")
+    if not cfg.isolate_versions:
+        warnings.append("当前没开版本隔离：导出的是公共目录，可能混进别的版本的文件")
+
+    dependencies: dict[str, str] = {"minecraft": str(game)}
+    if loader != "vanilla" and loader_version:
+        key = {"fabric": "fabric-loader", "quilt": "quilt-loader",
+               "forge": "forge", "neoforge": "neoforge"}[loader]
+        dependencies[key] = loader_version
+
+    pack_name = (name or version_id).strip() or version_id
+    index = {
+        "formatVersion": 1,
+        "game": "minecraft",
+        "versionId": "1.0.0",
+        "name": pack_name,
+        "summary": f"从 MCL 导出的实例：{version_id}",
+        "files": [],
+        "dependencies": dependencies,
+    }
+
+    directories = list(EXPORT_DIRS) + (["saves"] if include_saves else [])
+    collected: list[tuple[Path, str]] = []
+    for directory_name in directories:
+        directory = base / directory_name
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.rglob("*")):
+            if not path.is_file() or path.suffix.lower() in SKIP_SUFFIXES:
+                continue
+            collected.append((path, f"{directory_name}/{path.relative_to(directory).as_posix()}"))
+    for file_name in EXPORT_FILES:
+        path = base / file_name
+        if path.is_file():
+            collected.append((path, file_name))
+
+    if dest is None:
+        exports_dir = root / "exports"
+        exports_dir.mkdir(parents=True, exist_ok=True)
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        dest = exports_dir / f"{_export_slug(version_id)}-{stamp}.mrpack"
+    dest = Path(dest).expanduser()
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr("modrinth.index.json",
+                             json.dumps(index, ensure_ascii=False, indent=2))
+            for path, relative in collected:
+                archive.write(path, f"overrides/{relative}")
+    except OSError as exc:
+        raise PackError(f"写整合包失败：{exc}") from exc
+
+    return {
+        "path": str(dest),
+        "version": version_id,
+        "name": pack_name,
+        "game": str(game),
+        "loader": loader,
+        "loader_version": loader_version,
+        "files": len(collected),
+        "size": dest.stat().st_size,
+        "warnings": warnings,
+    }

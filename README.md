@@ -46,7 +46,7 @@
 
 ## 项目状态
 
-当前版本 **v3.8.1**：
+当前版本 **v3.9.0**：
 
 | 状态 | 功能 |
 | --- | --- |
@@ -60,10 +60,10 @@
 
 | 模块 | 能做什么 |
 | --- | --- |
-| 版本管理 | 左侧版本列表 + 右侧详情：概览（加载器/Java/占用/路径）、单版本设置、模组管理；支持重命名、复制、打开文件夹、装加载器、崩溃分析、删除 |
+| 版本管理 | 左侧版本列表 + 右侧详情：概览（加载器/Java/占用/路径）、单版本设置、模组管理；支持重命名、复制、导出整合包、打开文件夹、装加载器、崩溃分析、删除 |
 | 安装 | Mojang 官方版本清单，边输边筛，可选下载资源文件，进度条 + 日志 + 取消 |
 | 模组 | Modrinth / CurseForge 搜索安装，自动补前置；本地模组启用/禁用/删除 |
-| 整合包 | Modrinth `.mrpack`、CurseForge zip；自动装原版和加载器，复制 overrides，生成独立实例 |
+| 整合包 | 导入 Modrinth `.mrpack` / CurseForge zip（自动装原版和加载器、复制 overrides）；也能把已装版本**导出**成 `.mrpack`（含模组/配置/资源包，可连存档） |
 | 资源 | 光影、材质包搜索安装到 `shaderpacks/` / `resourcepacks/` |
 | 联机 | 服务器列表读写游戏自己的 `servers.dat`，显示延迟/在线人数/版本/MOTD，点「进服」直接连 |
 | 皮肤 | 离线自定义皮肤 PNG，生成资源包替换默认 Steve/Alex 贴图 |
@@ -265,6 +265,8 @@ mcl launch 1.20.1 --offline         # 强制离线
 mcl mods search sodium --version 1.20.1
 mcl mods install sodium --version fabric-loader-0.20.1-1.20.1 -y
 mcl modpack install pack.mrpack --name "我的整合包"
+mcl modpack export 1.20.1           # 导出成 .mrpack（默认放 <游戏目录>/exports/）
+mcl modpack export 1.20.1 --with-saves -o my.mrpack
 mcl resources search shader complementary --version 1.20.1
 mcl servers                         # 服务器列表（读写 servers.dat）
 mcl servers add Hypixel mc.hypixel.net
@@ -418,7 +420,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-183 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java、模组、整合包、资源、
+192 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java、模组、整合包导入导出、资源、
 服务器列表与 NBT、Server List Ping（用本地假服务器）、删除、TUI（无需终端）和 GUI API；不需要网络。
 
 前端另有一个 jsdom 冒烟测试，会真跑一遍构建后的界面：
@@ -440,6 +442,8 @@ cd gui && npm test        # 先构建，再在 jsdom 里渲染并断言导航与
 - 快速进服用版本 JSON 里的 `--quickPlayMultiplayer`（1.20+），老版本退回 `--server/--port`；
   真机进服行为没在每种游戏版本上跑过
 - 重命名不能改「有子版本继承的父版本」的名字（会让 Fabric/Forge 版本失效），会明确拒绝
+- 导出的整合包把模组文件放进 `overrides/`（不联网匹配 Modrinth 版本），所以包是自包含的但体积偏大；
+  加载器版本从版本目录名反推，认不出来时会在导出结果里给出警告
 - 服务器列表、自动更新、Java 管理 GUI 还没做
 
 ## 隐私
