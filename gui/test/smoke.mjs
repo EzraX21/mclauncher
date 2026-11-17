@@ -225,14 +225,16 @@ await flush();
 assert.ok(doc.querySelector("#mods-query"), "模组分类没有搜索框");
 assert.ok(doc.querySelector("#mods-version"), "模组分类没有版本选择");
 
-// 设置 → Java 页
+// 设置：PCL 的四页结构，默认落在「启动」，Java 就在这一页
 window.location.hash = "#/settings";
 window.dispatchEvent(new window.Event("hashchange"));
 await flush();
 await flush();
-[...doc.querySelectorAll("[data-tab]")].find((node) => node.dataset.tab === "java").click();
-await flush();
-await flush();
+
+const settingsTabs = [...doc.querySelectorAll(".settings-nav-item")].map((node) => node.dataset.tab);
+assert.deepEqual(settingsTabs, ["launch", "ui", "system", "link"], `设置分页不对：${settingsTabs}`);
+assert.ok(doc.querySelector('#settings-launch, [data-page="launch"]'), "没有「启动」分页容器");
+assert.equal(doc.querySelectorAll('[data-page="launch"]').length, 4, "启动页应该容纳账号/常规/Java/下载四张卡");
 
 const javaList = doc.querySelector("#java-runtimes");
 assert.ok(javaList, "设置里没有 Java 列表");
@@ -246,6 +248,26 @@ assert.equal(disabledSet.length, 1, "当前指定的那个按钮应该是禁用�
 const installButtons = [...doc.querySelectorAll("[data-java-install]")].map((b) => b.dataset.javaInstall);
 assert.deepEqual(installButtons, ["17", "21"], `下载按钮不对：${installButtons}`);
 assert.ok(doc.querySelector("#java-auto"), "没有自动选择按钮");
+
+// 「其他」页：配置路径 + 检查更新 + 诊断入口
+[...doc.querySelectorAll(".settings-nav-item")].find((node) => node.dataset.tab === "system").click();
+await flush();
+const systemPage = doc.querySelector('[data-page="system"]');
+assert.ok(systemPage.classList.contains("active"), "切到「其他」没生效");
+assert.ok(systemPage.textContent.includes("config.json") || systemPage.textContent.includes("配置"),
+          "「其他」页没显示配置路径");
+doc.querySelector("#set-check-update").click();
+await flush();
+await flush();
+assert.ok(doc.querySelector("#set-update-result").textContent.includes("v9.9.10"),
+          "设置里的检查更新没显示结果");
+assert.ok(doc.querySelector("#set-goto-toolbox"), "「其他」页没有诊断入口");
+
+// 「联机」页：说明 + 跳转
+[...doc.querySelectorAll(".settings-nav-item")].find((node) => node.dataset.tab === "link").click();
+await flush();
+assert.ok(doc.querySelector('[data-page="link"]').classList.contains("active"), "切到「联机」没生效");
+assert.ok(doc.querySelector("#set-goto-link"), "联机设置页没有跳转按钮");
 
 // 百宝箱
 window.location.hash = "#/toolbox";
