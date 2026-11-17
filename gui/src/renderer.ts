@@ -1,4 +1,4 @@
-type View = "versions" | "instance" | "download" | "link" | "settings";
+type View = "versions" | "instance" | "download" | "link" | "toolbox" | "settings";
 const MICROSOFT_LOGIN_ENABLED = false;
 
 interface VersionInfo {
@@ -24,6 +24,15 @@ interface VersionOptions {
 interface InstanceInfo {
   id: string; path: string; size: number; loader: string; java: number | null;
   mods: number; has_jar: boolean; type: string; inherits: string; options: VersionOptions;
+}
+interface AboutInfo {
+  version: string; python: string; platform: string; config_path: string;
+  game_dir: string; exports_dir: string; license: string; repo: string; releases: string;
+}
+interface DoctorCheck { label: string; value: string; status: "ok" | "warn" | "bad" | "info"; }
+interface DoctorReport {
+  version: string; checks: DoctorCheck[]; problems: number;
+  java: { display: string; path: string; major: number }[];
 }
 interface ServerStatus {
   online: boolean; error: string; latency_ms: number | null;
@@ -92,6 +101,7 @@ const icons: Record<View, string> = {
   versions: lucide('<path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z"/>'),
   instance: lucide('<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>'),
   download: lucide('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>'),
+  toolbox: lucide('<path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>'),
   link: lucide('<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>'),
   settings: lucide('<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>'),
 };
@@ -108,7 +118,7 @@ function shell(): string {
         </div>
       </div>
       <nav class="nav" id="nav">
-        ${(["versions", "instance", "download", "link", "settings"] as View[]).map((name) => `
+        ${(["versions", "instance", "download", "link", "toolbox", "settings"] as View[]).map((name) => `
           <button class="nav-item" data-view="${name}">
             ${icons[name]}<span>${labelOf(name)}</span>
           </button>`).join("")}
@@ -140,7 +150,7 @@ function shell(): string {
 }
 function labelOf(value: View): string {
   return { versions: "启动", instance: "版本管理", download: "下载",
-    link: "联机", settings: "设置" }[value];
+    link: "联机", toolbox: "百宝箱", settings: "设置" }[value];
 }
 
 function esc(text: unknown): string {
@@ -217,6 +227,8 @@ function render(): void {
     renderDownload();
   } else if (view === "link") {
     renderLink();
+  } else if (view === "toolbox") {
+    renderToolbox();
   } else {
     renderSettings();
   }
@@ -1336,6 +1348,104 @@ function removeServer(index: number): void {
   });
 }
 
+// ---------------------------------------------------------------- 百宝箱（PCL PageOther）
+const CHECK_ICON: Record<DoctorCheck["status"], string> = {
+  ok: "✓", warn: "!", bad: "✗", info: "·",
+};
+
+function renderToolbox(): void {
+  setHeader("百宝箱", "关于、环境诊断、快捷目录");
+  const content = document.getElementById("content") as HTMLElement;
+  content.innerHTML = `
+    <div class="card" id="tb-about">
+      <div class="card-head"><span class="card-title">关于</span></div>
+      <div class="card-body"><div class="empty">加载中…</div></div>
+    </div>
+    <div class="card" id="tb-doctor">
+      <div class="card-head">
+        <span class="card-title">环境诊断</span>
+        <button class="btn sm" id="tb-recheck">重新检测</button>
+      </div>
+      <div class="list" id="tb-checks"><div class="empty">检测中…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">快捷目录</span></div>
+      <div class="card-body">
+        <div class="inline">
+          <button class="btn" data-dir="config">配置目录</button>
+          <button class="btn" data-dir="game">游戏目录</button>
+          <button class="btn" data-dir="logs">日志目录</button>
+          <button class="btn" data-dir="exports">导出目录</button>
+        </div>
+      </div>
+    </div>`;
+  content.querySelectorAll<HTMLButtonElement>("[data-dir]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      try {
+        await api("/api/open-dir", { method: "POST", body: JSON.stringify({ which: button.dataset.dir }) });
+      } catch (error) {
+        toast((error as Error).message, "error");
+      }
+    });
+  });
+  content.querySelector("#tb-recheck")?.addEventListener("click", () => void loadDoctor());
+  void loadAbout();
+  void loadDoctor();
+}
+
+async function loadAbout(): Promise<void> {
+  const host = document.getElementById("tb-about");
+  if (!host) return;
+  try {
+    const info = await api<AboutInfo>("/api/about");
+    const rows: [string, string][] = [
+      ["版本", `v${info.version}`],
+      ["平台", info.platform],
+      ["Python", info.python],
+      ["许可证", info.license],
+      ["配置", info.config_path],
+      ["游戏目录", info.game_dir],
+    ];
+    host.innerHTML = `
+      <div class="card-head"><span class="card-title">关于</span></div>
+      <div class="card-body">
+        <div class="kv-grid">
+          ${rows.map(([key, value]) => `<div class="kv-key">${esc(key)}</div><div class="kv-value">${esc(value)}</div>`).join("")}
+        </div>
+        <div class="inline" style="margin-top:14px">
+          <a class="btn" href="${esc(info.repo)}" target="_blank" rel="noreferrer">项目主页</a>
+          <a class="btn" href="${esc(info.releases)}" target="_blank" rel="noreferrer">下载新版本</a>
+        </div>
+      </div>`;
+  } catch (error) {
+    host.innerHTML = `<div class="card-head"><span class="card-title">关于</span></div>
+      <div class="card-body"><div class="empty">${esc((error as Error).message)}</div></div>`;
+  }
+}
+
+async function loadDoctor(): Promise<void> {
+  const list = document.getElementById("tb-checks");
+  if (!list) return;
+  list.innerHTML = `<div class="empty">检测中…</div>`;
+  try {
+    const data = await api<DoctorReport>("/api/doctor");
+    const rows = data.checks.map((check) => `
+      <div class="list-row check-row">
+        <span class="check-mark ${check.status}">${CHECK_ICON[check.status] ?? "·"}</span>
+        <div class="grow">
+          <div class="title">${esc(check.label)}</div>
+          <div class="desc">${esc(check.value)}</div>
+        </div>
+      </div>`).join("");
+    const summary = data.problems
+      ? `<div class="card-body"><span class="badge red">${data.problems} 个问题</span></div>`
+      : `<div class="card-body"><span class="badge green">没发现问题</span></div>`;
+    list.innerHTML = summary + rows;
+  } catch (error) {
+    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
+}
+
 // ---------------------------------------------------------------- 设置
 function renderSettings(): void {
   setHeader("设置", "修改会立即写入配置文件");
@@ -1688,7 +1798,7 @@ function setView(next: View): void {
 
 function viewFromHash(): View {
   const value = location.hash.replace(/^#\/?/, "");
-  return (["versions", "instance", "download", "link", "settings"] as View[]).includes(value as View)
+  return (["versions", "instance", "download", "link", "toolbox", "settings"] as View[]).includes(value as View)
     ? (value as View)
     : "versions";
 }

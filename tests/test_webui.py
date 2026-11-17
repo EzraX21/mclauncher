@@ -282,6 +282,37 @@ class WebuiTests(unittest.TestCase):
             post_json(self.url + "api/exports/open", {"path": "/etc/passwd"})
         self.assertEqual(ctx.exception.code, 400)
 
+    # ------------------------------------------------------------ 百宝箱
+    def test_about(self):
+        data = get_json(self.url + "api/about")
+        self.assertEqual(data["license"], "GPL-3.0-or-later")
+        self.assertEqual(data["game_dir"], str(Path(self.tmp.name) / "game"))
+        self.assertTrue(data["repo"].startswith("https://github.com/"))
+        self.assertIn("version", data)
+
+    def test_doctor_report(self):
+        data = get_json(self.url + "api/doctor")
+        labels = [check["label"] for check in data["checks"]]
+        self.assertIn("游戏目录", labels)
+        self.assertIn("Java", labels)
+        for check in data["checks"]:
+            self.assertIn(check["status"], ("ok", "warn", "bad", "info"))
+
+    def test_open_dir_rejects_unknown(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/open-dir", {"which": "passwd"})
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_open_dir_config(self):
+        from unittest import mock
+
+        with mock.patch("mcl.versions.subprocess.Popen") as popen:
+            data = post_json(self.url + "api/open-dir", {"which": "config"})
+        self.assertTrue(data["ok"])
+        self.assertTrue(popen.called)
+        self.assertTrue(data["path"].endswith("/config.json") or Path(data["path"]).name != "")
+
+
 
 if __name__ == "__main__":
     unittest.main()

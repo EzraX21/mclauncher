@@ -14,7 +14,8 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, auth, crash, loaders, modpacks, modrinth, resources, servers, skin, vsettings
+from . import (__version__, auth, crash, doctor, loaders, modpacks, modrinth, resources,
+               servers, skin, vsettings)
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -414,6 +415,10 @@ class Handler(BaseHTTPRequestHandler):
                     "default_client_id": auth.DEFAULT_CLIENT_ID,
                     "platform": os_name(),
                 })
+            if parsed.path == "/api/about":
+                return self._json(doctor.about(_ACTIVE_CFG))
+            if parsed.path == "/api/doctor":
+                return self._json(doctor.report(_ACTIVE_CFG))
             if parsed.path == "/api/version/info":
                 version_id = (query.get("id", [""])[0] or "").strip()
                 if not version_id:
@@ -607,6 +612,22 @@ class Handler(BaseHTTPRequestHandler):
                     if task and task["state"] == "running":
                         task["state"] = "cancelled"
                 return self._json({"ok": True})
+            if parsed.path == "/api/open-dir":
+                which = str(body.get("which", "")).strip()
+                targets = {
+                    "config": config_path().parent,
+                    "game": _ACTIVE_CFG.root(),
+                    "logs": _ACTIVE_CFG.game_dir_for(_default_version() or "default") / "logs",
+                    "exports": _ACTIVE_CFG.root() / "exports",
+                }
+                target = targets.get(which)
+                if target is None:
+                    return self._error("只支持 config / game / logs / exports", 400)
+                try:
+                    open_folder(target)
+                except VersionError as exc:
+                    return self._error(str(exc), 400)
+                return self._json({"ok": True, "path": str(target)})
             if parsed.path == "/api/modpack/export":
                 return self._json(_export_modpack(body))
             if parsed.path == "/api/exports/open":

@@ -46,7 +46,7 @@
 
 ## 项目状态
 
-当前版本 **v3.11.0**：
+当前版本 **v3.12.0**：
 
 | 状态 | 功能 |
 | --- | --- |
@@ -66,6 +66,7 @@
 | 下载 → 整合包 | 导入 Modrinth `.mrpack` / CurseForge zip（自动装原版和加载器、复制 overrides）；也能把已装版本**导出**成 `.mrpack`（含模组/配置/资源包，可连存档） |
 | 下载 → 光影 / 材质包 | 搜索安装到 `shaderpacks/` / `resourcepacks/` |
 | 联机 | 服务器列表读写游戏自己的 `servers.dat`，显示延迟/在线人数/版本/MOTD，点「进服」直接连 |
+| 百宝箱 | 关于（版本 / 平台 / 路径 / 许可证）、环境诊断（Java、依赖、目录可写、下载源）、快捷打开配置/游戏/日志/导出目录 |
 | 皮肤 | 离线自定义皮肤 PNG，生成资源包替换默认 Steve/Alex 贴图 |
 | 崩溃分析 | 解析 crash-report / latest.log，给出 Java 版本、内存、缺前置、Mixin 冲突等建议 |
 | 账号 | 仅离线（微软登录被 Mojang 拒绝，已停用） |
@@ -87,9 +88,13 @@
 | --- | --- |
 | ![光影](docs/gui-resources.png) | ![联机](docs/gui-link.png) |
 
-| 设置 | 深色主题 |
+| 百宝箱 | 设置 |
 | --- | --- |
-| ![设置](docs/gui-settings.png) | ![深色主题](docs/gui-dark.png) |
+| ![百宝箱](docs/gui-toolbox.png) | ![设置](docs/gui-settings.png) |
+
+| 深色主题 | |
+| --- | --- |
+| ![深色主题](docs/gui-dark.png) | |
 
 截图是脚本生成的，界面改动后重新跑一次就行：
 
@@ -164,7 +169,7 @@ mcl --cli      # questionary 文本菜单
 ## 图形界面
 
 GUI 是默认入口：直接运行 `mcl` 就会打开桌面窗口（`mcl gui` 等价）。
-页面：启动 / 版本管理 / 下载 / 联机 / 设置（下载页左侧分：游戏本体 / 整合包 / 模组 / 光影 / 材质包）。
+页面：启动 / 版本管理 / 下载 / 联机 / 百宝箱 / 设置（下载页左侧分：游戏本体 / 整合包 / 模组 / 光影 / 材质包）。
 它是**桌面窗口**，不是浏览器标签：
 
 - Linux：GTK + WebKitGTK，需要 `webkit2gtk-4.1`、`python-gobject`
@@ -433,7 +438,7 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-194 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java、模组、整合包导入导出、
+201 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java、环境诊断、模组、整合包导入导出、
 光影/材质包的游戏版本解析、
 服务器列表与 NBT、Server List Ping（用本地假服务器）、删除、TUI（无需终端）和 GUI API；不需要网络。
 
