@@ -456,3 +456,16 @@ html[data-theme="dark"] textarea { background: #262c35; color: var(--text); bord
 .version-pick { cursor: pointer; }
 .version-pick:hover { background: var(--pcl-soft); }
 .chevron { color: var(--muted); font-size: 22px; line-height: 1; padding: 0 4px; }
+
+/* ---------------- 联机 ---------------- */
+.server-row { align-items: flex-start; }
+.server-icon {
+  width: 40px; height: 40px; flex: none; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--pcl-soft); color: var(--pcl);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 16px;
+}
+.server-icon img { width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.server-row .inline { justify-content: flex-end; flex-wrap: nowrap; }
+html[data-theme="dark"] .server-icon { background: #1c3450; }

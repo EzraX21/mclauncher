@@ -54,7 +54,7 @@
 | 📴 仅离线 | **微软登录**：Mojang 未通过 MCL 的申请，登录已停用；当前只支持离线模式 |
 | 🚧 待验证 | **CurseForge 整合包**：下载逻辑已实现，需要 API key；手头没有 key，还没跑真实整合包回归 |
 | ⏸️ 暂停 | **AUR**：AUR 注册暂停，暂时没法开号/首次提交；PKGBUILD 和 CI 已就绪，恢复后可直接启用 |
-| 📋 计划中 | 服务器列表 / 快速进服、启动器自动更新、Java 管理 GUI、地图/数据包 |
+| 📋 计划中 | 启动器自动更新、Java 管理 GUI、地图/数据包 |
 
 ## 功能
 
@@ -65,6 +65,7 @@
 | 模组 | Modrinth / CurseForge 搜索安装，自动补前置；本地模组启用/禁用/删除 |
 | 整合包 | Modrinth `.mrpack`、CurseForge zip；自动装原版和加载器，复制 overrides，生成独立实例 |
 | 资源 | 光影、材质包搜索安装到 `shaderpacks/` / `resourcepacks/` |
+| 联机 | 服务器列表读写游戏自己的 `servers.dat`，显示延迟/在线人数/版本/MOTD，点「进服」直接连 |
 | 皮肤 | 离线自定义皮肤 PNG，生成资源包替换默认 Steve/Alex 贴图 |
 | 崩溃分析 | 解析 crash-report / latest.log，给出 Java 版本、内存、缺前置、Mixin 冲突等建议 |
 | 账号 | 仅离线（微软登录被 Mojang 拒绝，已停用） |
@@ -264,6 +265,10 @@ mcl mods search sodium --version 1.20.1
 mcl mods install sodium --version fabric-loader-0.20.1-1.20.1 -y
 mcl modpack install pack.mrpack --name "我的整合包"
 mcl resources search shader complementary --version 1.20.1
+mcl servers                         # 服务器列表（读写 servers.dat）
+mcl servers add Hypixel mc.hypixel.net
+mcl servers --ping                  # 顺便查在线状态
+mcl servers remove --index 0        # 删掉第 0 个
 mcl crash 1.20.1                    # 分析崩溃
 mcl java install 21                 # 下 Java 运行时
 mcl account                         # 查看离线状态
@@ -388,6 +393,8 @@ mclauncher/
 │   ├── auth.py           微软设备代码登录
 │   ├── modpacks.py       整合包导入
 │   ├── resources.py      光影 / 材质包
+│   ├── servers.py        服务器列表（servers.dat）+ Server List Ping
+│   ├── nbt.py            最小 NBT 编解码（servers.dat 用）
 │   ├── crash.py          崩溃日志分析
 │   ├── versions.py       inheritsFrom 合并 / 版本扫描
 │   ├── launch.py         启动参数 / classpath / natives
@@ -410,8 +417,14 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-119 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
-删除、TUI（无需终端）和 GUI API；不需要网络。
+167 个测试，覆盖规则、下载计划、版本合并、启动参数、Java、模组、整合包、资源、
+服务器列表与 NBT、Server List Ping（用本地假服务器）、删除、TUI（无需终端）和 GUI API；不需要网络。
+
+前端另有一个 jsdom 冒烟测试，会真跑一遍构建后的界面：
+
+```bash
+cd gui && npm test        # 先构建，再在 jsdom 里渲染并断言导航与联机页
+```
 
 ## 已知限制
 
@@ -422,6 +435,9 @@ python -m unittest discover -s tests -v
 - AUR 注册暂停，暂时没有账号/包
 - 自定义皮肤用资源包实现，会替换所有默认 Steve/Alex 贴图，多人里其他默认皮肤玩家也会看到
 - 资源目前只有光影/材质，地图、数据包还没做
+- 联机页不做 SRV 解析（`_minecraft._tcp`），只靠 SRV 暴露端口的服务器会显示离线
+- 快速进服用版本 JSON 里的 `--quickPlayMultiplayer`（1.20+），老版本退回 `--server/--port`；
+  真机进服行为没在每种游戏版本上跑过
 - 服务器列表、自动更新、Java 管理 GUI 还没做
 
 ## 隐私

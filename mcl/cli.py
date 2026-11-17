@@ -18,7 +18,7 @@ from .versions import VersionError
 
 COMMANDS = {"install", "versions", "remove", "uninstall", "launch", "loaders", "mods", "java",
             "config", "tui", "doctor", "gui", "login", "logout", "account", "modpack",
-            "crash", "resources", "skin", "desktop"}
+            "crash", "resources", "skin", "desktop", "servers"}
 _GLOBAL_FLAGS = {"--plain", "--cli", "-h", "--help", "--version"}
 
 
@@ -136,6 +136,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("kind", choices=["shader", "resourcepack"])
     p.add_argument("query", nargs="?", help="关键词 / 项目 slug / 文件名")
     p.add_argument("--version", help="游戏版本（默认上次启动的）")
+
+    p = sub.add_parser("servers", help="服务器列表（读写 servers.dat，联机页同款）")
+    p.add_argument("action", nargs="?", default="list", choices=["list", "add", "remove"])
+    p.add_argument("name", nargs="?", help="add：服务器名字")
+    p.add_argument("address", nargs="?", help="add：服务器地址，例如 mc.hypixel.net")
+    p.add_argument("--index", type=int, help="remove：服务器序号")
+    p.add_argument("--version", help="游戏版本（默认上次启动的）")
+    p.add_argument("--ping", action="store_true", help="顺便查在线状态")
 
     p = sub.add_parser("skin", help="离线自定义皮肤（资源包）")
     p.add_argument("action", nargs="?", default="show", choices=["show", "set", "off"])
@@ -257,6 +265,10 @@ def main(argv=None) -> int:
             return modpack_cmd.run(args, ui, cfg)
         if args.command == "desktop":
             return desktop_cmd.run(args, ui, cfg)
+        if args.command == "servers":
+            from .servers_cmd import run as servers_run
+
+            return servers_run(args, ui, cfg)
         if args.command == "resources":
             return resources_cmd.run(args, ui, cfg)
         if args.command == "crash":

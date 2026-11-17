@@ -159,6 +159,52 @@ class WebuiTests(unittest.TestCase):
             get_json(self.url + "api/nope")
         self.assertEqual(ctx.exception.code, 404)
 
+    # ------------------------------------------------------------ 联机
+    def make_version(self, version_id="1.20.1") -> Path:
+        version_dir = Path(self.tmp.name) / "game" / "versions" / version_id
+        version_dir.mkdir(parents=True)
+        (version_dir / f"{version_id}.json").write_text(
+            json.dumps({"id": version_id, "type": "release"}), encoding="utf-8")
+        return version_dir
+
+    def test_servers_empty_list(self):
+        self.make_version()
+        data = get_json(self.url + "api/servers")
+        self.assertEqual(data["servers"], [])
+        self.assertEqual(data["version"], "1.20.1")
+        # 版本隔离开着：游戏读的就是 versions/<id>/servers.dat
+        self.assertTrue(data["path"].endswith("/versions/1.20.1/servers.dat"))
+
+    def test_servers_add_and_remove(self):
+        self.make_version()
+        data = post_json(self.url + "api/servers/add", {
+            "version": "1.20.1", "name": "Hypixel", "ip": "mc.hypixel.net",
+        })
+        self.assertEqual(len(data["servers"]), 1)
+        self.assertEqual(data["servers"][0]["host"], "mc.hypixel.net")
+        self.assertEqual(data["servers"][0]["port"], 25565)
+        data = post_json(self.url + "api/servers/remove", {"version": "1.20.1", "index": 0})
+        self.assertEqual(data["servers"], [])
+
+    def test_servers_add_rejects_bad_port(self):
+        self.make_version()
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/servers/add", {
+                "version": "1.20.1", "name": "X", "ip": "example.com:99999",
+            })
+        self.assertEqual(ctx.exception.code, 400)
+
+    def test_servers_join_unknown_index(self):
+        self.make_version()
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            post_json(self.url + "api/servers/join", {"version": "1.20.1", "index": 3})
+        self.assertEqual(ctx.exception.code, 404)
+
+    def test_servers_needs_installed_version(self):
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            get_json(self.url + "api/servers")
+        self.assertEqual(ctx.exception.code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

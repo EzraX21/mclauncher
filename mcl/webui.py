@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import parse_qs, unquote, urlparse
 
-from . import __version__, auth, crash, loaders, modpacks, modrinth, resources, skin, vsettings
+from . import __version__, auth, crash, loaders, modpacks, modrinth, resources, servers, skin, vsettings
 from .mods import find as find_mods, list_mods, remove as remove_mod, set_enabled
 from .config import Config, config_path
 from .installer import build_plan, execute
@@ -130,6 +130,15 @@ def _versions() -> list[dict]:
 
 
 _ACTIVE_CFG = Config.load()
+
+
+def _default_version() -> str:
+    """没指定版本时用上次启动的那个，否则用列表里第一个。"""
+    configured = (_ACTIVE_CFG.last_version or "").strip()
+    installed = [item.id for item in scan(_ACTIVE_CFG.root())]
+    if configured and configured in installed:
+        return configured
+    return installed[0] if installed else ""
 
 
 # ---------------------------------------------------------------- 任务
@@ -311,14 +320,14 @@ def start_resource_install(kind: str, version_id: str, slug: str) -> dict:
     return task
 
 
-def launch_version(version_id: str) -> dict:
+def launch_version(version_id: str, join: Optional[tuple[str, int]] = None) -> dict:
     cfg = _ACTIVE_CFG
     resolved = resolve(cfg.root(), version_id)
     java = ensure_java(cfg, resolved.java_major, note=lambda message: None)
     ensure_libraries(resolved, cfg.root(), jobs=cfg.jobs, source=cfg.source)
     prepare_natives(resolved, cfg.root())
     account = auth.ensure_account(cfg)
-    command = build_command(resolved, cfg, java, account=account)
+    command = build_command(resolved, cfg, java, account=account, join=join)
     if command.missing:
         raise RuntimeError(f"缺少 {len(command.missing)} 个文件")
     try:
@@ -435,6 +444,20 @@ class Handler(BaseHTTPRequestHandler):
                         kind, text, version_id, _ACTIVE_CFG.source)})
                 return self._json({"files": resources.local(
                     kind, _ACTIVE_CFG, version_id)})
+            if parsed.path == "/api/servers":
+                version_id = (query.get("version", [""])[0] or "").strip() or _default_version()
+                if not version_id:
+                    return self._error("还没有安装任何版本", 404)
+                data = servers.listing(_ACTIVE_CFG, version_id)
+                if query.get("ping", [""])[0] not in ("", "0", "false"):
+                    try:
+                        timeout = min(10.0, max(0.3, float(query.get("timeout", ["2"])[0])))
+                    except ValueError:
+                        timeout = 2.0
+                    results = servers.ping_servers(data["servers"], timeout=timeout)
+                    for item, result in zip(data["servers"], results):
+                        item["status"] = result
+                return self._json(data)
             if parsed.path == "/api/crash":
                 version_id = query.get("version", [""])[0] or None
                 return self._json(crash.analyze_version(_ACTIVE_CFG, version_id))
@@ -524,6 +547,32 @@ class Handler(BaseHTTPRequestHandler):
                     if task and task["state"] == "running":
                         task["state"] = "cancelled"
                 return self._json({"ok": True})
+            if parsed.path in ("/api/servers/add", "/api/servers/update", "/api/servers/remove",
+                             "/api/servers/join"):
+                version_id = str(body.get("version", "")).strip() or _default_version()
+                if not version_id:
+                    return self._error("还没有安装任何版本", 404)
+                try:
+                    if parsed.path == "/api/servers/add":
+                        return self._json(servers.add(_ACTIVE_CFG, version_id,
+                                                      str(body.get("name", "")), str(body.get("ip", ""))))
+                    index = body.get("index")
+                    if not isinstance(index, int):
+                        return self._error("缺少服务器序号", 400)
+                    if parsed.path == "/api/servers/update":
+                        return self._json(servers.update(
+                            _ACTIVE_CFG, version_id, index,
+                            name=None if body.get("name") is None else str(body.get("name")),
+                            ip=None if body.get("ip") is None else str(body.get("ip"))))
+                    if parsed.path == "/api/servers/remove":
+                        return self._json(servers.remove(_ACTIVE_CFG, version_id, index))
+                    listing = servers.listing(_ACTIVE_CFG, version_id)
+                    if not 0 <= index < len(listing["servers"]):
+                        return self._error("找不到这个服务器", 404)
+                    entry = listing["servers"][index]
+                    return self._json(launch_version(version_id, join=(entry["host"], entry["port"])))
+                except servers.ServerError as exc:
+                    return self._error(str(exc), 400)
             if parsed.path == "/api/resources/install":
                 return self._json(start_resource_install(
                     body.get("kind", "shader"), body.get("version", ""),

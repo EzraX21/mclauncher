@@ -1,4 +1,4 @@
-type View = "versions" | "install" | "resources" | "mods" | "settings";
+type View = "versions" | "install" | "resources" | "mods" | "link" | "settings";
 const MICROSOFT_LOGIN_ENABLED = false;
 
 interface VersionInfo {
@@ -17,6 +17,14 @@ interface RemoteVersion { id: string; type: string; release: string; }
 interface RemoteInfo { latest: { release: string; snapshot: string }; versions: RemoteVersion[]; }
 interface ModHit { slug: string; title: string; description: string; downloads: number; author: string; }
 interface LocalMod { name: string; enabled: boolean; size: number; title: string; version: string; }
+interface ServerStatus {
+  online: boolean; error: string; latency_ms: number | null;
+  players: { online: number; max: number }; version: string; motd: string;
+}
+interface ServerItem {
+  index: number; name: string; ip: string; host: string; port: number;
+  icon: string; accept_textures: boolean; status?: ServerStatus;
+}
 interface TaskInfo {
   id: string; kind: string; state: string; error: string | null; result: unknown;
   progress: { phase?: string; done_files?: number; total_files?: number; done_bytes?: number; total_bytes?: number };
@@ -36,6 +44,7 @@ let modsTab = "pack";
 let installTab = "vanilla";
 let installLoader = "";
 let installSelected = "";
+let linkVersion = "";
 
 const app = document.getElementById("app") as HTMLDivElement;
 const toasts = (): HTMLElement => document.getElementById("toasts") as HTMLElement;
@@ -75,6 +84,7 @@ const icons: Record<View, string> = {
   install: lucide('<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>'),
   resources: lucide('<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>'),
   mods: lucide('<path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/><path d="M12 22V12"/><polyline points="3.29 7 12 12 20.71 7"/><path d="m7.5 4.27 9 5.15"/>'),
+  link: lucide('<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>'),
   settings: lucide('<path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>'),
 };
 
@@ -90,7 +100,7 @@ function shell(): string {
         </div>
       </div>
       <nav class="nav" id="nav">
-        ${(["versions", "install", "resources", "mods", "settings"] as View[]).map((name) => `
+        ${(["versions", "install", "resources", "mods", "link", "settings"] as View[]).map((name) => `
           <button class="nav-item" data-view="${name}">
             ${icons[name]}<span>${labelOf(name)}</span>
           </button>`).join("")}
@@ -122,7 +132,8 @@ function shell(): string {
   </div>`;
 }
 function labelOf(value: View): string {
-  return { versions: "启动", install: "安装", resources: "资源", mods: "模组", settings: "设置" }[value];
+  return { versions: "启动", install: "安装", resources: "资源", mods: "模组",
+    link: "联机", settings: "设置" }[value];
 }
 
 function esc(text: unknown): string {
@@ -200,6 +211,8 @@ function render(): void {
     renderResources();
   } else if (view === "mods") {
     renderMods();
+  } else if (view === "link") {
+    renderLink();
   } else {
     renderSettings();
   }
@@ -961,6 +974,227 @@ async function searchMods(): Promise<void> {
   }
 }
 
+// ---------------------------------------------------------------- 联机
+function renderLink(): void {
+  setHeader("联机", "服务器列表，点「进服」启动游戏并直连");
+  const content = document.getElementById("content") as HTMLElement;
+  if (!linkVersion || !state.versions.some((item) => item.id === linkVersion)) {
+    linkVersion = state.config.last_version || state.versions[0]?.id || "";
+  }
+  const options = state.versions.map((version) =>
+    `<option value="${esc(version.id)}" ${version.id === linkVersion ? "selected" : ""}>${esc(version.id)} (${esc(version.loader)})</option>`).join("");
+  content.innerHTML = `
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">服务器列表</span>
+        <div class="inline">
+          <select id="link-version">${options || '<option value="">没有已装版本</option>'}</select>
+          <button class="btn" id="link-refresh">刷新状态</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="inline">
+          <input id="link-name" placeholder="名字，例如 Hypixel" style="width:200px" />
+          <input class="search" id="link-ip" placeholder="地址，例如 mc.hypixel.net" />
+          <button class="btn primary" id="link-add">添加</button>
+        </div>
+        <div class="small muted" style="margin-top:8px">
+          写进游戏自己的 servers.dat，在游戏里也能看到。<span id="link-path"></span>
+        </div>
+      </div>
+      <div class="list" id="link-list"><div class="empty">加载中…</div></div>
+    </div>`;
+
+  const select = content.querySelector("#link-version") as HTMLSelectElement | null;
+  select?.addEventListener("change", () => {
+    linkVersion = select.value;
+    void loadServers();
+  });
+  content.querySelector("#link-refresh")?.addEventListener("click", () => void loadServers());
+
+  const submitAdd = async (): Promise<void> => {
+    const nameInput = content.querySelector("#link-name") as HTMLInputElement;
+    const ipInput = content.querySelector("#link-ip") as HTMLInputElement;
+    const name = nameInput.value.trim();
+    const ip = ipInput.value.trim();
+    if (!ip) { toast("先填服务器地址", "error"); return; }
+    try {
+      await api("/api/servers/add", {
+        method: "POST",
+        body: JSON.stringify({ version: linkVersion, name: name || ip, ip }),
+      });
+      nameInput.value = "";
+      ipInput.value = "";
+      toast("已添加服务器", "ok");
+      await loadServers();
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  };
+  content.querySelector("#link-add")?.addEventListener("click", () => void submitAdd());
+  (content.querySelector("#link-ip") as HTMLInputElement).addEventListener("keydown", (event) => {
+    if (event.key === "Enter") void submitAdd();
+  });
+
+  void loadServers();
+}
+
+async function loadServers(): Promise<void> {
+  const list = document.getElementById("link-list");
+  if (!list) return;
+  if (!linkVersion) {
+    list.innerHTML = `<div class="empty">先装一个版本：服务器列表跟着版本目录走</div>`;
+    return;
+  }
+  list.innerHTML = `<div class="empty">正在查询服务器状态…</div>`;
+  try {
+    const data = await api<{ path: string; servers: ServerItem[] }>(
+      `/api/servers?version=${encodeURIComponent(linkVersion)}&ping=1`);
+    const pathLabel = document.getElementById("link-path");
+    if (pathLabel) pathLabel.textContent = `（${data.path}）`;
+    paintServers(data.servers);
+  } catch (error) {
+    list.innerHTML = `<div class="empty">${esc((error as Error).message)}</div>`;
+  }
+}
+
+function paintServers(items: ServerItem[]): void {
+  const list = document.getElementById("link-list");
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = `<div class="empty">还没有服务器。上面填个名字和地址就能加进来。</div>`;
+    return;
+  }
+  list.innerHTML = items.map((item) => serverRow(item)).join("");
+  list.querySelectorAll<HTMLButtonElement>("[data-join]").forEach((button) => {
+    button.addEventListener("click", () => void joinServer(Number(button.dataset.join), button));
+  });
+  list.querySelectorAll<HTMLButtonElement>("[data-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const item = items.find((entry) => entry.index === Number(button.dataset.edit));
+      if (item) openServerEditor(item);
+    });
+  });
+  list.querySelectorAll<HTMLButtonElement>("[data-del]").forEach((button) => {
+    button.addEventListener("click", () => void removeServer(Number(button.dataset.del)));
+  });
+}
+
+function serverRow(item: ServerItem): string {
+  const status = item.status;
+  const latency = status?.online
+    ? `<span class="badge green">${status.latency_ms ?? 0} ms</span>`
+    : status ? `<span class="badge red">离线</span>` : "";
+  const players = status?.online
+    ? `<span class="small muted">${status.players.online}/${status.players.max} 人</span>` : "";
+  const gameVersion = status?.online && status.version
+    ? `<span class="small muted">${esc(status.version)}</span>` : "";
+  const motd = status?.online && status.motd ? ` · ${esc(status.motd)}` : "";
+  const failure = status && !status.online && status.error
+    ? `<div class="desc">${esc(status.error)}</div>` : "";
+  return `
+    <div class="list-row server-row">
+      <div class="server-icon">${item.icon
+        ? `<img src="${esc(item.icon)}" alt="" />`
+        : esc(item.name.slice(0, 1).toUpperCase())}</div>
+      <div class="grow">
+        <div class="title">${esc(item.name)} ${latency}</div>
+        <div class="desc">${esc(item.ip)}${motd}</div>
+        ${failure}
+      </div>
+      <div class="inline">${players}${gameVersion}</div>
+      <button class="btn sm" data-edit="${item.index}">编辑</button>
+      <button class="btn sm danger" data-del="${item.index}">删除</button>
+      <button class="btn primary sm" data-join="${item.index}">进服</button>
+    </div>`;
+}
+
+async function joinServer(index: number, button: HTMLButtonElement): Promise<void> {
+  button.disabled = true;
+  const label = button.textContent;
+  button.textContent = "启动中…";
+  try {
+    await api("/api/servers/join", {
+      method: "POST",
+      body: JSON.stringify({ version: linkVersion, index }),
+    });
+    toast("游戏已启动，正在进服", "ok");
+  } catch (error) {
+    toast(`进服失败：${(error as Error).message}`, "error");
+  } finally {
+    button.disabled = false;
+    button.textContent = label;
+  }
+}
+
+function openServerEditor(item: ServerItem): void {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `<div class="modal" style="width:460px">
+    <h3>编辑服务器</h3>
+    <div class="field"><label>名字</label><input id="srv-name" type="text" /></div>
+    <div class="field"><label>地址</label><input id="srv-ip" type="text" /></div>
+    <div class="actions">
+      <button class="btn" id="srv-cancel">取消</button>
+      <button class="btn primary" id="srv-save">保存</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  (overlay.querySelector("#srv-name") as HTMLInputElement).value = item.name;
+  (overlay.querySelector("#srv-ip") as HTMLInputElement).value = item.ip;
+  overlay.querySelector("#srv-cancel")?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  overlay.querySelector("#srv-save")?.addEventListener("click", async () => {
+    try {
+      await api("/api/servers/update", {
+        method: "POST",
+        body: JSON.stringify({
+          version: linkVersion,
+          index: item.index,
+          name: (overlay.querySelector("#srv-name") as HTMLInputElement).value.trim(),
+          ip: (overlay.querySelector("#srv-ip") as HTMLInputElement).value.trim(),
+        }),
+      });
+      close();
+      toast("已保存", "ok");
+      await loadServers();
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+}
+
+function removeServer(index: number): void {
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `<div class="modal">
+    <h3>删除服务器</h3>
+    <div class="small muted" style="margin-bottom:16px">只从 servers.dat 里去掉这一条，不会动游戏文件。</div>
+    <div class="actions">
+      <button class="btn" id="srv-del-cancel">取消</button>
+      <button class="btn danger" id="srv-del-ok">删除</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.querySelector("#srv-del-cancel")?.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  overlay.querySelector("#srv-del-ok")?.addEventListener("click", async () => {
+    try {
+      await api("/api/servers/remove", {
+        method: "POST",
+        body: JSON.stringify({ version: linkVersion, index }),
+      });
+      close();
+      toast("已删除", "ok");
+      await loadServers();
+    } catch (error) {
+      toast((error as Error).message, "error");
+    }
+  });
+}
+
 // ---------------------------------------------------------------- 设置
 function renderSettings(): void {
   setHeader("设置", "修改会立即写入配置文件");
@@ -1313,7 +1547,7 @@ function setView(next: View): void {
 
 function viewFromHash(): View {
   const value = location.hash.replace(/^#\/?/, "");
-  return (["versions", "install", "resources", "mods", "settings"] as View[]).includes(value as View)
+  return (["versions", "install", "resources", "mods", "link", "settings"] as View[]).includes(value as View)
     ? (value as View)
     : "versions";
 }

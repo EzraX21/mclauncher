@@ -138,5 +138,73 @@ class ConfigTests(unittest.TestCase):
         self.assertEqual(Config(download_source="custom").source, "official")
 
 
+class JoinTests(unittest.TestCase):
+    """快速进服：1.20+ 走版本 JSON 里的 --quickPlayMultiplayer，老版本退回 --server/--port。"""
+
+    MODERN_ARGS = [
+        "--username", "${auth_player_name}",
+        {"rules": [{"action": "allow", "features": {"is_quick_play_multiplayer": True}}],
+         "value": ["--quickPlayMultiplayer", "${quickPlayMultiplayer}"]},
+    ]
+    LEGACY_ARGS = ["--username", "${auth_player_name}"]
+
+    def build(self, game_args, join):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "mc"
+            version_dir = root / "versions" / "demo"
+            version_dir.mkdir(parents=True)
+            (version_dir / "demo.jar").write_bytes(b"jar")
+            resolved = Resolved(
+                id="demo",
+                directory=version_dir,
+                data={
+                    "mainClass": "net.minecraft.client.main.Main",
+                    "type": "release",
+                    "arguments": {"jvm": ["-cp", "${classpath}"], "game": game_args},
+                },
+                client_jar=version_dir / "demo.jar",
+                jar_id="demo",
+                libraries=[],
+                main_class="net.minecraft.client.main.Main",
+                java_major=17,
+                assets_index="5",
+                assets_dir=root / "assets",
+            )
+            cfg = Config(game_dir=str(root), username="Alex", memory_mb=1024, isolate_versions=False)
+            return build_command(resolved, cfg, java=None, join=join).argv
+
+    def test_modern_uses_quick_play(self):
+        argv = self.build(self.MODERN_ARGS, ("mc.hypixel.net", 25565))
+        index = argv.index("--quickPlayMultiplayer")
+        self.assertEqual(argv[index + 1], "mc.hypixel.net:25565")
+        self.assertNotIn("--server", argv)
+
+    def test_modern_custom_port(self):
+        argv = self.build(self.MODERN_ARGS, ("mc.hypixel.net", 25566))
+        index = argv.index("--quickPlayMultiplayer")
+        self.assertEqual(argv[index + 1], "mc.hypixel.net:25566")
+
+    def test_legacy_falls_back_to_server_flags(self):
+        argv = self.build(self.LEGACY_ARGS, ("mc.hypixel.net", 25565))
+        self.assertNotIn("--quickPlayMultiplayer", argv)
+        index = argv.index("--server")
+        self.assertEqual(argv[index + 1], "mc.hypixel.net")
+        port_index = argv.index("--port")
+        self.assertEqual(argv[port_index + 1], "25565")
+
+    def test_no_join_adds_nothing(self):
+        argv = self.build(self.MODERN_ARGS, None)
+        self.assertNotIn("--quickPlayMultiplayer", argv)
+        self.assertNotIn("--server", argv)
+
+    def test_join_target_brackets_ipv6(self):
+        from mcl.launch import join_target
+
+        self.assertEqual(join_target("::1", 25565), "[::1]:25565")
+        self.assertEqual(join_target("mc.hypixel.net", 25565), "mc.hypixel.net:25565")
+
+
 if __name__ == "__main__":
     unittest.main()

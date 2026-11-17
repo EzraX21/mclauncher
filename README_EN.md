@@ -54,7 +54,7 @@ Current version: **v3.8.1**
 | 📴 Offline only | **Microsoft login**: Mojang rejected MCL's application; login is disabled and only offline mode is supported |
 | 🚧 Unverified | **CurseForge modpacks**: download path implemented, requires an API key; no real-pack regression yet |
 | ⏸️ Paused | **AUR**: registration is closed, so no account/first submission yet; PKGBUILD and CI are ready for when it reopens |
-| 📋 Planned | Server list / quick join, launcher auto-update, Java management UI, maps/datapacks |
+| 📋 Planned | Launcher auto-update, Java management UI, maps/datapacks |
 
 ## Features
 
@@ -65,6 +65,7 @@ Current version: **v3.8.1**
 | Mods | Modrinth / CurseForge search and install with required dependencies; local mods enable/disable/delete |
 | Modpacks | Modrinth `.mrpack` and CurseForge zips; installs vanilla + loader, copies overrides, creates an isolated instance |
 | Resources | Shaders and resource packs into `shaderpacks/` / `resourcepacks/` |
+| Multiplayer | Server list in the game's own `servers.dat` with latency / players / version / MOTD, one-click join |
 | Crash analysis | Reads crash reports / latest.log and explains Java, memory, missing deps, Mixin conflicts, etc. |
 | Accounts | Offline + Microsoft device-code login, local token cache with refresh |
 | Java | Picks the exact major version; downloads the matching Mojang runtime instead of using a newer Java |
@@ -265,6 +266,10 @@ mcl mods search sodium --version 1.20.1
 mcl mods install sodium --version fabric-loader-0.20.1-1.20.1 -y
 mcl modpack install pack.mrpack --name "My Pack"
 mcl resources search shader complementary --version 1.20.1
+mcl servers                         # server list (reads/writes servers.dat)
+mcl servers add Hypixel mc.hypixel.net
+mcl servers --ping                  # also query online status
+mcl servers remove --index 0
 mcl crash 1.20.1                    # analyze a crash
 mcl java install 21                 # download a Java runtime
 mcl account                         # show offline state
@@ -416,6 +421,8 @@ mclauncher/
 │   ├── auth.py           Microsoft device-code login
 │   ├── modpacks.py       modpack import
 │   ├── resources.py      shaders / resource packs
+│   ├── servers.py        server list (servers.dat) + Server List Ping
+│   ├── nbt.py            minimal NBT codec (servers.dat)
 │   ├── crash.py          crash log analysis
 │   ├── versions.py       inheritsFrom merging / version scan
 │   ├── launch.py         launch args / classpath / natives
@@ -427,7 +434,7 @@ mclauncher/
 │   └── ...
 ├── gui/                  TypeScript frontend (esbuild)
 ├── docs/                 README screenshots
-├── tests/                119 tests
+├── tests/                167 tests
 ├── packaging/            deb/rpm/Arch, Windows, macOS, AUR, release helper
 └── pyproject.toml
 ```
@@ -438,7 +445,8 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-119 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+167 tests covering rules, download plans, version merging, launch arguments, Java, mods,
+server lists and NBT, Server List Ping against a local fake server,
 modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network needed.
 
 ## Known limitations
@@ -449,7 +457,10 @@ modpacks, resources, crash analysis, Microsoft auth, TUI and GUI API; no network
 - macOS only has a manual build script; releases do not ship a dmg, and the GUI falls back to a browser
 - AUR has not been submitted yet
 - Resources cover shaders/resource packs only; maps and datapacks are not implemented
-- Server list, auto-update and a Java management UI are not implemented
+- No SRV lookup (`_minecraft._tcp`): servers that only publish their port via SRV show as offline
+- Quick join uses `--quickPlayMultiplayer` from the version JSON (1.20+) and falls back to
+  `--server/--port`; the in-game result was not tested on every game version
+- Auto-update and a Java management UI are not implemented
 
 ## Privacy
 

@@ -217,6 +217,14 @@ def _extra_args(text: str, label: str, warnings: list[str]) -> list[str]:
         return []
 
 
+def join_target(host: str, port: int) -> str:
+    """`--quickPlayMultiplayer` 要的 `host:port`。IPv6 要加中括号。"""
+    host = (host or "").strip()
+    if ":" in host:
+        host = f"[{host}]"
+    return f"{host}:{port}"
+
+
 def build_command(
     resolved: Resolved,
     cfg: Config,
@@ -225,8 +233,15 @@ def build_command(
     features: Optional[dict] = None,
     memory_mb: Optional[int] = None,
     account=None,
+    join: Optional[tuple[str, int]] = None,
 ) -> LaunchCommand:
     features = features or {}
+    join_host = (join[0].strip() if join else "")
+    join_port = int(join[1]) if join else 0
+    if join_host:
+        # 1.20+ 的版本 JSON 里带 --quickPlayMultiplayer，由这个 feature 打开；
+        # 老版本没有这条规则，下面退回 --server/--port。
+        features = {**features, "is_quick_play_multiplayer": True}
     username = account.name if account is not None else (username or cfg.username or "Player")
     account_uuid = account.uuid if account is not None else offline_uuid(username)
     access_token = account.access_token if account is not None else "0"
@@ -278,6 +293,7 @@ def build_command(
         "user_properties": "{}",
         "resolution_width": str(width),
         "resolution_height": str(height),
+        "quickPlayMultiplayer": join_target(join_host, join_port) if join_host else "",
     }
 
     executable = str(java.path) if java else "java"
@@ -322,6 +338,10 @@ def build_command(
         argv += build_arguments(legacy.split() if legacy else [], context, features, command.warnings)
 
     argv += _extra_args(options.get("game_args") or "", "游戏参数", command.warnings)
+
+    if join_host and "--quickPlayMultiplayer" not in argv:
+        # 1.19 及更老的版本没有 quickPlay，用着这两个参数直连
+        argv += ["--server", join_host, "--port", str(join_port)]
 
     if java is not None and resolved.java_major and java.major != resolved.java_major:
         command.warnings.append(
