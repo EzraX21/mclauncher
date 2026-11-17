@@ -19,7 +19,7 @@ def run(args, ui: UI, cfg: Config) -> int:
             if not args.query:
                 ui.error("搜索要带关键词")
                 return 2
-            hits = resources.search(kind, args.query, version, cfg.source)
+            hits = resources.search(kind, args.query, cfg, version)
             if not hits:
                 ui.warn("没有搜到")
                 return 1
@@ -27,7 +27,7 @@ def run(args, ui: UI, cfg: Config) -> int:
                 ui.kv(hit["title"], f"{hit['slug']}  ·  {hit['downloads']:,} 次")
             return 0
         if action == "install":
-            path = resources.install(kind, version, args.query or "", cfg)
+            path = resources.install(kind, cfg, version, args.query or "")
             ui.ok(f"已安装 {path.name}")
             return 0
         if action == "list":

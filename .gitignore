@@ -12,3 +12,6 @@ dist/
 
 *.log
 mcl/webui_dist/
+
+# 截图工具的临时演示目录
+.screenshots/

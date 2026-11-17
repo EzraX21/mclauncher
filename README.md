@@ -46,7 +46,7 @@
 
 ## 项目状态
 
-当前版本 **v3.10.0**：
+当前版本 **v3.11.0**：
 
 | 状态 | 功能 |
 | --- | --- |
@@ -75,19 +75,30 @@
 
 ## 截图
 
-| 浅色 | 深色 |
+| 启动 | 版本管理 |
 | --- | --- |
-| ![版本列表](docs/gui-versions.png) | ![深色主题](docs/gui-dark.png) |
+| ![启动](docs/gui-versions.png) | ![版本管理](docs/gui-instance.png) |
 
-| 下载 · 游戏本体 | 下载 · 模组 / 整合包 |
+| 下载 · 游戏本体 | 下载 · 模组 |
 | --- | --- |
-| ![安装](docs/gui-install.png) | ![模组](docs/gui-mods.png) |
+| ![下载](docs/gui-install.png) | ![模组](docs/gui-mods.png) |
 
-| 下载 · 光影 / 材质 | 设置 / 微软账号 |
+| 下载 · 光影 | 联机 |
 | --- | --- |
-| ![资源](docs/gui-resources.png) | ![设置](docs/gui-settings.png) |
+| ![光影](docs/gui-resources.png) | ![联机](docs/gui-link.png) |
 
-> 截图拍摄于「安装 / 资源 / 模组」合并成「下载」页之前，顶部导航还多两项；功能没变，位置变了。
+| 设置 | 深色主题 |
+| --- | --- |
+| ![设置](docs/gui-settings.png) | ![深色主题](docs/gui-dark.png) |
+
+截图是脚本生成的，界面改动后重新跑一次就行：
+
+```bash
+cd gui
+npm install --include=dev
+npx playwright install chromium   # 第一次要下 Chromium
+npm run shots                     # 造演示目录 → 起服务 → 逐页截图到 docs/
+```
 
 ## 安装
 
@@ -422,7 +433,8 @@ mclauncher/
 python -m unittest discover -s tests -v
 ```
 
-192 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java、模组、整合包导入导出、资源、
+194 个测试，覆盖规则、下载计划、版本合并、版本改名/复制、启动参数、Java、模组、整合包导入导出、
+光影/材质包的游戏版本解析、
 服务器列表与 NBT、Server List Ping（用本地假服务器）、删除、TUI（无需终端）和 GUI API；不需要网络。
 
 前端另有一个 jsdom 冒烟测试，会真跑一遍构建后的界面：

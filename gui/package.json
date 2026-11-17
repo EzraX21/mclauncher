@@ -1,19 +1,21 @@
 {
   "name": "mcl-gui",
   "private": true,
-  "version": "3.10.0",
+  "version": "3.11.0",
   "description": "MCL (mclauncher) GUI (Electron + TypeScript)",
   "main": "dist/main.cjs",
   "scripts": {
     "build": "node build.mjs",
     "start": "npm run build && electron .",
     "electron": "electron .",
-    "test": "npm run build && node test/smoke.mjs"
+    "test": "npm run build && node test/smoke.mjs",
+    "shots": "node tools/screenshots.mjs"
   },
   "devDependencies": {
     "electron": "^45.0.0",
     "esbuild": "^0.28.2",
     "jsdom": "^31.0.1",
+    "playwright": "^1.65.1",
     "typescript": "^5.9.0"
   }
 }

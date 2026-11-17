@@ -310,7 +310,7 @@ def start_resource_install(kind: str, version_id: str, slug: str) -> dict:
 
     def run() -> None:
         try:
-            path = resources.install(kind, version_id, slug, cfg)
+            path = resources.install(kind, cfg, version_id, slug)
             _log(task, f"已安装 {path.name}")
             task["result"] = {"file": path.name}
             task["state"] = "done"
@@ -479,7 +479,7 @@ class Handler(BaseHTTPRequestHandler):
                     return self._error("缺少 version")
                 if text:
                     return self._json({"hits": resources.search(
-                        kind, text, version_id, _ACTIVE_CFG.source)})
+                        kind, text, _ACTIVE_CFG, version_id)})
                 return self._json({"files": resources.local(
                     kind, _ACTIVE_CFG, version_id)})
             if parsed.path == "/api/servers":
