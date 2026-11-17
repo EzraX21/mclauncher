@@ -407,6 +407,28 @@ class WebuiTests(unittest.TestCase):
         self.assertTrue(data["update_available"])
         self.assertEqual(data["latest"], "v9.9.9")
 
+    def test_update_cached(self):
+        from unittest import mock
+
+        payload = {
+            "current": "3.0.0", "latest": "v9.9.9", "update_available": True,
+            "page": "https://example/releases", "published": "", "prerelease": False,
+            "name": "v9.9.9", "notes": "", "assets": [],
+        }
+        from mcl import webui
+
+        webui.UPDATE_CACHE["data"] = None
+        webui.UPDATE_CACHE["at"] = 0.0
+        with mock.patch("mcl.webui.update.check", return_value=payload) as check:
+            first = get_json(self.url + "api/update")
+            second = get_json(self.url + "api/update")
+            get_json(self.url + "api/update?force=1")
+        self.assertFalse(first["cached"])
+        self.assertTrue(second["cached"])
+        self.assertEqual(check.call_count, 2)  # 第二次命中缓存，第三次 force 才重新查
+        webui.UPDATE_CACHE["data"] = None
+        webui.UPDATE_CACHE["at"] = 0.0
+
     def test_update_network_error(self):
         from unittest import mock
 

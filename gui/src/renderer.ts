@@ -35,6 +35,7 @@ interface JavaListing {
 interface UpdateInfo {
   current: string; latest: string; update_available: boolean;
   page: string; published: string; prerelease: boolean;
+  name: string; notes: string; cached?: boolean;
   assets: { name: string; size: number; url: string }[];
 }
 interface AboutInfo {
@@ -274,6 +275,13 @@ function renderVersions(): void {
         <div class="launch-note">${state.versions.length ? "启动前会自动检查 Java 和依赖库。" : "还没有安装任何版本。"}</div>
       </aside>
       <section class="launch-main">
+        <div class="card" id="launch-news">
+          <div class="card-head">
+            <span class="card-title">最新版本</span>
+            <button class="btn sm" id="news-reload">刷新</button>
+          </div>
+          <div class="card-body"><div class="empty">加载中…</div></div>
+        </div>
         ${state.versions.length ? `
         <div class="card">
           <div class="card-head">
@@ -307,6 +315,8 @@ function renderVersions(): void {
     if (button) void launch(id, button);
   };
   content.querySelector("#launch-main")?.addEventListener("click", launchSelected);
+  content.querySelector("#news-reload")?.addEventListener("click", () => void loadNews(true));
+  void loadNews(false);
   content.querySelector("#go-install")?.addEventListener("click", () => setView("download"));
   content.querySelector("#go-install-empty")?.addEventListener("click", () => setView("download"));
   content.querySelector("#refresh")?.addEventListener("click", () => refreshState());
@@ -1609,6 +1619,57 @@ async function loadAbout(): Promise<void> {
   } catch (error) {
     host.innerHTML = `<div class="card-head"><span class="card-title">关于</span></div>
       <div class="card-body"><div class="empty">${esc((error as Error).message)}</div></div>`;
+  }
+}
+
+// 发布说明是 Markdown，这里只取能看的纯文本行
+function formatNotes(text: string, maxLines = 6): string[] {
+  const lines: string[] = [];
+  for (const raw of (text || "").split("\n")) {
+    const line = raw
+      .replace(/^#{1,6}\s*/, "")
+      // 要求星号/减号后面有空格，否则会把 **加粗** 的第一个星号吃掉
+      .replace(/^[*+-]\s+/, "")
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/\[(.+?)\]\((.+?)\)/g, "$1")
+      .trim();
+    if (!line || /^full changelog/i.test(line)) continue;
+    lines.push(line);
+    if (lines.length >= maxLines) break;
+  }
+  return lines;
+}
+
+async function loadNews(force: boolean): Promise<void> {
+  const host = document.getElementById("launch-news");
+  if (!host) return;
+  try {
+    const data = await api<UpdateInfo>(`/api/update${force ? "?force=1" : ""}`);
+    const when = data.published ? data.published.slice(0, 10) : "";
+    const notes = formatNotes(data.notes);
+    host.innerHTML = `
+      <div class="card-head">
+        <span class="card-title">最新版本 ${esc(data.latest)}
+          ${data.update_available ? '<span class="badge red">有新版本</span>' : ""}</span>
+        <button class="btn sm" id="news-reload">刷新</button>
+      </div>
+      <div class="card-body">
+        ${notes.length
+          ? `<div class="news-body">${notes.map((line) => `<div class="news-line">${esc(line)}</div>`).join("")}</div>`
+          : `<div class="small muted">这个版本没有写发布说明。</div>`}
+        <div class="inline" style="margin-top:12px">
+          <a class="btn sm" href="${esc(data.page)}" target="_blank" rel="noreferrer">查看全部</a>
+          ${when ? `<span class="small muted">发布于 ${esc(when)}</span>` : ""}
+          ${data.cached ? `<span class="small muted">（缓存）</span>` : ""}
+        </div>
+      </div>`;
+    host.querySelector("#news-reload")?.addEventListener("click", () => void loadNews(true));
+  } catch (error) {
+    host.innerHTML = `
+      <div class="card-head"><span class="card-title">最新版本</span>
+        <button class="btn sm" id="news-reload">重试</button></div>
+      <div class="card-body"><div class="small muted">查不到更新信息：${esc((error as Error).message)}</div></div>`;
+    host.querySelector("#news-reload")?.addEventListener("click", () => void loadNews(true));
   }
 }
 

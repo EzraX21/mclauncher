@@ -67,6 +67,7 @@ def check(current: str, fetch: Optional[Callable[[], dict]] = None,
         if name:
             assets.append({"name": str(name), "size": asset.get("size") or 0,
                            "url": str(asset.get("browser_download_url") or "")})
+    body = str(payload.get("body") or "")
     return {
         "current": current,
         "latest": tag,
@@ -74,5 +75,8 @@ def check(current: str, fetch: Optional[Callable[[], dict]] = None,
         "page": str(payload.get("html_url") or RELEASES_PAGE),
         "published": str(payload.get("published_at") or ""),
         "prerelease": bool(payload.get("prerelease", False)),
+        # 发布说明给启动页的公告卡片用，太长就截断（整篇在 GitHub 页面看）
+        "name": str(payload.get("name") or tag),
+        "notes": body[:4000],
         "assets": assets,
     }

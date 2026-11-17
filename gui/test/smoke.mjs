@@ -109,7 +109,10 @@ const WORLDS = {
 
 const UPDATE = {
   current: "9.9.9", latest: "v9.9.10", update_available: true,
-  page: "https://example/releases", published: "", prerelease: false,
+  page: "https://example/releases", published: "2026-11-17T10:00:00Z", prerelease: false,
+  name: "v9.9.10",
+  notes: "## What's Changed\n* feat: 联机页 by @EzraX21 in https://x/1\n\n**Full Changelog**: https://x/y",
+  cached: false,
   assets: [{ name: "setup.exe", size: 1, url: "https://example/x" }],
 };
 
@@ -163,6 +166,18 @@ assert.deepEqual(
 
 // 默认落地页是启动页
 assert.ok(doc.querySelector("#launch-main"), "启动页没有渲染出启动按钮");
+
+// 启动页公告：最新版本 + 发布说明（Markdown 要拍平）
+const news = doc.querySelector("#launch-news");
+assert.ok(news, "启动页没有最新版本卡片");
+assert.ok(!news.textContent.includes("加载中"), "公告卡片还停在加载中");
+assert.ok(news.textContent.includes("v9.9.10"), `公告没显示版本：${news.textContent.slice(0, 80)}`);
+assert.ok(news.querySelectorAll(".news-line").length >= 2, "发布说明没渲染成行");
+assert.ok(news.textContent.includes("联机页"), "发布说明内容缺失");
+assert.ok(!news.textContent.includes("Full Changelog"), "Full Changelog 应该被过滤");
+assert.ok(!news.textContent.includes("##"), "Markdown 标题应该被清掉");
+assert.ok(news.querySelector('a[href^="https://example/releases"]'), "公告没有「查看全部」链接");
+assert.ok(news.textContent.includes("有新版本"), "有更新时应该显示徽章");
 
 // 切到下载页：分类导航 + 版本清单
 window.location.hash = "#/download";
