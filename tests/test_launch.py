@@ -26,8 +26,12 @@ class ArgumentTests(unittest.TestCase):
         ]
         args = build_arguments(entries, {}, {}, [])
         self.assertIn("--always", args)
-        self.assertNotIn("--windows-only", args)
-        if os.name != "nt":
+        # 规则按当前系统生效：在 Windows 上 --windows-only 才该出现
+        if os.name == "nt":
+            self.assertIn("--windows-only", args)
+            self.assertNotIn("--linux", args)
+        else:
+            self.assertNotIn("--windows-only", args)
             self.assertIn("--linux", args)
             self.assertIn("--linux2", args)
 

@@ -75,7 +75,7 @@ class ResourceTests(unittest.TestCase):
                 resources.install("shader", cfg, "fabric-loader-0.16.9-1.21.4", "complementary")
             self.assertEqual(latest_mock.call_args.args[2], "1.21.4")
             target = download_mock.call_args.args[1]
-            self.assertEqual(target, root / "versions" / "fabric-loader-0.16.9-1.21.4" / "shaderpacks")
+            self.assertEqual(target, (root / "versions" / "fabric-loader-0.16.9-1.21.4" / "shaderpacks").resolve())
 
     def test_bad_kind(self):
         with self.assertRaises(resources.ResourceError):
@@ -94,7 +94,9 @@ class ResourceTests(unittest.TestCase):
             root = Path(tmp) / "game"
             cfg = Config(game_dir=str(root), isolate_versions=True)
             path = resources.directory("datapack", cfg, "1.21.4", "新世界")
-            self.assertEqual(path, root / "versions" / "1.21.4" / "saves" / "新世界" / "datapacks")
+            # 产品返回的是解析过符号链接的路径（Config.root() 会 resolve）；
+            # Windows 上临时目录是 8.3 短名，直接比字符串会不等
+            self.assertEqual(path, (root / "versions" / "1.21.4" / "saves" / "新世界" / "datapacks").resolve())
 
     def test_worlds_listing(self):
         with tempfile.TemporaryDirectory() as tmp:

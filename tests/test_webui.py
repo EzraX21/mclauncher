@@ -63,7 +63,8 @@ class WebuiTests(unittest.TestCase):
     def test_state(self):
         data = get_json(self.url + "api/state")
         self.assertIn("version", data)
-        self.assertEqual(data["config"]["game_dir"], str(Path(self.tmp.name) / "game"))
+        self.assertEqual(data["config"]["game_dir"],
+                         str((Path(self.tmp.name) / "game").resolve()))
         self.assertEqual(data["config"]["memory_mb"], 2048)
         self.assertEqual(data["versions"], [])
 
@@ -173,8 +174,9 @@ class WebuiTests(unittest.TestCase):
         data = get_json(self.url + "api/servers")
         self.assertEqual(data["servers"], [])
         self.assertEqual(data["version"], "1.20.1")
-        # 版本隔离开着：游戏读的就是 versions/<id>/servers.dat
-        self.assertTrue(data["path"].endswith("/versions/1.20.1/servers.dat"))
+        # 版本隔离开着：游戏读的就是 versions/<id>/servers.dat（Windows 用反斜杠）
+        self.assertTrue(data["path"].replace("\\", "/").endswith("/versions/1.20.1/servers.dat"),
+                        data["path"])
 
     def test_servers_add_and_remove(self):
         self.make_version()
@@ -219,7 +221,7 @@ class WebuiTests(unittest.TestCase):
         self.assertTrue(data["has_jar"])
         self.assertEqual(data["mods"], 1)
         self.assertGreater(data["size"], 0)
-        self.assertEqual(data["path"], str(version_dir))
+        self.assertEqual(data["path"], str(version_dir.resolve()))
 
     def test_version_rename(self):
         self.make_version()
@@ -287,7 +289,7 @@ class WebuiTests(unittest.TestCase):
     def test_about(self):
         data = get_json(self.url + "api/about")
         self.assertEqual(data["license"], "GPL-3.0-or-later")
-        self.assertEqual(data["game_dir"], str(Path(self.tmp.name) / "game"))
+        self.assertEqual(data["game_dir"], str((Path(self.tmp.name) / "game").resolve()))
         self.assertTrue(data["repo"].startswith("https://github.com/"))
         self.assertIn("version", data)
 
@@ -316,10 +318,19 @@ class WebuiTests(unittest.TestCase):
 
     # ------------------------------------------------------------ Java
     def fake_java(self, major: int = 17) -> Path:
-        path = Path(self.tmp.name) / f"java{major}"
-        path.write_text(f'#!/bin/sh\necho \'openjdk version "{major}.0.9" 2023-10-17\' >&2\n',
-                        encoding="utf-8")
-        path.chmod(0o755)
+        """造一个能被 java.probe() 跑起来的假 java。
+
+        Windows 没有 shebang，得用 .bat 包一层 echo；否则 subprocess 会直接失败。
+        """
+        if os.name == "nt":
+            path = Path(self.tmp.name) / f"java{major}.bat"
+            path.write_text(f'@echo off\r\necho openjdk version "{major}.0.9" 2023-10-17 1>&2\r\n',
+                            encoding="utf-8")
+        else:
+            path = Path(self.tmp.name) / f"java{major}"
+            path.write_text(f'#!/bin/sh\necho \'openjdk version "{major}.0.9" 2023-10-17\' >&2\n',
+                            encoding="utf-8")
+            path.chmod(0o755)
         return path
 
     def test_java_listing(self):
@@ -342,9 +353,13 @@ class WebuiTests(unittest.TestCase):
         self.assertEqual(Config.load().java_path, "")
 
     def test_java_set_rejects_garbage(self):
-        bogus = Path(self.tmp.name) / "not-java"
-        bogus.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
-        bogus.chmod(0o755)
+        if os.name == "nt":
+            bogus = Path(self.tmp.name) / "not-java.bat"
+            bogus.write_text("@echo off\r\nexit /b 0\r\n", encoding="utf-8")
+        else:
+            bogus = Path(self.tmp.name) / "not-java"
+            bogus.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            bogus.chmod(0o755)
         with self.assertRaises(urllib.error.HTTPError) as ctx:
             post_json(self.url + "api/java/set", {"path": str(bogus)})
         self.assertEqual(ctx.exception.code, 400)
